@@ -1,0 +1,26 @@
+{
+  "config": {
+    "window": 252,
+    "min_frac": 0.8,
+    "floor_pct": 5.0,
+    "min_dollar_volume_usd": 1000000.0,
+    "first_date": null,
+    "last_date": "2025-12-31",
+    "bias": {
+      "seed": 20261015,
+      "n_portfolios": 100,
+      "gross_long_short": 2.0
+    }
+  },
+  "config_path": "experiments/configs/risk.yaml",
+  "git_commit": "44ea3ba67cd9e36c88be3b6aab0e05b31335b2b4",
+  "built_utc": "2026-10-16T06:27:41Z",
+  "n_dates": 241,
+  "first_date": "2005-12-30",
+  "last_date": "2025-12-31",
+  "units": {
+    "F": "monthly covariance (daily x 21)",
+    "d": "monthly variance (daily x 21)",
+    "B": "loadings on daily decimal factor returns"
+  }
+}

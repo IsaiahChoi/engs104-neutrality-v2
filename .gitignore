@@ -1,0 +1,23 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/raw/
+data/processed/
+logs/*
+!logs/.gitkeep
+results/scratch/*
+!results/scratch/.gitkeep
+*.lic
+.claude/settings.local.json
+.DS_Store
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.synctex.gz
+# v2 additions
+results/checks/scratch/
+.ecc/

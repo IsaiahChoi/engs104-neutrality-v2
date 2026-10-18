@@ -1,0 +1,26 @@
+# Base-case mandate: brief §3.3 values as they stand ([CONFIRM] by Isaiah before the freeze).
+# A family set to null is switched off. Numbers are plain decimals: YAML 1.1 reads 1.0e9 as text.
+mandate:
+  dollar: 0.02            # |1'w| <= eps_net
+  beta: 0.05              # |y_mkt| <= eps_beta (loading units)
+  style: 0.10             # |y_k| <= b_k, each non-market factor
+  sector: 0.02            # |S_j'w| <= s_j, each GICS sector
+  gross: 2.0              # 1'(w+ + w-) <= G
+  position: 0.03          # w+_i, w-_i <= min(u, theta * ADV_i / AUM)
+  liquidity_theta: 0.05
+  aum_usd: 1000000000.0
+  borrow_annual: 0.0030   # 30 bp/yr on shorts (2.5 bp/month)
+  trade_cost: 0.0005      # 5 bp one-way
+risk_aversion:                    # brief §3.3 λ policy (src/opt/lambda_policy.py)
+  target_annual_vol: 0.03         # ex-ante, on capital, under the full base mandate
+  fallback_fraction: 0.9          # if 3% is unattainable: 90% of the maximum attainable vol
+  lambda_bracket: [0.001, 100000.0]
+solver:
+  primary: GUROBI
+  cross_check: CLARABEL
+  threads: 1
+  seed: 0
+alpha:
+  seed: 20261015
+  synthetic_ic: [0.02, 0.05, 0.10]
+  momentum_ic: 0.03

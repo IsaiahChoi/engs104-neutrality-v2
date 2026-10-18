@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make *)",
+      "Bash(uv sync *)",
+      "Bash(uv run *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git mv *)",
+      "Bash(tectonic *)",
+      "WebFetch(domain:docs.gurobi.com)",
+      "WebFetch(domain:support.gurobi.com)",
+      "WebFetch(domain:www.cvxpy.org)",
+      "WebFetch(domain:clarabel.org)"
+    ],
+    "ask": [
+      "Bash(rm *)",
+      "Bash(git rm *)",
+      "Bash(brew *)",
+      "Bash(pip install *)",
+      "Bash(uv add *)",
+      "Bash(uv remove *)",
+      "Edit(./docs/DESIGN.md)",
+      "Edit(./CLAUDE.md)",
+      "Edit(./Makefile)",
+      "Edit(./pyproject.toml)"
+    ],
+    "deny": [
+      "Edit(./docs/CHECKS.md)",
+      "Edit(./reference/**)",
+      "Edit(./data/**)",
+      "Edit(./.claude/**)",
+      "Bash(git push *)",
+      "Bash(git tag *)",
+      "Bash(git reset *)",
+      "Bash(git rebase *)",
+      "Bash(git restore *)",
+      "Bash(git clean *)",
+      "Bash(git switch *)",
+      "Bash(git checkout *)",
+      "Bash(git filter-branch *)",
+      "Bash(git commit --amend *)"
+    ]
+  },
+  "env": {
+    "ECC_SESSION_START_CONTEXT": "off",
+    "ECC_CONTEXT_MONITOR_COST_WARNINGS": "off"
+  }
+}

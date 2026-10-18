@@ -1,0 +1,26 @@
+[project]
+name = "engs104-neutrality"
+version = "0.1.0"
+description = "ENGS 104 final project: shadow prices of neutrality constraints in market-neutral portfolio construction"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.1",
+  "scipy>=1.11",
+  "cvxpy>=1.5",
+  "clarabel>=0.7",
+  "gurobipy>=11.0",
+  "yfinance>=0.2.40",
+  "requests>=2.31",
+  "lxml>=5.0",
+  "pyyaml>=6.0",
+  "matplotlib>=3.8",
+  "tqdm>=4.66",
+  "pypdf>=4.0",
+  "pytest>=8.0",
+  "pyarrow>=26.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

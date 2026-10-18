@@ -1,0 +1,37 @@
+% Phase 0 smoke test: tectonic can compile an IEEEtran conference document.
+% Build: tectonic -o results/scratch tools/latex_smoke/ieee_smoke.tex
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+\begin{document}
+
+\title{IEEEtran Smoke Test}
+\author{\IEEEauthorblockN{ENGS 104 Toolchain Check}}
+\maketitle
+
+\begin{abstract}
+This document checks that the LaTeX toolchain builds an IEEEtran conference paper.
+\end{abstract}
+
+\section{Problem Setting}
+\begin{equation}
+  \max_{w}\; \alpha^\top w - \lambda\, w^\top \Sigma w
+  \quad \text{s.t.}\quad \mathbf{1}^\top w = 0.
+\end{equation}
+
+\section{Results}
+\begin{table}[h]
+  \centering
+  \caption{Placeholder table}
+  \begin{tabular}{lr}
+    \toprule
+    Item & Value \\
+    \midrule
+    A & 1 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\end{document}

@@ -1,0 +1,43 @@
+{
+  "config_path": "experiments/configs/risk.yaml",
+  "config": {
+    "window": 252,
+    "min_frac": 0.8,
+    "floor_pct": 5.0,
+    "min_dollar_volume_usd": 1000000.0,
+    "first_date": null,
+    "last_date": "2025-12-31",
+    "bias": {
+      "seed": 20261015,
+      "n_portfolios": 100,
+      "gross_long_short": 2.0
+    }
+  },
+  "git_commit": "44ea3ba67cd9e36c88be3b6aab0e05b31335b2b4",
+  "seed": 20261015,
+  "created_utc": "2026-10-16T06:27:41Z",
+  "z_file": "bias_w252_20261016T062739Z.parquet",
+  "summary": [
+    {
+      "type": "factor_neutral",
+      "pooled_std_z": 0.9701767952647837,
+      "mean_z": 0.00039565508182947366,
+      "n_z": 24000,
+      "n_dates": 240,
+      "per_portfolio_std_median": 0.9676075498046839,
+      "per_portfolio_std_p05": 0.8877950605785635,
+      "per_portfolio_std_p95": 1.058152665050959
+    },
+    {
+      "type": "long_only",
+      "pooled_std_z": 0.9523537284974856,
+      "mean_z": 0.2206828573427234,
+      "n_z": 24000,
+      "n_dates": 240,
+      "per_portfolio_std_median": 0.9544266253674836,
+      "per_portfolio_std_p05": 0.9491271600042099,
+      "per_portfolio_std_p95": 0.9593390816824809
+    }
+  ],
+  "mean_missing_share": 1.4059797766994977e-06
+}

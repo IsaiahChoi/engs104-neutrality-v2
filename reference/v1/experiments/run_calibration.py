@@ -1,0 +1,128 @@
+"""Phase 3b: λ calibration (brief §3.3) and the vol-target feasibility report (GATE_CRITERIA P7).
+
+`uv run python -m experiments.run_calibration`
+Calibrates λ once per (date, alpha) under the full base mandate for every pair a design needs:
+E1 dates (momentum; synthetic IC 0.05, draw 0), E2 months (synthetic IC 0.02, 0.05, 0.10,
+draw 0), E3 dates (momentum; all E3 dates are E1 dates, so they reuse the E1 record).
+Outputs (new timestamped files):
+- results/lambda/lambda_calibration_<UTC>.json — the λ record the experiment runners read;
+- results/lambda/vol_target_feasibility_<UTC>.md and .csv — for each (design, date, alpha):
+  N, maximum attainable ex-ante volatility, whether the target is attainable, whether the
+  90% fallback is used, and the volatility λ was calibrated to. Feasibility numbers only: no
+  hypothesis metric (no A, L, IR, TC, slope).
+"""
+from __future__ import annotations
+
+import sys
+
+import pandas as pd
+
+from experiments.designs import config, e1_dates, e2_months, e3_dates
+from src.alpha.momentum import momentum_alpha
+from src.alpha.synthetic import draw_rng, residual_returns, synthetic_alpha
+from src.opt.continuous import ContinuousProblem, load_config
+from src.opt.inputs import date_inputs, market_data, next_rebalance_date
+from src.opt.lambda_policy import LAMBDA_DIR, alpha_key, calibrate, write_book
+from src.risk.factor_model import FACTORS
+from src.utils import append_run_log, git_commit, utc_timestamp
+from tools.check_frozen import TAG, _git
+
+
+def needed_pairs() -> dict[tuple[pd.Timestamp, str], set[str]]:
+    """(date, alpha key) -> designs that use it."""
+    ic1 = config("rq1")["alphas"]["synthetic"]["ic"]
+    pairs: dict = {}
+    for d in e1_dates():
+        pairs.setdefault((d, "momentum"), set()).add("E1")
+        pairs.setdefault((d, alpha_key("synthetic", ic1)), set()).add("E1")
+    for d in e2_months():
+        for ic in config("rq2")["ics"]:
+            pairs.setdefault((d, alpha_key("synthetic", ic)), set()).add("E2")
+    for design, dates in e3_dates().items():
+        for d in dates:
+            pairs.setdefault((d, "momentum"), set()).add(f"E3-{design}")
+    return pairs
+
+
+def alpha_for(di, key: str, seed: int):
+    md = market_data()
+    if key == "momentum":
+        return momentum_alpha(di.model, md.ret)
+    ic = float(key.removeprefix("synthetic_ic"))
+    e = residual_returns(di.model, md.excess, md.factors, next_rebalance_date(di.date))
+    return synthetic_alpha(e, di.model.d, ic, draw_rng(seed, di.date, ic, 0))[0]
+
+
+def main() -> int:
+    mandate, mcfg = load_config()
+    ra = mcfg["risk_aversion"]
+    lo, hi = ra["lambda_bracket"]
+    seed = mcfg["alpha"]["seed"]
+    stamp = utc_timestamp().replace(":", "").replace("-", "")
+    try:
+        records, rows = [], []
+        for (date, key), designs in sorted(needed_pairs().items()):
+            di = date_inputs(date)
+            m = di.model
+            P = ContinuousProblem(m.B, m.F, m.d, di.sector_matrix(), mandate, adv=di.adv,
+                                  factor_names=FACTORS)
+            rec = calibrate(P, alpha_for(di, key, seed), f"{date:%Y-%m-%d}", key,
+                            target=ra["target_annual_vol"], lo=lo, hi=hi,
+                            fallback_frac=ra["fallback_fraction"])
+            records.append(rec)
+            rows.append({"designs": ",".join(sorted(designs)), "date": rec.date, "alpha": key,
+                         "N": rec.N, "max_vol": rec.max_vol,
+                         "target_attainable": not rec.fallback, "fallback": rec.fallback,
+                         "calibrated_vol": rec.target_vol})
+        frozen = _git("rev-list", "-n", "1", TAG).stdout.decode().strip()
+        meta = {"created_utc": utc_timestamp(), "git_commit": git_commit(), "frozen_commit": frozen,
+                "mandate_config": "experiments/configs/base_mandate.yaml", "risk_aversion": ra,
+                "alpha_seed": seed, "policy": "brief §3.3: once per (date, alpha), full base "
+                "mandate, synthetic on draw 0, 90%-of-maximum fallback"}
+        book = write_book(records, meta, stamp)
+        df = pd.DataFrame(rows)
+        csv = LAMBDA_DIR / f"vol_target_feasibility_{stamp}.csv"
+        df.to_csv(csv, index=False)
+        md_path = csv.with_suffix(".md")
+        md_path.write_text(feasibility_markdown(df, meta, ra))
+    except Exception as e:
+        append_run_log("experiments/run_calibration.py", "failed", str(LAMBDA_DIR),
+                       f"{type(e).__name__}: {e}")
+        raise
+    n_fb = int(df["fallback"].sum())
+    print(f"{len(df)} (date, alpha) pairs; fallback at {n_fb}; book {book.name}; report {md_path.name}")
+    append_run_log("experiments/run_calibration.py", "ok", str(book),
+                   f"lambda calibration; {len(df)} pairs; fallback {n_fb}")
+    return 0
+
+
+def feasibility_markdown(df: pd.DataFrame, meta: dict, ra: dict) -> str:
+    pct = lambda x: f"{100 * x:.2f}%"
+    L = ["# Vol-target feasibility report (generated by experiments/run_calibration.py)", "",
+         "Feasibility numbers only: no hypothesis metric (no A, L, IR, TC, or slope).", "",
+         f"- Git commit: `{meta['git_commit']}`; frozen tag commit: `{meta['frozen_commit']}`; "
+         f"created (UTC) {meta['created_utc']}",
+         f"- Target ex-ante volatility: {pct(ra['target_annual_vol'])}/yr under the full base "
+         f"mandate; fallback: {ra['fallback_fraction']:.0%} of the maximum attainable "
+         f"(the volatility at λ = {ra['lambda_bracket'][0]:g}).",
+         f"- (date, alpha) pairs: {len(df)}; target attainable: {int((~df['fallback']).sum())}; "
+         f"fallback: **{int(df['fallback'].sum())}**", ""]
+    fb = df[df["fallback"]]
+    L += ["## Every (date, alpha) that uses the 90% fallback", ""]
+    if fb.empty:
+        L.append("None.")
+    else:
+        L += ["| designs | date | alpha | N | max attainable vol | calibrated vol |",
+              "|---|---|---|---|---|---|"]
+        L += [f"| {r.designs} | {r.date} | {r.alpha} | {r.N} | {pct(r.max_vol)} | "
+              f"{pct(r.calibrated_vol)} |" for r in fb.itertuples()]
+    L += ["", "## All pairs", "",
+          "| designs | date | alpha | N | max attainable vol | target attainable | fallback | calibrated vol |",
+          "|---|---|---|---|---|---|---|---|"]
+    L += [f"| {r.designs} | {r.date} | {r.alpha} | {r.N} | {pct(r.max_vol)} | "
+          f"{r.target_attainable} | {r.fallback} | {pct(r.calibrated_vol)} |" for r in df.itertuples()]
+    return "\n".join(L) + "\n"
+
+
+if __name__ == "__main__":
+    sys.exit(main())

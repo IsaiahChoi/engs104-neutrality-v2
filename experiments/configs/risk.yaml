@@ -1,0 +1,14 @@
+# Risk model (brief §5) and bias-statistic validation (GATE_CRITERIA R5).
+window: 252            # trading days in the estimation window (robustness: 504)
+min_frac: 0.8          # universe rule: >= 80% non-missing returns in the window
+floor_pct: 5.0         # d_i floored at this cross-sectional percentile
+# A day is valid only if it has a return and dollar volume >= min_dollar_volume_usd (zero or missing
+# volume is invalid). Invalid days are missing in estimation, so the 80% rule above counts valid days
+# in the 252-day window ending at the rebalance date. Approved by Isaiah 2026-10-15.
+min_dollar_volume_usd: 1000000.0
+first_date: null       # null = first month-end with a full window in the panel
+last_date: "2025-12-31"
+bias:
+  seed: 20261015
+  n_portfolios: 100    # per type and date
+  gross_long_short: 2.0
