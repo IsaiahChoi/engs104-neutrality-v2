@@ -10,7 +10,8 @@ import src.opt.miqp as miqp
 from experiments.instances import miqp_mandate, restricted, subsample
 from src.opt.continuous import ContinuousProblem, Mandate, load_config
 from src.opt.feasibility import pmi_violations
-from src.opt.integer import PMI, choose_s_obj, exact_objective, incumbent_flags
+from src.opt.integer import (PMI, choose_s_obj, cone_violation_effect, exact_objective,
+                              incumbent_flags)
 from src.opt.risk_budget import net_alpha, solve_risk_budget
 from src.risk.factor_model import FACTORS
 from tests.test_opt import dense_sigma, random_instance
@@ -302,3 +303,46 @@ def test_k8_real_instances_scale(ym):
             assert b["raw_shadow"][k] == pytest.approx(s * b["shadow"][k], rel=1e-12, abs=1e-300), (est, k)
     # CHECKS K8 (revised 2026-10-19): the perspective relaxation's optimal value scales to 1e-9
     assert rl1["perspective"]["U"] == pytest.approx(rl2["perspective"]["U"], rel=1e-9)
+
+# ---- S2 (P4 diagnostic, Isaiah 2026-10-19): Gurobi's perspective cones at the raw incumbent ----
+
+@pytest.mark.parametrize("form", FORMS)
+def test_cone_diag_solve_is_the_kept_solve(form):
+    """PMI.solve(cone_diag=True) runs a port of MIQPModel.solve that also reads the perspective
+    model's cone variables: every recorded quantity is bitwise the kept solve's."""
+    M, _ = small(seed=61, form=form)
+    a, b = M.solve(mip_gap=0.0), M.solve(mip_gap=0.0, cone_diag=True)
+    for k in ("V", "B", "U_raw", "U_incumbent", "U_polished", "work", "nodes", "root_bound",
+              "status_name", "v_source"):
+        assert getattr(a, k) == getattr(b, k) or (np.isnan(getattr(a, k)) and np.isnan(getattr(b, k))), k
+    for k in ("w", "w_incumbent", "zp", "zm"):
+        np.testing.assert_array_equal(getattr(a, k), getattr(b, k))
+    assert np.isnan(a.cone_effect) and a.cone_n_capped == -1          # not requested
+    if form == "bigm":
+        assert np.isnan(b.cone_effect) and b.cone_n_capped == -1      # no cones in big-M
+    else:
+        assert np.isfinite(b.cone_effect) and b.cone_effect >= 0 and b.cone_n_capped >= 0
+
+
+def test_cone_violation_effect_formula():
+    """λ·Σ d_i·max(0, w_i²/ζ_i − s_i), with w²/ζ from cone_exact_s (0 where w = 0, at most u|w|)."""
+    w, zeta, s = np.array([0.05, -0.02, 0.0, 1e-7]), np.array([1.0, 1.0, 0.0, 0.0]), \
+        np.array([0.0025 - 1e-6, 0.0004 + 1e-6, 1e-9, 0.0])
+    ub, d = np.full(4, 0.06), np.array([2.0, 3.0, 4.0, 5.0])
+    eff, n_cap = cone_violation_effect(w, zeta, s, ub, d, lam=10.0)
+    assert eff == pytest.approx(10.0 * (2.0 * 1e-6 + 5.0 * 0.06 * 1e-7), rel=1e-9)
+    assert n_cap == 1                                       # ζ = 0 with w ≠ 0: the linking bound
+
+
+def test_cone_violation_effect_on_r110():
+    """Round-3 Finding C: toy R110 (seed 20261019) at b = 1.2079e-3, s_obj = 1e8: Gurobi's
+    perspective incumbent violates its cone within FeasibilityTol, so its raw value exceeds V. On
+    the one-asset toy (no factor risk) the effect is exactly U_raw − U_incumbent = λd(w² − s)."""
+    from src.opt.toy import random_toys
+    from tests.test_relaxation import toy_pmi
+    T, b_max = random_toys(20261019, 200)[110]
+    b = float(np.linspace(0.0, b_max, 41)[np.argmin(np.abs(np.linspace(0.0, b_max, 41) - 1.20790268e-3))])
+    r = toy_pmi(T, b, "perspective").solve(mip_gap=0.0, cone_diag=True)
+    assert r.s_obj == 1e8 and r.V == pytest.approx(T.value(b), abs=1e-12)
+    assert r.cone_effect == pytest.approx(r.U_raw - r.U_incumbent, rel=1e-6)
+    assert r.cone_effect / abs(r.V) > 1.0                   # B − V = 4.7·|V| in the round-3 run

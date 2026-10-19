@@ -1,0 +1,19 @@
+# Continuous experiments C1–C3 (DESIGN §7) and their self-checks (CHECKS K15, K16, K19).
+# Plain decimals with a dot (PyYAML reads 1e-6 as text).
+mandate_config: experiments/configs/base_mandate.yaml
+# P-RB (DESIGN §6; src/opt/risk_budget.py): the kept QP (Gurobi dual simplex, FeasibilityTol =
+# OptimalityTol = 1e-9) at a root-found λ; Brent on log λ until |vol/target − 1| ≤ root_rtol.
+# Bracket: from the neighbouring sweep point's λ* (C2, C3) or the unconstrained multiplier
+# √(α'Σ⁻¹α)/(2σ_m) (C1), stepping ×e^0.5, doubling the step; λ_min = 1e-6 (slack budget).
+p_rb: {target_annual_vol: 0.03, root_rtol: 1.0e-10, lambda_min: 1.0e-6,
+       bracket: "warm start at the neighbouring point's λ*, else the unconstrained multiplier"}
+s_obj: null                     # P-MI objective scale (DESIGN §6): set from pilot P1 before C1
+d12: ["2008-10", "2009-03", "2011-08", "2013-06", "2015-08", "2017-12", "2018-12", "2020-03",
+      "2020-11", "2022-06", "2023-03", "2025-04"]
+envelope_rel_step: 0.01         # CHECKS K15: δ = 1% of the bound
+c3_chunk: 12                    # month-ends per C3 chunk (λ warm-started within a chunk)
+k16_n: 30                       # CHECKS K16: random C1/C2 solves, QP vs Clarabel QCQP
+k16_seed: 16
+k19_n: 5                        # CHECKS K19: random C solves rerun at the same commit
+k19_seed: 19
+workers: 4                      # DESIGN §6: up to 4 workers

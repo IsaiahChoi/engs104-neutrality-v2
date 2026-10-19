@@ -566,3 +566,28 @@ Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). Thes
       - (c) Both.
     - Until Isaiah decides, S2 records the independent checker's verdict on every pilot V at 1e-7 and at 1e-9 (recording only; V is unchanged).
 25. **Raw duals of a failed perspective relaxation.** The module drops them on failure: R082 has none recorded, although Clarabel returned them. K9 calls them a diagnostic. Should they be kept for failed relaxations too (diagnostic only, never used)?
+
+## 2026-10-19 — S2 (Claude Code, Opus 5.5): code for the pilot and C1–C3, before `make pilot`
+- **New code** (v2 files; no kept-core file changed):
+  - src/opt/integer.py: solve_mip_with_cones, a line-for-line port of the kept MIQPModel.solve (polish off) that also reads the perspective model's s and ζ at the raw incumbent; cone_violation_effect = λ·Σ d_i·max(0, w_i²/ζ_i − s_i), with w²/ζ from cone_exact_s; PMI.solve(cone_diag=False by default); PMIResult.cone_effect, cone_n_capped. This is Isaiah's P4 A9 instruction.
+    - Test-first. A first RED was invalid: a SyntaxError in my test file (logs/test_s2_cones_red_*.log, first run). After fixing the test, the committed integer.py was put back temporarily, giving a valid RED on the missing name (ImportError), and then the implementation, GREEN (logs/test_s2_cones_green_*.log).
+    - New tests: test_cone_diag_solve_is_the_kept_solve[bigm, perspective] (bitwise equal to the kept solve), test_cone_violation_effect_formula, test_cone_violation_effect_on_r110 (round-3 Finding C toy: the effect equals U_raw − U_incumbent, and is > |V|).
+  - experiments/run_pilot.py + configs/pilot.yaml (P1–P7, DESIGN §8; module docstring). Rules fixed before any pilot solve:
+    - s_obj is the power of 10 that puts the geometric mean of the P3 proxies |U_mv| closest to 10, the log-centre of [1, 100]. U_mv is the P-MI objective at the P-RB solution, an upper bound on U*. Whether every proxy and every P4 V lands in [1, 100] is recorded. This is my rule; DESIGN asks only for [1, 100].
+    - P4 runs under TimeLimit 300 s, because W* is unknown before P5 (DESIGN §6's fallback value), with 4 solves at once. P5's Work rate is measured under that same concurrency, as S3 will run.
+    - P6 candidates: constraint keys (families and single style factors; position, liquidity and single sectors excluded), ranked by median α_mom elasticity at the I1 dates in P2. P2's solves are the same as C1's at those dates. The Mom bound at 0.025 is added. Selection keeps L > 0 in candidate order, at most 4, and a factor bound replaces the last kept one if none is kept but one has L > 0.
+    - Decision 24 interim: the independent checker's verdict on every pilot V is recorded at 1e-7 and at 1e-9.
+    - tests/test_pilot.py (6) covers these rules. Written after the draft, so not RED-first.
+  - experiments/cont.py (shared helpers; check_p_rb refuses a continuous.yaml whose P-RB block differs from src/opt/risk_budget.py), run_c1.py, run_c2.py, run_c3.py, check_cont.py (K16, K19), configs/continuous.yaml (s_obj: null until the pilot sets it).
+- **Smoke tests** (scratch, not evidence):
+  - P1 at 2017-12: A 1.2e-10, λ 2.2e-8, binding duals 3.1e-6; 8 QP solves; 0.4 s.
+  - P3: S = 188, 133, 158 at N = 250 (2009-03, 2017-12, 2020-03); s_obj = 1e4, with proxies scaled to 9.1–20.5.
+  - One P4 perspective solve: OPTIMAL in 0.5 s.
+  - C1 at 2017-12: 3 alphas, idealized, envelope ≤ 6.4e-5.
+  - C2: one (date, alpha) sweep in 6 s.
+  - C3 chunk; the process pool with resume.
+- **Findings for Isaiah (no check affected; for GATE C):**
+  - **C3 covers 240 of the 241 month-ends.** α_mom needs 252 trading days before the date, so 2005-12-30 has no momentum alpha. DESIGN §7 says "all 241 month-ends". The runner records the excluded date and the reason in c3_skipped.
+  - **The risk budget can be slack under α∥.** At 2017-12, base, α∥ holds 20 names, risk_binding = false, solved at λ_min = 1e-6. The Stubbs–Vandenbussche attribution at λ = μ_risk = 1e-6 is then degenerate (total "loss" 1.3e5). C1 records it with the risk_binding flag; P2 lists every exception. Fig. 3 is α_mom only.
+- **Suite:** 256 passed, 2 xfailed (logs/test_s2_pre_pilot_*.log).
+- Next: commit, then `make pilot` in the background.

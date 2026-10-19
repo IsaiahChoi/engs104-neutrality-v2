@@ -1,0 +1,19 @@
+# S2 design pilot (DESIGN §8, P1–P7): `make pilot` → results/pilot/run_<UTC>/ (RUN_LOG "pilot").
+# Parameter rules for S3; no DESIGN §7 result. Plain decimals with a dot (PyYAML reads 1e-6 as text).
+mandate_config: experiments/configs/base_mandate.yaml
+d12: ["2008-10", "2009-03", "2011-08", "2013-06", "2015-08", "2017-12", "2018-12", "2020-03",
+      "2020-11", "2022-06", "2023-03", "2025-04"]
+p1_tol: {A_rel: 1.0e-6, lam_rel: 1.0e-5, dual_rel: 1.0e-4}   # DESIGN §8 P1
+s_obj_window: [1.0, 100.0]                                    # DESIGN §6: |U*|·s_obj in [1, 100]
+i1: {dates: ["2009-03", "2017-12", "2020-03"], N: 250, f: [0.25, 0.5, 0.75]}
+n1:
+  dates: ["2017-12", "2020-03"]
+  N: [100, 250, "full"]
+  f: [0.25, 0.5]
+  tight: {style: 0.025, beta: 0.0125}                         # DESIGN §7 N1 tightness
+p4: {dates: ["2017-12", "2020-03"], N: 250, f: [0.25, 0.5], tightness: [base, tight],
+     mip_gap: 1.0e-4, time_limit: 300.0}
+p5: {reference_seconds: 300.0, probe_work_limit: 0.001}
+p6: {date: "2017-12", N: 250, f: 0.5, n_families: 4, mom_bound: 0.025, rel_delta: 0.10,
+     mip_gap: 1.0e-6, work_limit_factor: 2.0, max_keep: 4}
+workers: 4                                                    # DESIGN §6: up to 4 workers

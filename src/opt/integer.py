@@ -27,6 +27,11 @@
   fixed_integer_duals(z) re-solves the convex problem at fixed z. Shadow prices dU*/db use
   src.opt.miqp.shadow_price (sign established by the kept tests), divided by s_obj.
 - Effort. Work (deterministic) and Runtime are recorded; work_limit sets Gurobi's WorkLimit.
+- Cone diagnostic (S2, pilot P4; A9). solve(cone_diag=True) runs solve_mip_with_cones, a line-
+  for-line port of the kept MIQPModel.solve (polish off; bitwise the same result, tested) that
+  also reads the perspective model's s and ζ at the raw incumbent, and records the objective
+  effect of the cones' violation within Gurobi's tolerances, λ·Σ_i d_i·max(0, w_i²/ζ_i − s_i)
+  (cone_effect, original units; nan for big-M or when not requested).
 """
 from __future__ import annotations
 
@@ -35,13 +40,14 @@ import json
 from dataclasses import dataclass, field, replace
 
 import numpy as np
+from gurobipy import GRB
 
 from src.opt.certified import BOUND_RTOL
 from src.opt.continuous import Mandate
 from src.opt.gurobi_env import DEFAULT_SEED, DEFAULT_THREADS
 from src.opt.feasibility import pmi_violations
-from src.opt.miqp import MIQPModel, shadow_price
-from src.opt.relaxation import perspective_relaxation
+from src.opt.miqp import MIQPModel, MIQPResult, _status_name, shadow_price
+from src.opt.relaxation import cone_exact_s, perspective_relaxation
 
 FORMULATIONS = ("bigm", "perspective")
 FLAG_RTOL = BOUND_RTOL               # DESIGN §6 incumbent flags: B_eff's slack 1e-6·|V|
@@ -79,6 +85,57 @@ def exact_objective(w, alpha, lam: float, B, F, d, mandate: Mandate) -> float:
                  - mandate.trade_cost * np.abs(w).sum())
 
 
+def solve_mip_with_cones(M: MIQPModel, time_limit: float, mip_gap: float, presolve: int,
+                         work_limit: float | None) -> tuple[MIQPResult, dict | None]:
+    """src.opt.miqp.MIQPModel.solve with polish=False, ported line for line (the same model,
+    parameters and root callback, so the same result; tests/test_integer.py checks this
+    bitwise), plus, for the perspective formulation, Gurobi's raw cone variables at the
+    incumbent: w = w⁺ − w⁻, ζ and s, read before the model is disposed (A9 diagnostic)."""
+    mdl, wp, wm, zp, zm, _ = M._build("mip")
+    mdl.Params.TimeLimit, mdl.Params.MIPGap, mdl.Params.Presolve = time_limit, mip_gap, presolve
+    if work_limit is not None:
+        mdl.Params.WorkLimit = work_limit
+    root = {}
+
+    def cb(model, where):
+        if where == GRB.Callback.MIPNODE and model.cbGet(GRB.Callback.MIPNODE_NODCNT) == 0:
+            root["bnd"] = model.cbGet(GRB.Callback.MIPNODE_OBJBND)
+            root["best"] = model.cbGet(GRB.Callback.MIPNODE_OBJBST)
+
+    mdl.optimize(cb)
+    has = mdl.SolCount > 0
+    U = -mdl.ObjVal if has else np.nan
+    bound = -mdl.ObjBound
+    gap = (bound - U) / abs(U) if has and U != 0 else np.nan
+    rg = np.nan
+    if "bnd" in root and abs(root["best"]) < GRB.INFINITY:
+        rb, rbest = -root["bnd"], -root["best"]
+        rg = (rb - rbest) / abs(rbest) if rbest != 0 else np.nan
+    res = MIQPResult(U=U, bound=bound,
+                     w=(wp.X - wm.X) if has else np.full(M.N, np.nan),
+                     zp=np.round(zp.X) if has else np.zeros(M.N),
+                     zm=np.round(zm.X) if has else np.zeros(M.N),
+                     status=mdl.Status, status_name=_status_name(mdl.Status),
+                     runtime=mdl.Runtime, nodes=mdl.NodeCount, final_gap=gap, root_gap=rg,
+                     reached_gap=mdl.Status == GRB.OPTIMAL, work=mdl.Work,
+                     root_bound=-root["bnd"] if "bnd" in root else np.nan)
+    cones = None
+    if has and M.formulation == "perspective":
+        get = lambda name: np.array([mdl.getVarByName(f"{name}[{i}]").X for i in range(M.N)])
+        cones = {"w": wp.X - wm.X, "zeta": get("zeta"), "s": get("s")}
+    mdl.dispose()
+    return res, cones
+
+
+def cone_violation_effect(w, zeta, s, ub, d, lam: float) -> tuple[float, int]:
+    """λ·Σ_i d_i·max(0, w_i²/ζ_i − s_i) at Gurobi's raw incumbent (w, ζ, s): the objective
+    effect of the perspective cones' violation within Gurobi's tolerances (A9, pilot P4).
+    w_i²/ζ_i is src.opt.relaxation.cone_exact_s (0 where w_i = 0, at most u_i|w_i|); returns
+    the effect in the units of λ and the number of names held at that bound."""
+    need, n_cap = cone_exact_s(w, zeta, ub)
+    return float(lam * (np.asarray(d, float) @ np.maximum(need - np.asarray(s, float), 0.0))), n_cap
+
+
 @dataclass
 class PMIResult:
     V: float                     # incumbent value, original units (nan if no incumbent)
@@ -106,6 +163,8 @@ class PMIResult:
     incumbent_violations: str = "{}"   # JSON: the checker on the raw incumbent weights
     flag_incumbent_exceeds_polished: bool = False
     flag_polished_exceeds_bound: bool = False
+    cone_effect: float = float("nan")   # λ·Σ d_i·max(0, w_i²/ζ_i − s_i) at the raw incumbent
+    cone_n_capped: int = -1              # names where w²/ζ took the linking bound u|w| (-1: none)
 
     @property
     def final_gap(self) -> float:
@@ -181,10 +240,15 @@ class PMI:
 
     # ----- solves -----
     def solve(self, mip_gap: float, work_limit: float | None = None,
-              time_limit: float = float("inf"), presolve: int = -1) -> PMIResult:
+              time_limit: float = float("inf"), presolve: int = -1,
+              cone_diag: bool = False) -> PMIResult:
         s, M = self.s_obj, self.model
-        r = M.solve(time_limit=time_limit, mip_gap=mip_gap, presolve=presolve, polish=False,
-                    work_limit=work_limit)
+        cones = None
+        if cone_diag:
+            r, cones = solve_mip_with_cones(M, time_limit, mip_gap, presolve, work_limit)
+        else:
+            r = M.solve(time_limit=time_limit, mip_gap=mip_gap, presolve=presolve, polish=False,
+                        work_limit=work_limit)
         settings = {"mip_gap": mip_gap, "work_limit": work_limit, "time_limit": time_limit,
                     "presolve": presolve, "threads": self.threads, "seed": self.seed}
         has = bool(np.isfinite(r.U))
@@ -205,6 +269,10 @@ class PMI:
         inc_viol = json.dumps(pmi_violations(r.w, r.zp, r.zm, self.B, self.S, self.mandate,
                                              self.K, self.ell, self.adv, mkt=M.mkt),
                               sort_keys=True) if has else "no incumbent"
+        c_eff, c_cap = np.nan, -1
+        if cones is not None:
+            c_eff, c_cap = cone_violation_effect(cones["w"], cones["zeta"], cones["s"],
+                                                 np.where(M.holdable, M.ub, 0.0), self.d, self.lam)
         return PMIResult(V=V, B=B, w=w, zp=r.zp, zm=r.zm, status_name=r.status_name,
                          reached_gap=r.reached_gap, runtime=r.runtime, work=r.work,
                          nodes=r.nodes, root_bound=r.root_bound / s, U_incumbent=U_inc,
@@ -213,7 +281,7 @@ class PMI:
                          formulation=self.formulation, settings=settings,
                          v_source="polished" if use_pol else ("polish_failed" if has else "none"),
                          incumbent_violations=inc_viol, flag_incumbent_exceeds_polished=f_inc,
-                         flag_polished_exceeds_bound=f_bnd)
+                         flag_polished_exceeds_bound=f_bnd, cone_effect=c_eff, cone_n_capped=c_cap)
 
     def _shadows(self, res) -> dict[str, float]:
         """Raw (scaled) dU*/db per key: dollar, beta, gross, style and style:<f>, sector and
