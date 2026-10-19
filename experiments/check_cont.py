@@ -16,11 +16,10 @@ import sys
 import numpy as np
 import pandas as pd
 
-from experiments.check_envelope import rebuild_point
 from experiments.common import fail, finish, latest_done, open_run
-from experiments.cont import check_p_rb, case, problem
+from experiments.cont import check_p_rb, case
 from experiments.designs import config
-from experiments.sweep import C2_GRIDS, sweep_date
+from experiments.sweep import C2_GRIDS, OFF_STYLE, REMOVABLE, apply_point, build, sweep_date
 from src.alpha.decompose import alpha_set
 from src.opt.continuous import load_config
 from src.opt.risk_budget import solve_qcqp, solve_risk_budget
@@ -29,11 +28,20 @@ CONFIG = "experiments/configs/continuous.yaml"
 
 
 def _rebuild(row, base):
-    if row["family"] == "base":
-        di, alpha_mom = case(pd.Timestamp(row["date"]))
-        m = di.model
-        return problem(di, base), alpha_set(alpha_mom, m.B, m.F, m.d)["alphas"][row["alpha"]]
-    return rebuild_point(row, base)
+    """(P-RB problem, alpha) for a stored C1/C2/C3 point (full universe), built as sweep_date
+    builds it: "off" removes the family (a single style factor gets bound +inf)."""
+    di, alpha_mom = case(pd.Timestamp(row["date"]))
+    m = di.model
+    a = alpha_set(alpha_mom, m.B, m.F, m.d)["alphas"][row["alpha"]]
+    fam = row["family"]
+    probs = build(di, base)
+    if fam == "base":
+        return probs["base"], a
+    if bool(row["off"]) and fam in REMOVABLE:
+        return probs[f"off:{fam}"], a
+    P = probs["base"]
+    apply_point(P, base, fam, OFF_STYLE if bool(row["off"]) else row["value"])
+    return P, a
 
 
 def k16(c1, c2, base, n, seed) -> pd.DataFrame:

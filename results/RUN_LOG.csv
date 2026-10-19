@@ -13,3 +13,4 @@ timestamp,git_commit,config_path,status,output_path,notes
 2026-10-19T19:25:00Z,8ce52deca63ab232ec97f297f34632f07bf72917,experiments/configs/continuous.yaml,ok,results/c1/run_20261019T192500Z,"c1 run_20261019T192500Z; ok 2026-10-19T19:25:36Z: C1: 36 points, envelope max rel err 3.09e-04"
 2026-10-19T19:27:22Z,0db01b85ffbacb708411d215690b9626ba5033e3,experiments/configs/continuous.yaml,ok,results/c2/run_20261019T192722Z,c2 run_20261019T192722Z; ok 2026-10-19T19:29:20Z: C2: 2040 points
 2026-10-19T19:29:22Z,0db01b85ffbacb708411d215690b9626ba5033e3,experiments/configs/continuous.yaml,ok,results/c3/run_20261019T192922Z,c3 run_20261019T192922Z; ok 2026-10-19T19:29:54Z: C3: 240 month-ends
+2026-10-19T19:32:05Z,d145e9d6b38e5d1b543649eb153aa8c6bc144693,experiments/configs/continuous.yaml,failed,results/cont_checks/run_20261019T193205Z,cont_checks run_20261019T193205Z; failed 2026-10-19T19:32:07Z: ValueError: Parameter value must be nonnegative.
