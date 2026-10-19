@@ -161,7 +161,10 @@ def c2_facts(F: Facts, c2: Path) -> None:
         x = mom[(mom["family"] == fam) & (mom["value"] == b)]["retained_vs_off"]
         parts.append(f"{fam} at {b:g}: {g(x.median())} ({g(x.min())}–{g(x.max())})")
     F.add("A*(b)/A*(off) at the tightest grid point, median (range) over D12: " + "; ".join(parts), pf)
-    F.add(f"C2: {len(pts)} points; risk budget slack at {int((~pts['risk_binding']).sum())}", pf)
+    sl = pts[~pts["risk_binding"]]
+    F.add(f"C2: {len(pts)} points; risk budget slack at {len(sl)} ("
+          + ", ".join(f"{k} {v}" for k, v in sl["alpha"].value_counts().sort_index().items())
+          + "; families " + ", ".join(sorted(sl["family"].unique())) + ")", pf)
 
 
 def c3_facts(F: Facts, c3: Path) -> None:

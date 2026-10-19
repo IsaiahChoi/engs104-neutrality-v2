@@ -17,11 +17,11 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [x] 8. S1 entry in PROGRESS; commit; continue with S2 if CHECK CORE is PASS
 
 ## S2 — Design pilot and continuous experiments (Claude Code, Sun 10/18 night, inside S1)
-- [ ] 1. Pilot P1–P7 (DESIGN §8) → results/pilot/<UTC>/, RUN_LOG status "pilot"; stop after the pilot if P1 or P4 fails
-- [ ] 2. experiments/configs/continuous.yaml (P-RB settings, s_obj); integer.yaml and numerics.yaml drafted "proposed, pending GATE DESIGN"
-- [ ] 3. C1, C2, C3 via `make c1 c2 c3` in the background (≤ 4 workers)
-- [ ] 4. Figs. 1–3 and the C3 summary, "preliminary" in file names until GATE C
-- [ ] 5. proposal/FACTS.md (each fact with source file and sha256)
+- [x] 1. Pilot P1–P7 (DESIGN §8) → results/pilot/<UTC>/, RUN_LOG status "pilot"; stop after the pilot if P1 or P4 fails
+- [x] 2. experiments/configs/continuous.yaml (P-RB settings, s_obj); integer.yaml and numerics.yaml drafted "proposed, pending GATE DESIGN"
+- [x] 3. C1, C2, C3 via `make c1 c2 c3` in the background (≤ 4 workers)
+- [x] 4. Figs. 1–3 and the C3 summary, "preliminary" in file names until GATE C
+- [x] 5. proposal/FACTS.md (each fact with source file and sha256)
 - [ ] 6. **CHECK CONT** (K14–K21) by the result-checker
 - [ ] Stop at GATE C with the pilot table, proposed I1/N1 parameters, C1/C2 headlines, the CHECK CONT verdict, the S3 projection
 

@@ -1,0 +1,18 @@
+{
+ "source_runs": {
+  "c1": "/Users/isaiahchoi/Desktop/engs_104_final_project/engs104-neutrality-v2/results/c1/run_20261019T192500Z",
+  "c2": "/Users/isaiahchoi/Desktop/engs_104_final_project/engs104-neutrality-v2/results/c2/run_20261019T192722Z",
+  "c3": "/Users/isaiahchoi/Desktop/engs_104_final_project/engs104-neutrality-v2/results/c3/run_20261019T192922Z"
+ },
+ "K16": {
+  "n": 30,
+  "max_rel_diff": 3.417108631826404e-10,
+  "all_pass": true
+ },
+ "K19": {
+  "n": 5,
+  "max_A_rel_diff": 0.0,
+  "max_w_rel_diff": 0.0,
+  "all_pass": true
+ }
+}
