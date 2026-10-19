@@ -471,3 +471,51 @@ Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). Thes
 - In all five failed solves, Gurobi's incumbent satisfies everything except w ≥ ℓz, which it violates by ℓ − b ≤ 9.6e-7, inside its default FeasibilityTol 1e-6.
 - The exact objective at the raw incumbent is f(b) to ≤ 2.4e-16, but the true value there is 0. The perspective raw value and bound exceed even f(b), by 10–79% (cone tolerance, Finding C).
 - At the next grid point below on each toy (1.7–2.4e-5 below ℓ, outside the band), V = 0 = the closed form for both formulations.
+
+## 2026-10-19 — Isaiah: decisions 21–22 (recorded by Claude Code at the start of the fresh session)
+- **Decision 21.** The perspective relaxation's value becomes the objective at Clarabel's returned (w, ζ) with each sᵢ = wᵢ²/ζᵢ, so every cone holds exactly. A duality-gap clause is added to the failure rule: a relaxation is failed if its duality gap exceeds 1e-9·max(|V|, |V_ref|) (DESIGN §6 as revised today).
+  - Adopted after the round-3 evidence run (results/core/run_20261019T124115Z at b386e16) and the diagnosis at b751b0d.
+  - Mechanism. R043's error sits in Clarabel's s, which the gap cannot see: the gap is 1.1e-13, and the value at s = w²/ζ is within 1.3e-14 of the closed form. R082 is under-converged, with relative gap 2e-8; its value at s = w²/ζ is still 2.4e-9 off.
+  - Threshold provenance. 1e-9 is K9's pre-existing tolerance. The V_ref floor (V_ref = the toy's U*; for a finite-difference stencil, the value at the unperturbed bound) handles V = 0, and that point was raised before any gap data existed.
+  - The out-of-sample test is the result-checker's own toys. The runner's seed (20261019) and its toy generator (src.opt.toy.random_toys) stay unchanged.
+- **Decision 22.** Grid points within the toy MIQP's FeasibilityTol below ℓ (ℓ − 1e-6 ≤ b < ℓ) are excluded from K9's value-function comparison and counted by formulation. They are checked positively: the exact objective at the incumbent's weights equals f(b) = ab − λdb² (CHECKS K9 at a43c264: to 1e-12 relative).
+- DESIGN §6 perspective-relaxation sentence: approved as written; applied verbatim this session (next entry).
+
+## 2026-10-19 — Isaiah: Decision 22a (in-session answer; recorded by Claude Code)
+- **The question.** K9's Decision 22 clause reads: "at each [band point], the exact objective at the incumbent's weights equals f(b)". In the round-3 run (reproduced bitwise) there are 3 band points × 2 formulations. At 5 of these 6 solves the incumbent is w = b, z = 1, and the exact objective equals f(b) to ≤ 2.4e-16. At R196 big-M (ℓ − b = 9.6e-7) the incumbent is w = 0, z = 0: V = 0 equals the closed form exactly, but the exact objective at the incumbent is 0 ≠ f(b).
+- **Isaiah's answer: either test.** At each band point, the exact objective at the incumbent's weights must equal f(b) to 1e-12 relative where the incumbent holds the name (z = 1). Where it does not (w = 0), V must equal the closed form (0) to 1e-8. The runner reports both, by formulation. This note is how the reading reaches the result-checker; CHECKS K9 is unchanged.
+
+## 2026-10-19 — Isaiah: Decision 22b (in-session answer; recorded by Claude Code)
+- **The question.** K9's fixed-integer-dual clause ("match their closed forms to 1e-6 relative") has no estimate at exactly the 3 band points of the round-3 run: R103, R139 and R196, 3 of 7,874 off-kink points. The perspective incumbent there holds the name (z = 1, w = b < ℓ within FeasibilityTol), so the exact fixed-integer QP at its z is INFEASIBLE. That is recorded, not fatal; the closed form there is 0.
+- **Isaiah's answer: exclude them, as in Decision 22.** The band ℓ − FeasibilityTol ≤ b < ℓ is also excluded from the fixed-integer-dual comparison. Those points are counted and listed with the fixed QP's status, and the band's either-test (Decision 22a) covers their incumbents. CHECKS K9 is unchanged; this note is how the reading reaches the result-checker.
+
+## 2026-10-19 — S1, CORE round 3 (Claude Code, Opus 5.5): Decisions 21–22b implemented, before the evidence run
+- **DESIGN §6:** the perspective-relaxation sentence was replaced verbatim with Isaiah's approved text. Nothing else in DESIGN changed.
+- **Code** (v2 files only; no kept-core file changed):
+  - src/opt/relaxation.py:
+    - cone_exact_s: s = (|v|/ζ)·|v|, which does not underflow; s = 0 where v = 0.
+    - Interpretation: "the linking row bounds it by uᵢ|wᵢ|" is implemented as s = min(w²/ζ, u|w|), and u|w| where ζ ≤ 0. The cap binds only where Clarabel's point breaks the linking row; each binding name is counted (n_s_capped). Dry run: 0 of 8,282 K9 relaxations, 0 on the K8 instances.
+    - The value is the objective at the returned (w⁺, w⁻, ζ), with y = Bᵀw recomputed.
+    - GAP_RTOL = 1e-9 gap clause with v_ref (model units); fail_reason "status", "residual" or "gap".
+    - Recorded for every relaxation: status, residuals, p and d, gap_abs, gap_rel (pure), clarabel_gap_rel, Clarabel's objective (−p), CVXPY's value, the value, value − Clarabel's objective, v_ref, gap_threshold, n_s_capped. The returned point (w⁺, w⁻, s) is kept whenever the status is accepted.
+  - src/opt/integer.py: relaxation_duals(v_ref) in original units; new fields fail_reason, U_value (also when failed), U_clarabel, U_minus_clarabel. U is the DESIGN §6 value everywhere.
+  - experiments/run_core.py:
+    - K9 passes V_ref = the toy's U*.
+    - Per-point additions: the incumbent's z, w, exact objective and raw value per formulation; f(b); the band flag, with FeasibilityTol read from the toy MIQP's Gurobi model (1e-6, the default); Clarabel's objective, the value, and the gap fields.
+    - New summary helpers: band_mask, _k9_value_function (off the band; undefined V counted), _k9_band (Decision 22a by formulation), _k9_fixed (Decision 22b), _k9_persp (not-failed comparison, failures with reasons, the 1% cap, Clarabel's objective as a diagnostic).
+    - K8 columns: persp_U_clarabel_s is renamed persp_U_s (the DESIGN §6 value). Clarabel's objective and the difference are added at both scales.
+- **Tests, test-first.** RED (logs/test_d21_red_*.log): 14 failures plus a collection error, all from the missing v_ref, cone_exact_s and runner helpers.
+  - New tests in tests/test_relaxation.py:
+    - test_cone_exact_s_and_zeta_to_zero;
+    - test_value_is_objective_at_cone_feasible_point[T2, 2017-12];
+    - test_r043_regression_value_within_1e9 (also asserts that Clarabel's own objective still misses, so the reproducer reproduces);
+    - test_r082_failed_by_gap_clause;
+    - test_b_zero_points_not_failed;
+    - test_gap_clause[3 cases].
+  - New file tests/test_run_core.py: 7 tests of the K9 helpers on constructed rows.
+  - GREEN: tests/test_relaxation.py 23 passed. Full suite **246 passed, 2 xfailed** (logs/test_d21_full_*.log).
+- **Changes to existing tests (rule 5): no assertion was changed or removed.**
+  - Two call sites in tests/test_relaxation.py now pass v_ref = T.value(T.w_opt), the toy's U* that DESIGN §6 names as V_ref: the helper _k9_relaxation_values and test_k9_relaxation_and_fixed_integer_duals_match_closed_forms. Without it, the gap clause would read the b = 0 points against |V| ≈ 0.
+  - test_relaxation_failure_rule: docstring only ("failed if", pointing to test_gap_clause).
+  - tests/test_toy_miqp.py and tests/test_integer.py are unchanged; they pass with V_ref omitted.
+- **Scratch dry run** of run_core with open_run/finish stubbed (results/scratch/dryrun_core_d21*; not evidence): 338 s, no errors. The evidence run follows at the commit after this entry.

@@ -12,6 +12,15 @@ residuals are stored as a diagnostic. K9 runs the fixed toys T1 and T2 and a see
 (src.opt.toy.random_toys; seed in core.yaml). Every P-MI solve adds a row to pmi_solves with the
 signed discrepancies B − V and U_incumbent − V (DESIGN §6, A9). K10 stores the raw-B and the
 B_eff intervals (DESIGN §6) for the toy and for two small MIQPs.
+
+Decisions 21-22b (PROGRESS, 2026-10-19; CHECKS K9 at a43c264). The perspective relaxation's value
+is the objective at Clarabel's point with every cone exact, and a relaxation is also failed by its
+duality gap (DESIGN §6); K9 passes V_ref = the toy's U*. Every relaxation records its status,
+residuals, gap (absolute, pure relative, Clarabel's), Clarabel's objective, the value and their
+difference (A9). Grid points with ℓ − FeasibilityTol ≤ b < ℓ (the band; FeasibilityTol read from
+the toy MIQP) are excluded from the value-function and fixed-integer-dual comparisons and counted
+by formulation; at each, the exact objective at the incumbent's weights equals f(b) where the
+incumbent holds the name, and V equals the closed form where it does not (Decision 22a).
 """
 from __future__ import annotations
 
@@ -41,6 +50,12 @@ from src.risk.factor_model import FACTORS
 from tests.test_opt import random_instance
 
 CONFIG = "experiments/configs/core.yaml"
+FORMS = ("bigm", "perspective")
+VALUE_ATOL = 1e-8             # CHECKS K9: the MIQP value function, absolute
+BAND_EXACT_RTOL = 1e-12       # CHECKS K9 (Decision 22): exact objective at the incumbent vs f(b)
+PERSP_VALUE_RTOL = 1e-9       # CHECKS K9: the perspective relaxation's value
+FIXED_RTOL = 1e-6             # CHECKS K9: the big-M relaxation and fixed-integer duals
+PERSP_FAIL_CAP = 0.01         # CHECKS K9: more than 1% failed perspective relaxations fails K9
 OFF = dict(dollar=None, beta=None, style=None, sector=None, gross=None, position=None,
            liquidity_theta=None, borrow_annual=0.0, trade_cost=0.0)
 
@@ -56,33 +71,130 @@ def _k9_err(k9: pd.DataFrame, mu: str, cf: str) -> float:
     return float(_rel_err(r[mu], r[cf], r["a"]).max()) if len(r) else float("nan")
 
 
+def _max(x: pd.Series) -> float:
+    return float(x.max()) if x.notna().any() else float("nan")
+
+
+def band_mask(b, ell: float, feas_tol: float):
+    """Decision 22 (CHECKS K9): the grid points with ℓ − FeasibilityTol ≤ b < ℓ."""
+    b = np.asarray(b, float)
+    return (ell - feas_tol <= b) & (b < ell)
+
+
+def _feasibility_tol(M: PMI) -> float:
+    """The Gurobi FeasibilityTol of M's MIQP solve (the kept model leaves Gurobi's default)."""
+    mdl = M.model._build("mip")[0]
+    try:
+        return float(mdl.Params.FeasibilityTol)
+    finally:
+        mdl.dispose()
+
+
+def _k9_value_function(k9: pd.DataFrame) -> dict:
+    """CHECKS K9: V against the closed form to 1e-8 absolute, off the band (Decision 22); V
+    undefined off the band is counted and fails the clause, never skipped."""
+    rest = k9[~k9["band"]]
+    out = {"n_compared": len(rest), "n_excluded_band": int(k9["band"].sum())}
+    for f in FORMS:
+        V = rest[f"V_{f}"]
+        err = (V - rest["U_cf"]).abs()
+        n_undef = int(V.isna().sum())
+        out[f] = {"n_V_undefined": n_undef, "max_abs_err": _max(err),
+                  "n_above_1e-8": int((err > VALUE_ATOL).sum()),
+                  "pass": bool(n_undef == 0 and (err <= VALUE_ATOL).all())}
+    return out
+
+
+def _k9_band(k9: pd.DataFrame) -> dict:
+    """Decisions 22 and 22a, by formulation: at each band point, the exact objective at the
+    incumbent's weights equals f(b) to 1e-12 relative where the incumbent holds the name (z = 1);
+    where it does not (w = 0), V equals the closed form to 1e-8."""
+    band = k9[k9["band"]]
+    cols = [c for c in ("toy", "b", "ell_minus_b") if c in band]
+    out = {"n_points": len(band), "points": band[cols].to_dict("records")}
+    for f in FORMS:
+        holds = band[f"zeta_inc_{f}"] > 0.5
+        rel = (band[f"U_inc_{f}"] - band["f_b"]).abs() / band["f_b"].abs()
+        v_err = (band[f"V_{f}"] - band["U_cf"]).abs()
+        ok = (holds & (rel <= BAND_EXACT_RTOL)) | (~holds & (v_err <= VALUE_ATOL))
+        out[f] = {"n": len(band), "n_holds_name": int(holds.sum()), "n_w0": int((~holds).sum()),
+                  "n_V_undefined": int(band[f"V_{f}"].isna().sum()),
+                  "max_rel_err_exact_obj_vs_f_b": _max(rel[holds]),
+                  "max_abs_err_V_where_w0": _max(v_err[~holds]),
+                  "n_pass": int(ok.sum()), "all_pass": bool(ok.all()),
+                  "failed_points": band.loc[~ok, cols].to_dict("records")}
+    return out
+
+
+def _k9_fixed(k9: pd.DataFrame) -> dict:
+    """CHECKS K9, the fixed-integer dual off the kinks, against its closed form to 1e-6 relative
+    (|μ̂|/a where it is 0); the band is excluded (Decision 22b) and listed with the fixed QP's
+    status; a failed fixed QP off the band is counted and fails the clause."""
+    est = k9[~k9["kink"]]
+    band, rest = est[est["band"]], est[~est["band"]]
+    err = _rel_err(rest["mu_fixed"], rest["cf_fixed"], rest["a"])
+    n_failed = int((rest["fixed_status"] != "OPTIMAL").sum())
+    return {"n_compared": len(rest), "n_excluded_band": len(band),
+            "excluded_band_points": band[["toy", "b", "fixed_status"]].to_dict("records"),
+            "n_failed_outside_band": n_failed, "max_rel_err": _max(err),
+            "pass": bool(n_failed == 0 and (err <= FIXED_RTOL).all())}
+
+
+def _k9_persp(k9: pd.DataFrame) -> dict:
+    """CHECKS K9 (Decision 21): on relaxations not failed under DESIGN §6, the perspective
+    relaxation's value against its closed form to 1e-9 relative (against the toy's U* where the
+    closed form is 0); failures counted with their reasons; K9 fails if more than 1% fail.
+    Clarabel's own objective, compared the same way, is a diagnostic (A9)."""
+    ok = k9["persp_ok"].astype(bool)
+    scale = k9["value_scale"]
+    err = _rel_err(k9["R_persp"], k9["R_persp_cf"], scale)
+    err_val = _rel_err(k9["R_persp_value"], k9["R_persp_cf"], scale)
+    err_cl = _rel_err(k9["R_persp_clarabel_obj"], k9["R_persp_cf"], scale)
+    n, n_failed = len(k9), int((~ok).sum())
+    failed = k9[~ok]
+    return {
+        "n": n, "n_failed": n_failed, "failed_fraction": n_failed / n if n else float("nan"),
+        "within_failure_cap": bool(n_failed <= PERSP_FAIL_CAP * n),
+        "failed_reasons": {str(k): int(v) for k, v in failed["persp_fail_reason"].value_counts().items()},
+        "failed_points": [{"toy": r["toy"], "b": r["b"], "reason": r["persp_fail_reason"],
+                           "status": r["persp_status"], "clarabel_status": r["clarabel_status"],
+                           "gap_abs": r["gap_abs"], "gap_threshold": r["gap_threshold"],
+                           "r_prim": r["r_prim"], "r_dual": r["r_dual"],
+                           "value_rel_err": float(err_val.loc[i]),
+                           "clarabel_obj_rel_err": float(err_cl.loc[i])}
+                          for i, r in failed.iterrows()],
+        "max_rel_err_not_failed": _max(err[ok]),
+        "n_not_failed_above_1e-9": int((err[ok] > PERSP_VALUE_RTOL).sum()),
+        "n_not_failed_value_undefined": int(err[ok].isna().sum()),
+        "diagnostic_clarabel_objective": {"max_rel_err": _max(err_cl),
+                                          "n_above_1e-9": int((err_cl > PERSP_VALUE_RTOL).sum())},
+        "value_minus_clarabel_rel": _quantiles((k9["R_persp_value"] - k9["R_persp_clarabel_obj"])
+                                               / k9["R_persp_cf"].abs().where(k9["R_persp_cf"] != 0, scale))}
+
+
 def _k9_summary(k9: pd.DataFrame) -> dict:
-    """The runner's K9 claims on a subset of toys (CHECKS K9, revised 2026-10-19)."""
+    """The runner's K9 claims on a subset of toys (CHECKS K9 at a43c264; Decisions 21-22b)."""
     est = k9[~k9["kink"]]
     raw = _rel_err(est["mu_persp_raw"], est["cf_persp"], est["a"])
     st = est["clarabel_status"]
-    undefined = k9[k9["V_bigm"].isna() | k9["V_perspective"].isna()]
+    capped = k9["n_s_capped"].where(k9["n_s_capped"] >= 0, 0)
     return {
         "n_toys": int(k9["toy"].nunique()), "n_value_points": len(k9),
-        # V undefined (exact polish infeasible; DESIGN §6): counted and listed, never dropped
-        "n_V_undefined": {f: int(k9[f"V_{f}"].isna().sum()) for f in ("bigm", "perspective")},
-        "V_undefined_points": undefined[["toy", "b", "ell_minus_b", "v_source_bigm",
-                                         "v_source_perspective"]].to_dict("records"),
-        "n_fixed_failed": int((est["fixed_status"] != "OPTIMAL").sum()),
-        "max_abs_value_err_defined": float(max((k9[f"V_{f}"] - k9["U_cf"]).abs().max()
-                                               for f in ("bigm", "perspective"))),
-        "max_rel_err_R_persp": float(_rel_err(k9["R_persp"], k9["R_persp_cf"], k9["value_scale"]).max()),
+        "value_function": _k9_value_function(k9),
+        "band": _k9_band(k9),
+        "persp_value": _k9_persp(k9),
         "max_rel_err_R_bigm": float(_rel_err(k9["R_bigm"], k9["R_bigm_cf"], k9["value_scale"]).max()),
-        "n_persp_failed": int((~k9["persp_ok"]).sum()),
-        "clarabel_status_counts": {str(k): int(v) for k, v in k9["clarabel_status"].value_counts().items()},
-        "max_r_prim": float(k9["r_prim"].max()), "max_r_dual": float(k9["r_dual"].max()),
         "n_estimator_points": len(est),
         "max_rel_err_bigm": _k9_err(k9, "mu_bigm", "cf_bigm"),
-        "max_rel_err_fixed": _k9_err(k9, "mu_fixed", "cf_fixed"),
+        "fixed_dual": _k9_fixed(k9),
+        "clarabel_status_counts": {str(k): int(v) for k, v in k9["clarabel_status"].value_counts().items()},
+        "max_r_prim": float(k9["r_prim"].max()), "max_r_dual": float(k9["r_dual"].max()),
+        "max_gap_over_threshold": _max(k9["gap_abs"] / k9["gap_threshold"]),
+        "n_relaxations_with_capped_s": int((capped > 0).sum()), "n_s_capped_total": int(capped.sum()),
         "diagnostic_persp_raw_dual": {
-            "max_rel_err": float(raw.max()), "n_above_1e-6": int((raw > 1e-6).sum()),
-            "max_rel_err_solved": float(raw[st == "Solved"].max()),
-            "max_rel_err_almost_solved": float(raw[st == "AlmostSolved"].max())}}
+            "max_rel_err": _max(raw), "n_above_1e-6": int((raw > 1e-6).sum()),
+            "max_rel_err_solved": _max(raw[st == "Solved"]),
+            "max_rel_err_almost_solved": _max(raw[st == "AlmostSolved"])}}
 
 
 def _solve_row(out: dict, case: str, r) -> None:
@@ -153,8 +265,15 @@ def _pmi_scale(case: str, kwargs: dict, out: dict, gated: bool, s_obj: float | N
            "persp_status_s1": rl1["perspective"]["status"], "persp_status_s": rl2["perspective"]["status"],
            "persp_almost_solved": int(rl1["perspective"]["almost_solved"]) + int(rl2["perspective"]["almost_solved"]),
            "persp_ok_s1": rl1["perspective"]["ok"], "persp_ok_s": rl2["perspective"]["ok"],
-           "persp_U_s1": rl1["perspective"]["U"], "persp_U_clarabel_s": rl2["perspective"]["U"],
+           # the DESIGN §6 value (every cone exact) at s = 1 and at s_obj; Clarabel's objective beside
+           "persp_U_s1": rl1["perspective"]["U"], "persp_U_s": rl2["perspective"]["U"],
            "persp_U_rel_diff": abs(rl2["perspective"]["U"] / rl1["perspective"]["U"] - 1),
+           "persp_U_clarabel_obj_s1": rl1["perspective"]["U_clarabel"],
+           "persp_U_clarabel_obj_s": rl2["perspective"]["U_clarabel"],
+           "persp_U_minus_clarabel_s1": rl1["perspective"]["U_minus_clarabel"],
+           "persp_U_minus_clarabel_s": rl2["perspective"]["U_minus_clarabel"],
+           "persp_fail_reason_s1": rl1["perspective"]["fail_reason"],
+           "persp_fail_reason_s": rl2["perspective"]["fail_reason"],
            "persp_U_gurobi_barrier_s": rl2["perspective"]["U_gurobi_barrier"],
            "persp_U_rel_vs_barrier_s": abs(rl2["perspective"]["U"] / rl2["perspective"]["U_gurobi_barrier"] - 1),
            "_r1": r1, "_r2": r2}
@@ -175,7 +294,9 @@ def _pmi_scale(case: str, kwargs: dict, out: dict, gated: bool, s_obj: float | N
     for tag, rl in (("s1", rl1), ("s", rl2)):
         info = rl["perspective"]["clarabel"]
         rec.update({f"clarabel_{k}_{tag}": info.get(k) for k in
-                    ("clarabel_status", "iterations", "r_prim", "r_dual", "gap_abs", "gap_rel", "w_scale")})
+                    ("clarabel_status", "iterations", "r_prim", "r_dual", "obj_primal", "obj_dual",
+                     "gap_abs", "gap_rel", "clarabel_gap_rel", "clarabel_objective", "value",
+                     "value_minus_clarabel", "gap_threshold", "n_s_capped", "w_scale")})
     return rec
 
 
@@ -337,6 +458,7 @@ def main() -> int:
                 for name, tp in cfg["k9_toys"].items()]
         toys += [(f"R{i:03d}", "random", T, bm) for i, (T, bm) in
                  enumerate(random_toys(cfg["k9_random_seed"], cfg["k9_random_n"]))]
+        feas_tol = _feasibility_tol(_toy_pmi(toys[0][2], toys[0][3]))     # Decision 22's band
         for name, family, T, b_max in toys:
             out["k9_toys"].append({"toy": name, "family": family, "a": T.a, "lam": T.lam, "d": T.d,
                                    "ell": T.ell, "u": T.u, "w_opt": T.w_opt, "b_max": b_max,
@@ -348,19 +470,30 @@ def main() -> int:
                        "U_cf": T.value(b), "value_scale": T.value(T.w_opt),
                        "s_obj": choose_s_obj(T.value(T.w_opt)),
                        "R_persp_cf": T.relaxation_value(b, "perspective"),
-                       "R_bigm_cf": T.relaxation_value(b, "bigm")}
+                       "R_bigm_cf": T.relaxation_value(b, "bigm"), "f_b": T.f(float(b)),
+                       "band": bool(band_mask(b, T.ell, feas_tol)), "feasibility_tol": feas_tol}
                 row["ell_minus_b"] = T.ell - float(b)
-                for form in ("bigm", "perspective"):
+                for form in FORMS:
                     r = _toy_pmi(T, b, form).solve(mip_gap=0.0)
                     row[f"V_{form}"], row[f"v_source_{form}"] = r.V, r.v_source
+                    row.update({f"zeta_inc_{form}": float(r.zp.sum() + r.zm.sum()),
+                                f"w_inc_{form}": float(r.w_incumbent[0]),
+                                f"U_inc_{form}": r.U_incumbent, f"U_raw_{form}": r.U_raw})
                     _solve_row(out, f"k9 {name} b={b:.9g}", r)
                 M = _toy_pmi(T, b)
-                rl = M.relaxation_duals()
+                rl = M.relaxation_duals(v_ref=T.value(T.w_opt))     # V_ref = the toy's U* (DESIGN §6)
                 pr, info = rl["perspective"], rl["perspective"]["clarabel"]
                 row.update(R_persp=pr["U"], R_bigm=rl["bigm"]["U"], persp_ok=pr["ok"],
-                           persp_status=pr["status"], clarabel_status=info.get("clarabel_status"),
+                           persp_status=pr["status"], persp_fail_reason=pr["fail_reason"],
+                           R_persp_value=pr["U_value"], R_persp_clarabel_obj=pr["U_clarabel"],
+                           R_persp_minus_clarabel=pr["U_minus_clarabel"],
+                           clarabel_status=info.get("clarabel_status"),
                            r_prim=info.get("r_prim"), r_dual=info.get("r_dual"),
-                           gap_rel=info.get("gap_rel"), iterations=info.get("iterations"),
+                           obj_primal=info.get("obj_primal"), obj_dual=info.get("obj_dual"),
+                           gap_abs=info.get("gap_abs"), gap_rel=info.get("gap_rel"),
+                           clarabel_gap_rel=info.get("clarabel_gap_rel"),
+                           gap_threshold=info.get("gap_threshold"), v_ref_scaled=info.get("v_ref"),
+                           n_s_capped=info.get("n_s_capped"), iterations=info.get("iterations"),
                            U_gurobi_barrier=pr["U_gurobi_barrier"],
                            mu_persp_raw=pr["shadow"].get("gross", np.nan))
                 if not kink:
@@ -473,7 +606,7 @@ def main() -> int:
                    "max_tc_vs_retained": ((frames["k6"]["tc_num"] / frames["k6"]["retained_num"]) - 1).abs().max()},
             "K7": {"n": len(frames["k7"]), "max_rel_err": frames["k7"]["rel_err"].max()},
             "K8": frames["k8"].to_dict("records"),
-            "K9": {"random_seed": cfg["k9_random_seed"],
+            "K9": {"random_seed": cfg["k9_random_seed"], "feasibility_tol": feas_tol,
                    **{fam: _k9_summary(frames["k9"][frames["k9"]["family"].isin(sel)])
                       for fam, sel in (("all", ("fixed", "random")), ("fixed", ("fixed",)),
                                        ("random", ("random",)))}},

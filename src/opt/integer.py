@@ -16,11 +16,14 @@
 - Duals. relaxation_duals() solves the z ∈ [0, 1] relaxation of both formulations: big-M by
   Gurobi dual simplex (a QP); perspective by Clarabel (src/opt/relaxation.py, an SOCP), with
   Gurobi's barrier on the same relaxation kept only as a value cross-check (U_gurobi_barrier).
-  A failed relaxation (DESIGN §6: Clarabel status neither Solved nor AlmostSolved, or a relative
-  residual above 1e-8) is recorded with its status and no value or duals, never raised; Clarabel's
-  status and residuals are recorded for every solve, AlmostSolved flagged (almost_solved). The
-  perspective estimator is the finite-difference slope of these values (DESIGN §6, gated by
-  CHECKS K29c in S3); Clarabel's raw perspective duals here are a diagnostic.
+  The perspective value U is the objective at Clarabel's point with every cone exact (DESIGN §6,
+  Decision 21); Clarabel's own objective (U_clarabel) and the difference are recorded alongside.
+  A failed relaxation (DESIGN §6: Clarabel status neither Solved nor AlmostSolved, a relative
+  residual above 1e-8, or a duality gap above 1e-9·max(|V|, |V_ref|), v_ref in original units)
+  is recorded with its reason and no value or duals, never raised; Clarabel's status, residuals
+  and gap are recorded for every solve, AlmostSolved flagged (almost_solved). The perspective
+  estimator is the finite-difference slope of these values (DESIGN §6, gated by CHECKS K29c in
+  S3); Clarabel's raw perspective duals here are a diagnostic.
   fixed_integer_duals(z) re-solves the convex problem at fixed z. Shadow prices dU*/db use
   src.opt.miqp.shadow_price (sign established by the kept tests), divided by s_obj.
 - Effort. Work (deterministic) and Runtime are recorded; work_limit sets Gurobi's WorkLimit.
@@ -245,17 +248,23 @@ class PMI:
     def _model(self, form: str) -> MIQPModel:
         return self.model if form == self.formulation else self._make(form, self.model.bounds)
 
-    def relaxation_duals(self) -> dict[str, dict]:
-        """Both relaxations at the current bounds (module docstring); failures are recorded."""
+    def relaxation_duals(self, v_ref: float | None = None) -> dict[str, dict]:
+        """Both relaxations at the current bounds (module docstring); failures are recorded.
+        v_ref: the perspective gap clause's reference value, original units (DESIGN §6)."""
         try:
             bigm = {**self._dual_record(self._model("bigm").relax()), "solver": "gurobi"}
         except RuntimeError as err:
             bigm = {**self._failed(str(err)), "solver": "gurobi"}
         P = self._model("perspective")
-        cl = perspective_relaxation(P)
+        cl = perspective_relaxation(P, v_ref=None if v_ref is None else self.s_obj * v_ref)
         persp = self._dual_record(cl.result, cl.status) if cl.ok else self._failed(cl.status)
-        persp.update(solver="clarabel", clarabel=cl.info,
-                     almost_solved=cl.info.get("clarabel_status") == "AlmostSolved")
+        s, info = self.s_obj, cl.info
+        persp.update(solver="clarabel", clarabel=info,
+                     almost_solved=info.get("clarabel_status") == "AlmostSolved",
+                     fail_reason=info.get("fail_reason"),
+                     U_value=info["value"] / s,               # the DESIGN §6 value, failed or not
+                     U_clarabel=info["clarabel_objective"] / s,
+                     U_minus_clarabel=info["value_minus_clarabel"] / s)
         try:
             persp.update(U_gurobi_barrier=P.relax().U / self.s_obj, gurobi_barrier_status="OPTIMAL")
         except RuntimeError as err:

@@ -12,6 +12,8 @@ form is 0 it is read against the slope scale a (|μ̂| ≤ 1e-6·a).
 """
 from __future__ import annotations
 
+import warnings
+
 import cvxpy as cp
 import numpy as np
 import pytest
@@ -58,7 +60,7 @@ def test_k9_relaxation_and_fixed_integer_duals_match_closed_forms(name):
     for b in pts:
         cf = T.slopes(b)
         M = toy_pmi(T, b)
-        rl = M.relaxation_duals()
+        rl = M.relaxation_duals(v_ref=T.value(T.w_opt))      # V_ref = the toy's U* (DESIGN §6)
         inc = M.solve(mip_gap=0.0)
         fixed = M.fixed_integer_duals(inc.zp, inc.zm)["shadow"]["gross"]
         assert rl["perspective"]["ok"] and rl["perspective"]["solver"] == "clarabel", b
@@ -96,7 +98,7 @@ def _k9_relaxation_values(T: Toy, grid) -> list[tuple]:
     """(b, form, Clarabel/Gurobi relaxation value, closed form, Clarabel status) on every point."""
     out = []
     for b in grid:
-        rl = toy_pmi(T, b).relaxation_duals()
+        rl = toy_pmi(T, b).relaxation_duals(v_ref=T.value(T.w_opt))   # V_ref = U* (DESIGN §6)
         assert rl["bigm"]["ok"] and rl["perspective"]["ok"], (b, rl["perspective"]["status"])
         st = rl["perspective"]["clarabel"]["clarabel_status"]
         out += [(b, f, rl[f]["U"], T.relaxation_value(b, f), st) for f in ("bigm", "perspective")]
@@ -211,9 +213,10 @@ def test_clarabel_failure_is_recorded_not_fatal(monkeypatch):
     ("AlmostSolved", cp.OPTIMAL_INACCURATE, 1e-12, 3e-8, False),     # dual residual > 1e-8
 ])
 def test_relaxation_failure_rule(monkeypatch, status, cvx, r_prim, r_dual, ok):
-    """DESIGN §6: a perspective relaxation counts as failed only if Clarabel's status is neither
-    Solved nor AlmostSolved, or its relative residuals (Clarabel's r_prim, r_dual) exceed 1e-8;
-    a failure keeps its status and residuals, carries no value or duals, and is never raised."""
+    """DESIGN §6: a perspective relaxation counts as failed if Clarabel's status is neither
+    Solved nor AlmostSolved, or its relative residuals (Clarabel's r_prim, r_dual) exceed 1e-8
+    (the duality-gap clause is test_gap_clause); a failure keeps its status and residuals,
+    carries no value or duals, and is never raised."""
     T, _ = TOYS["T2"]
     M = toy_pmi(T, 0.005)
     real = relaxation._solve
@@ -233,3 +236,160 @@ def test_relaxation_failure_rule(monkeypatch, status, cvx, r_prim, r_dual, ok):
         assert np.isfinite(rec["U"]) and rec["shadow"]
     else:
         assert np.isnan(rec["U"]) and rec["shadow"] == {} and "residual" in rec["status"]
+
+
+# ---- Decision 21 (DESIGN §6, revised 2026-10-19): the relaxation's value is the objective at
+# Clarabel's returned (w, ζ) with s_i = w_i²/ζ_i, so every cone holds exactly; a relaxation is
+# also failed if its duality gap exceeds 1e-9·max(|V|, |V_ref|) (V_ref: the toy's U*)
+
+R_SEED, R_N = 20261019, 200          # the round-3 runner's family (experiments/configs/core.yaml)
+
+
+def _random_point(i: int, j: int) -> tuple[Toy, float]:
+    """Toy i of random_toys(R_SEED, R_N) at point j of its 41-point grid (as experiments.run_core)."""
+    T, b_max = random_toys(R_SEED, R_N)[i]
+    return T, float(np.linspace(0.0, b_max, 41)[j])
+
+
+def test_cone_exact_s_and_zeta_to_zero():
+    """s_i = v_i²/ζ_i, so v_i² ≤ s_i·ζ_i holds with equality; s_i = 0 where v_i = 0. The linking row
+    |v_i| ≤ u_i·ζ_i bounds s_i by u_i·|v_i|; where Clarabel's point breaks it (ζ_i → 0 faster than
+    v_i, or ζ_i ≤ 0) s_i is that bound, and such names are counted. Finite, without warnings."""
+    u = np.full(8, 0.06)
+    v = np.array([0.0, 0.03, -0.06, 0.03 * 1e-13, 1e-16, 0.0, 1e-12, -1e-14])
+    zeta = np.array([0.0, 0.8, 1.0, 1e-13, 0.0, 1e-300, 1e-30, -1e-16])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        s, n_capped = relaxation.cone_exact_s(v, zeta, u)
+    expect = np.array([0.0, 0.03 ** 2 / 0.8, 0.06 ** 2, 0.03 ** 2 * 1e-13, 0.06 * 1e-16, 0.0,
+                       0.06 * 1e-12, 0.06 * 1e-14])
+    np.testing.assert_allclose(s, expect, rtol=1e-14, atol=0)
+    assert n_capped == 3                                      # ζ = 0, ζ ≪ |v|/u, ζ < 0
+    exact = np.array([True, True, True, True, False, True, False, False])
+    np.testing.assert_allclose((s * zeta)[exact], (v * v)[exact], rtol=1e-14, atol=0)
+    assert np.all(s <= u * np.abs(v))
+    # ζ → 0 inside the linking row (v = u·ζ/2): s = u²·ζ/4 → 0, the cone exact at every step,
+    # with no underflow where v² would (ζ < 1e-160)
+    for k in range(1, 300, 7):
+        z = 10.0 ** -k
+        sk, nk = relaxation.cone_exact_s(np.array([0.03 * z]), np.array([z]), np.array([0.06]))
+        assert nk == 0 and sk[0] == pytest.approx(0.03 ** 2 * z, rel=1e-14), k
+
+
+@pytest.mark.parametrize("case", ["T2", realdata.K8_MONTHS[0]])
+def test_value_is_objective_at_cone_feasible_point(case):
+    """The reported value is the P-MI objective at Clarabel's mapped-back (w⁺, w⁻, ζ) with
+    s = cone_exact_s(w, ζ, u) (every cone exact there), computed independently here; Clarabel's
+    own objective, their difference, the gap (absolute, pure relative, Clarabel's) and the
+    residuals are recorded for every relaxation."""
+    if case == "T2":
+        T, _ = TOYS["T2"]
+        M = toy_pmi(T, 0.005)
+        v_ref = T.value(T.w_opt)
+    else:
+        M = PMI(**realdata.pmi_case(case).kwargs, s_obj=1e4)
+        v_ref = None
+    rec = M.relaxation_duals(v_ref=v_ref)["perspective"]
+    sol = relaxation.perspective_relaxation(M.model, v_ref=None if v_ref is None else M.s_obj * v_ref)
+    assert rec["ok"] and sol.ok
+    info = rec["clarabel"]
+    for key in ("clarabel_status", "r_prim", "r_dual", "gap_abs", "gap_rel", "clarabel_gap_rel",
+                "clarabel_objective", "value", "value_minus_clarabel", "gap_threshold", "v_ref",
+                "n_s_capped", "fail_reason"):
+        assert key in info, key
+    assert info["fail_reason"] is None
+    w, zeta = sol.result.w, sol.result.zp + sol.result.zm
+    ub = np.where(M.model.holdable, M.model.ub, 0.0)
+    s = sol.s
+    assert np.all(np.isfinite(s)) and np.all(s >= 0)
+    held = (w != 0) & (zeta > 0) & (np.abs(w) <= ub * zeta)
+    np.testing.assert_allclose((s * zeta)[held], (w * w)[held], rtol=1e-14, atol=0)   # cones exact
+    m = M.mandate                                        # original units (the model's are × s_obj)
+    y = M.B.T @ w
+    U = float(M.alpha @ w - M.lam * (y @ M.F @ y + M.d @ s)
+              - m.borrow_monthly * sol.wm.sum() - m.trade_cost * (sol.wp + sol.wm).sum())
+    assert rec["U"] == pytest.approx(U, rel=1e-13)
+    assert info["value"] == pytest.approx(M.s_obj * U, rel=1e-13)
+    assert info["clarabel_objective"] == -info["obj_primal"]
+    assert info["value_minus_clarabel"] == info["value"] - info["clarabel_objective"]
+    assert rec["U_clarabel"] == info["clarabel_objective"] / M.s_obj
+    assert rec["U_minus_clarabel"] == pytest.approx(rec["U"] - rec["U_clarabel"], abs=1e-15 * abs(rec["U"]))
+    assert info["gap_abs"] == abs(info["obj_primal"] - info["obj_dual"])
+    assert info["clarabel_gap_rel"] == info["gap_abs"] / max(1.0, min(abs(info["obj_primal"]),
+                                                                      abs(info["obj_dual"])))
+    assert info["gap_threshold"] == 1e-9 * max(abs(info["value"]), abs(info["v_ref"] or 0.0))
+
+
+def test_r043_regression_value_within_1e9():
+    """Round-3 run (run_20261019T124115Z), R043 at grid point 19 (b = 2.81e-3, w° < b < u):
+    AlmostSolved, residuals 6e-11 and 1e-10, gap 1e-13. Clarabel's own objective misses the closed
+    form by 1.04e-9 relative, because its s sits above w²/ζ, which the gap cannot see; the value
+    at s = w²/ζ is within 1e-9 (CHECKS K9). The second assertion keeps the reproducer honest."""
+    T, b = _random_point(43, 19)
+    assert b == pytest.approx(2.80798e-3, rel=1e-5)
+    rec = toy_pmi(T, b).relaxation_duals(v_ref=T.value(T.w_opt))["perspective"]
+    cf = T.relaxation_value(b, "perspective")
+    assert rec["ok"] and rec["clarabel"]["clarabel_status"] == "AlmostSolved"
+    assert abs(rec["U"] - cf) <= 1e-9 * abs(cf), (rec["U"] - cf) / cf
+    assert abs(rec["U_clarabel"] - cf) > 1e-9 * abs(cf)
+
+
+def test_r082_failed_by_gap_clause():
+    """Round-3 run, R082 at grid point 37 (b = 0.2105 > u): AlmostSolved with residuals within
+    1e-8, so only the gap clause can fail it; its gap (6.6e-8 scaled) exceeds 1e-9·max(|V|, |U*|).
+    Recorded with its reason, its value and Clarabel's objective; no value or duals are used."""
+    T, b = _random_point(82, 37)
+    assert b == pytest.approx(0.210547, rel=1e-5)
+    M = toy_pmi(T, b)
+    rec = M.relaxation_duals(v_ref=T.value(T.w_opt))["perspective"]
+    info = rec["clarabel"]
+    assert info["clarabel_status"] == "AlmostSolved"
+    assert info["r_prim"] <= 1e-8 and info["r_dual"] <= 1e-8
+    assert info["v_ref"] == M.s_obj * T.value(T.w_opt)
+    assert info["gap_threshold"] == 1e-9 * max(abs(info["value"]), abs(info["v_ref"]))
+    assert info["gap_abs"] > info["gap_threshold"]
+    assert info["fail_reason"] == "gap" and "gap" in rec["status"]
+    assert not rec["ok"] and np.isnan(rec["U"]) and rec["shadow"] == {}
+    assert np.isfinite(info["value"]) and np.isfinite(info["clarabel_objective"])
+
+
+def test_b_zero_points_not_failed():
+    """At b = 0 the value is 0, so a gap read against |V| alone would fail on rounding; the floor
+    |V_ref| = the toy's U* (DESIGN §6) keeps them. The fixed toys and the first 12 seeded toys."""
+    toys = [T for T, _ in TOYS.values()] + [T for T, _ in random_toys(R_SEED, 12)]
+    for T in toys:
+        scale = T.value(T.w_opt)
+        M = toy_pmi(T, 0.0)
+        rec = M.relaxation_duals(v_ref=scale)["perspective"]
+        assert rec["ok"], (T, rec["status"])
+        assert abs(rec["U"]) <= 1e-9 * scale
+        assert rec["clarabel"]["gap_threshold"] == pytest.approx(1e-9 * M.s_obj * scale, rel=1e-15)
+
+
+@pytest.mark.parametrize("gap_factor,v_ref_factor,ok", [
+    (0.5, None, True),                # gap 0.5e-9·|V|
+    (2.0, None, False),               # gap 2e-9·|V| > 1e-9·|V|
+    (2.0, 4.0, True),                 # V_ref = 4·|V| raises the threshold to 4e-9·|V|
+])
+def test_gap_clause(monkeypatch, gap_factor, v_ref_factor, ok):
+    """DESIGN §6: failed if the duality gap |p − d| exceeds 1e-9·max(|V|, |V_ref|); a failure keeps
+    its reason, status, residuals and gap, carries no value or duals, and is never raised."""
+    T, _ = TOYS["T2"]
+    b = 0.005
+    M = toy_pmi(T, b)
+    real = relaxation._solve
+
+    def patched(prob, opts):
+        raw = real(prob, opts)
+        raw["obj_dual"] = raw["obj_primal"] + gap_factor * 1e-9 * abs(raw["obj_primal"])
+        return raw
+
+    monkeypatch.setattr(relaxation, "_solve", patched)
+    v_ref = None if v_ref_factor is None else v_ref_factor * T.relaxation_value(b, "perspective")
+    rec = M.relaxation_duals(v_ref=v_ref)["perspective"]
+    assert rec["ok"] is ok
+    assert rec["clarabel"]["fail_reason"] == (None if ok else "gap")
+    if ok:
+        assert np.isfinite(rec["U"]) and rec["shadow"]
+    else:
+        assert np.isnan(rec["U"]) and rec["shadow"] == {} and "gap" in rec["status"]
