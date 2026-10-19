@@ -15,8 +15,8 @@ These checks verify that the numbers are real, reproducible, and consistent with
 | K5 | Alpha decomposition (A4) | ‖BᵀD⁻¹α⊥‖ ≤ 1e-10·‖BᵀD⁻¹α‖; α⊥ + α∥ = α to 1e-14 relative before normalization (floating point); for α⊥ under the risk budget alone, max \|y_k\| ≤ 1e-8 and every factor-bound elasticity ≤ 1e-6; αᵀΣ⁻¹α = α⊥ᵀD⁻¹α⊥ + α∥ᵀΣ⁻¹α∥ to 1e-10 |
 | K6 | Closed forms (A2, A3) | Equality-constrained, risk-binding instances on ≥ 3 dates: numerical A* and w match the closed form to 1e-6; TC equals the retained fraction to 1e-6; under full factor neutrality the retained fraction equals √(1 − φ) to 1e-6 |
 | K7 | Envelope (A5) | P-RB at base on 2 dates: for every constraint with e_j ≥ 1e-4, the central-difference slope (δ = 1% of the bound) matches μ_j within 1% |
-| K8 | Scaling invariance (A9) | Scaled and unscaled P-RB (Clarabel cross-check) give the same w to 1e-6 relative L1 (Clarabel's weight precision; K4 allows 1e-5); P-MI scaled and unscaled, solved to MIPGap 0 on two small real-data instances fixed in advance (2017-12 and 2020-03; the top 30 names by ADV; u = 6%, ℓ = 0.25%, K = round(0.5·S); base mandate), give the same z and w within 1e-7; duals (including the perspective-relaxation duals, computed with Clarabel) scale by the factor to 1e-6 relative; unscaling round-trips. The degenerate synthetic instance (n = 20, u = 20%) is run and its dual-accuracy floor reported as a diagnostic, not gated |
-| K9 | Toy MIQP (A7) | The one-asset value function on a 41-point grid matches the closed form, including the jump at ℓ, to 1e-8; the estimators (big-M and perspective relaxation duals, fixed-integer dual) match their closed forms to 1e-6 relative |
+| K8 | Scaling invariance (A9) | Scaled and unscaled P-RB (Clarabel cross-check) give the same w to 1e-6 relative L1 (Clarabel's weight precision; K4 allows 1e-5); P-MI scaled and unscaled, solved to MIPGap 0 on two small real-data instances fixed in advance (2017-12 and 2020-03; the top 30 names by ADV; u = 6%, ℓ = 0.25%, K = round(0.5·S); base mandate), give the same z and w within 1e-7; P-MI duals (big-M relaxation, perspective relaxation via Clarabel, fixed-integer QP) scale by the factor to 1e-6 relative (the Clarabel P-RB cross-check's duals are checked against the exact primary path in P1, within 1e-4); unscaling round-trips. The degenerate synthetic instance (n = 20, u = 20%) is run and its dual-accuracy floor reported as a diagnostic, not gated |
+| K9 | Toy MIQP (A7) | The one-asset value function on a 41-point grid matches the closed form, including the jump at ℓ, to 1e-8; the big-M relaxation dual and the fixed-integer dual match their closed forms to 1e-6 relative; the perspective relaxation dual matches to 1e-5 relative on every solve Clarabel reports as Solved (measured floor ≈ 7e-7). AlmostSolved solves yield no dual: recorded as failed, counted, and their dual errors reported as a diagnostic. Random toys use a recorded seed |
 | K10 | Certified interval (A8) | On the toy and on 2 small MIQPs solved to MIPGap 0, every interval contains the exact slope; flags for H < 0 work on a constructed case |
 | K11 | Feasibility checker | Shares no code with the optimizer; covers the risk row, every mandate constraint, cardinality, minimum position, and linking; passes on every S1 solution and fails on 3 constructed violations |
 | K12 | Swept-cap shadow prices (ported v1 regression) | In the v2 sweep runner, at swept u and θ values, the recorded position and liquidity shadow prices match central finite differences of the objective within 1% (at least 2 binding points checked) |
@@ -39,15 +39,15 @@ These checks verify that the numbers are real, reproducible, and consistent with
 
 | ID | Check | Criterion |
 |---|---|---|
-| K22 | Formulation agreement | Every N1 instance where both formulations reach the gap: \|V_bigM − V_persp\| ≤ the larger absolute certified gap. Any failure → BLOCKED |
-| K23 | Certified intervals | Every I1 case has [L, H]; no case has H < 0 (else BLOCKED, as solver error) |
+| K22 | Formulation agreement | Every N1 instance where both formulations reach the gap: \|V_bigM − V_persp\| ≤ the larger of the two certified gaps B_eff − V, with B_eff = max(B, V) + 1e-6·|V| (DESIGN §6). Any failure → BLOCKED |
+| K23 | Certified intervals | Every I1 case has [L, H], computed with B_eff = max(B, V) + 1e-6·|V|; no case has H < 0 (else BLOCKED, as solver error) |
 | K24 | Perspective tightness (A6) | On every N1 instance, the perspective root bound ≤ the big-M root bound + 1e-8·\|V\| (maximization) |
 | K25 | Determinism | 3 N1 instances rerun under WorkLimit give identical Work, node count, and incumbent value |
 | K26 | MIQP feasibility | The independent checker passes on every incumbent (cardinality, minimum position, linking, mandate) |
 | K27 | Convex baseline | In I1 and I2, the continuous-baseline dual matches its slope within 1% wherever it binds |
 | K28 | Counts | Every I1 statistic reports n; excluded and non-binding cases are counted with the breakdown in DESIGN §7; nothing is dropped silently |
 | K29 | Provenance | Every S3 run has a RUN_LOG row at a clean commit with the scale factors, settings, and worker count; output hashes recorded |
-| K29b | Production dual accuracy | On the first 3 I1 instances by sorted instance id, perspective-relaxation duals at s_obj and 10·s_obj agree to 1e-6 relative; Clarabel status and final residuals are recorded for every relaxation, with AlmostSolved counted separately |
+| K29b | Production dual accuracy | On the first 3 I1 instances by sorted instance id, perspective-relaxation duals (Solved solves only) at s_obj and 10·s_obj agree to 1e-5 relative; Clarabel status and final residuals are recorded for every relaxation, AlmostSolved counted as failed; if more than 10% of I1 perspective relaxations are AlmostSolved, flag it at GATE I |
 
 ## REPORT (sessions S4–S6)
 

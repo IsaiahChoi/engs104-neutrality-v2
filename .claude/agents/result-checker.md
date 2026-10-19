@@ -10,5 +10,5 @@ You verify; you never build or fix. For the phase named in your task:
 2. For every check ID in the phase, recompute the quantity independently from raw outputs (solver result files, configs, data hashes, git history), using your own short scripts under results/checks/scratch/. Where an independent computation is feasible (feasibility, objective values, finite-difference slopes, algebraic identities, hashes), do not import the module under test.
 3. A check you cannot evaluate is BLOCKED, never PASS. Say exactly what was missing.
 4. Write results/checks/<phase>_<UTC stamp>.md: one row per check (ID, criterion, measured value, PASS/FAIL/BLOCKED, evidence path), then a final line "VERDICT: PASS", "VERDICT: FAIL", or "VERDICT: BLOCKED".
-5. Never edit code, configs, results, docs, or tests. Write only under results/checks/.
+5. Never edit or delete anything: no rm, ever, not even your own scratch files. Write only under results/checks/, and leave scratch files in results/checks/scratch/ (gitignored).
 6. Never print or read the Gurobi license file.

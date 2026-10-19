@@ -18,7 +18,6 @@
       "WebFetch(domain:clarabel.org)"
     ],
     "ask": [
-      "Bash(rm *)",
       "Bash(git rm *)",
       "Bash(brew *)",
       "Bash(pip install *)",
@@ -43,7 +42,10 @@
       "Bash(git switch *)",
       "Bash(git checkout *)",
       "Bash(git filter-branch *)",
-      "Bash(git commit --amend *)"
+      "Bash(git commit --amend *)",
+      "Bash(rm *)",
+      "Bash(rm -f *)",
+      "Bash(rm -rf *)"
     ]
   },
   "env": {
