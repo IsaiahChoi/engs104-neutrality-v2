@@ -7,8 +7,16 @@ k5_months: ["2008-10", "2017-12", "2020-03"]     # alpha decomposition
 k6_months: ["2008-10", "2017-12", "2020-03"]     # idealized equality mandates vs closed form
 k7_months: ["2017-12", "2020-03"]                # envelope at base
 k7_rel_step: 0.01                                # δ = 1% of the bound (CHECKS K7)
-k8_months: ["2017-12", "2020-03"]                # Clarabel scaled vs unscaled
-k8_pmi_seed: 63                                  # small random P-MI (tests/test_integer.py)
+k8_months: ["2017-12", "2020-03"]                # Clarabel scaled vs unscaled (P-RB)
+k8_pmi_months: ["2017-12", "2020-03"]            # P-MI, gated (CHECKS K8): fixed in advance
+k8_pmi_N: 30                                     # top 30 by ADV; u = 6%, ℓ = 0.25%, base mandate
+k8_pmi_f: 0.5                                    # K = round(0.5·S)
+k8_pmi_seed: 63                                  # synthetic n = 20, u = 20%: diagnostic only
+k9_toys:                                         # one-asset toys (A7), 41-point grids [0, b_max]
+  T1: {a: 1.0, lam: 1.0, d: 10.0, ell: 0.02, u: 0.08, b_max: 0.10}
+  T2: {a: 0.004, lam: 10.0, d: 0.02, ell: 0.0025, u: 0.015, b_max: 0.02}
+k10_toy_points: [0.01, 0.02, 0.03, 0.06]         # T1, δ = 0.005 (certified interval on the toy)
+k10_toy_delta: 0.005
 k12_month: "2020-03"                             # swept caps (position, liquidity)
 k12_rel_step: 0.001
 k13_months: ["2017-12", "2020-03"]

@@ -12,8 +12,9 @@ import pytest
 from src.opt.attribution import shadow_prices
 from src.opt.continuous import ContinuousProblem, Mandate, load_config
 from src.opt.feasibility import risk_violation, violations
-from src.opt.risk_budget import (LAMBDA_MIN, ROOT_RTOL, SIGMA_M, TARGET_VOL, net_alpha,
-                                 solve_qcqp, solve_risk_budget)
+from src.opt.risk_budget import (LAMBDA_MIN, QCQP_ACCEPTED, ROOT_RTOL, SIGMA_M, TARGET_VOL,
+                                 net_alpha, solve_qcqp, solve_risk_budget)
+from src.opt.sensitivity import bound_value
 from src.risk.factor_model import FACTORS
 from tests import realdata
 from tests.test_opt import OFF, random_instance
@@ -121,6 +122,40 @@ def test_k8_scaled_and_unscaled_prb_clarabel(ym):
     assert np.abs(scaled.w - raw.w).max() <= 1e-7
     assert scaled.objective == pytest.approx(raw.objective, rel=1e-8)
     assert scaled.lam == pytest.approx(raw.lam, rel=1e-6)
+    # CHECKS K8 as revised: w to 1e-6 relative L1
+    assert np.abs(scaled.w - raw.w).sum() / np.abs(raw.w).sum() <= 1e-6
+    assert raw.status in QCQP_ACCEPTED and scaled.status in QCQP_ACCEPTED   # AlmostSolved counted
+
+
+def _prb_k8_dual_scaling(ym, keys):
+    """Max over `keys` of |μ_scaled − μ_raw| / (1e-6·max(|μ_raw|, 1e-4·A*/b)): ≤ 1 passes K8's
+    1e-6 (a non-binding dual, e < 1e-4, is read against the bindingness threshold)."""
+    from src.opt.integer import choose_s_obj
+    _, alpha, _ = realdata.case(ym)
+    P = realdata.problem(ym)
+    raw = solve_qcqp(P, alpha, normalize=False, obj_scale=1.0)
+    scaled = solve_qcqp(P, alpha, normalize=True, obj_scale=choose_s_obj(raw.objective))
+    sp_raw, sp_sc = shadow_prices(P, raw), shadow_prices(P, scaled)
+    assert set(sp_raw) == set(sp_sc)
+    return max(abs(sp_sc[k] - sp_raw[k])
+               / (1e-6 * max(abs(sp_raw[k]), 1e-4 * abs(raw.objective) / abs(bound_value(P, k))))
+               for k in sp_raw if keys(k))
+
+
+@pytest.mark.parametrize("ym", ["2017-12", "2020-03"])
+def test_k8_prb_clarabel_family_duals_scale(ym):
+    """CHECKS K8 (P-RB duals), family keys (dollar, beta, gross, style, sector, position,
+    liquidity totals): scaled vs unscaled Clarabel to 1e-6 relative."""
+    assert _prb_k8_dual_scaling(ym, lambda k: ":" not in k) <= 1.0
+
+
+@pytest.mark.xfail(strict=True, reason="Known miss, reported to Isaiah (PROGRESS, S1 CHECK CORE "
+                   "round 2): Clarabel P-RB per-sector duals scale to 1.6e-6–2.2e-6 relative, "
+                   "the interior-point accuracy floor; whether K8's 1e-6 covers per-element "
+                   "P-RB cross-check duals is Isaiah's reading. strict: a pass fails the suite.")
+@pytest.mark.parametrize("ym", ["2017-12", "2020-03"])
+def test_k8_prb_clarabel_per_element_duals_scale(ym):
+    assert _prb_k8_dual_scaling(ym, lambda k: True) <= 1.0
 
 
 def test_root_finder_guess_validation(rand):

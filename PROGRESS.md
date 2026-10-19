@@ -144,3 +144,60 @@ Tests cover K4–K13.
 - ECOS: don't install; N2(b) uses Clarabel and SCS.
 - Tectonic downloading TeX packages is fine (the no-download rule covers market data only). The Makefile flag change is approved if it keeps intermediates and logs for spec_check; otherwise explain it first.
 - iCloud: Desktop is local (checked 2026-10-18).
+
+## 2026-10-19 — S1 continued (Claude Code, Opus 5.5): Isaiah's decisions applied; before CORE round 2
+- **DESIGN edits (approved by Isaiah this session, applied verbatim):**
+  - §6 P-RB cross-check: SOC risk row ‖(L_Fᵀy, √d∘w)‖₂/σ_m ≤ 1, μ_risk = ν/(2σ_m²), AlmostSolved accepted and recorded.
+  - §6 incumbent: V = polished alone. Flags: exact objective at the incumbent's weights > V + 1e-9·|V|; V > B + 1e-9·|V|. V undefined if the polish fails.
+  - §6 relaxation duals: perspective relaxation by Clarabel (1e-12) on the rescaled problem; Gurobi barrier as a value cross-check only; failures recorded.
+  - §8 P6: u and θ excluded from the I1 candidates.
+  - §11.3: Clarabel line.
+- **CHECKS re-read** after Isaiah's commit 651d14e: K8 gated on two real-data P-MI instances (synthetic as diagnostic); K29b added.
+- **No file present at v2-start was changed in this round** (rule 14). New: src/opt/relaxation.py. Changed v2 code: src/opt/integer.py, experiments/instances.py (pmi_instance, round_half_up, SUPPORT_TOL), experiments/run_core.py, experiments/configs/core.yaml.
+- **Tests, test-first (RED before code).**
+  - tests/test_relaxation.py, new: K9 for both relaxation duals and the fixed-integer dual on T1 and T2 (T2 = the checker's project-scale toy) at 1e-6 relative; T2 value function to 1e-8; Clarabel vs Gurobi barrier relaxation value at the chosen s_obj on the K8 instances (1e-6); unscaled point attains the value and is feasible; K29b record fields; Clarabel failure recorded.
+  - tests/test_integer.py, new: K8 on the fixed real instances; incumbent_flags; honest solve records the raw incumbent; pmi_instance rules; PMI.bound_of.
+  - RED evidence: test_relaxation failed at import (no src.opt.relaxation); test_integer failed at import (no incumbent_flags); the strengthened P-RB K8 dual assertion failed (sector:5, 2.2e-6).
+  - PMI.bound_of was written together with its test (a lookup helper; not RED-first).
+- **Spec-driven changes to two S1-added tests** (neither existed at v2-start; no CHECKS tolerance loosened). Both now assert the revised DESIGN §6 behaviour in place of the superseded one:
+  - test_relaxation_failure_is_recorded_not_fatal: a SUBOPTIMAL Gurobi barrier now lands in the cross-check fields while the Clarabel record stays ok. Added: a failed big-M relaxation is recorded with no duals.
+  - test_overstated_raw_incumbent_never_sets_V: when the polish fails, V and w are nan, v_source is "polish_failed", the raw incumbent and its checker verdict are recorded, and no flags are set.
+  - The comment in test_k8_scaled_and_unscaled_pmi_agree now says that instance is the K8 diagnostic; its assertions are unchanged.
+- **Two misses during implementation, both reverted:**
+  1. My first relaxation draft also wrote Gurobi's variable bounds w± ≤ u_i as rows. They are implied by w± ≤ u_i z±, z± ≤ 1. With them, T1 failed K9 at b = 0.0375 (1.3e-6). I reverted to the formulation I had measured and shown Isaiah in the proposal (no further tuning).
+  2. Rescaling the P-RB cross-check's weights by the largest position bound (my plan) moved its per-sector dual scaling only from 2.2e-6/1.6e-6 to 1.8e-6/1.3e-6. DESIGN's P-RB text has no rescaling, so I reverted it; solve_qcqp is unchanged from 4997e08.
+- **Known miss, K8 (P-RB).** Clarabel's P-RB per-element (per-sector) duals scale to 1.6e-6 (2020-03) and 2.2e-6 (2017-12) relative between unscaled and scaled solves. The following meet their bounds:
+  - family totals: ≤ 2.7e-7;
+  - weights: ‖Δw‖₁/‖w‖₁ ≤ 1.9e-7, against 1e-6;
+  - all gated P-MI duals.
+  This miss is recorded as a strict xfail test (test_k8_prb_clarabel_per_element_duals_scale), so a pass would fail the suite. See Decisions needed 13.
+- **Suite:** 216 passed, 2 xfailed (the known miss above), 58.8 s; logs/test_s1r2_20261019T022430Z.log.
+- **Dry run of the updated runner** (scratch, stubbed RUN_LOG, not evidence; the committed core run follows). Gated P-MI K8, 2017-12 and 2020-03 top 30 (S = 18, 19; K = 9, 10; s_obj = 1e4):
+  - same z, max |Δw| ≤ 6e-17;
+  - dual scaling, fixed-integer ≤ 6e-15 relative and big-M ≤ 7e-14;
+  - perspective (Clarabel) 1.4e-7 and 8.2e-7 relative;
+  - Clarabel vs barrier value ≤ 2.8e-9.
+  K9: perspective dual ≤ 5.0e-7 relative off the closed form; big-M and fixed-integer ≤ 6e-15.
+
+### Finding for the report (Section III, A9): interior-point duals on degenerate relaxations
+Isaiah asked for this to be recorded as report material. **Every number below comes from scratch probes or the dry run (results/scratch, gitignored), so none is reportable as it stands.** A reported version must come from a logged run (natural home: N2 or P1).
+- **The finding.** Clarabel's perspective-relaxation **values** are accurate to about 1e-11 relative; on the worst toy, a finite difference of the value matched the closed form to 2e-12. Its **duals** stall at an instance-dependent floor:
+
+| Instance | Dual accuracy |
+|---|---|
+| Real 2020-03, N = 250 | ≤ 1.8e-10 (dual scaling, s_obj 1 vs 1000) |
+| K8 real instances (top 30) | 1.4e-7 and 8.2e-7 (dual scaling) |
+| The two A7 toys | ≤ 5e-7 (vs closed form) |
+| 42 random valid toys | ≤ 7.7e-7 with weights rescaled to O(1); up to 1e-5 without (vs closed form) |
+| Synthetic degenerate instance (n = 20, u = 20%) | 2.4e-6 (dual scaling) |
+
+- **Not a tolerance effect.** On the worst unrescaled toy, the error was 9.86e-6 at tolerance 1e-11, 1e-12 and 1e-13 alike. At 1e-12, Clarabel ends AlmostSolved in about 30–60% of solves.
+- **Mechanism (a hypothesis consistent with the measurements).** Each long name has w⁻ = z⁻ = 0 with four constraints active at zero (w⁻ ≥ 0, z⁻ ≥ 0, w⁻ ≤ u z⁻, w⁻ ≥ ℓ z⁻). Held names at z = 1 add redundant active rows. Without strict complementarity, interior-point duals converge only like √μ (μ = complementarity), so a 1e-12 stop gives duals near 1e-6.
+- **Why weights are rescaled to O(1).** The tiny-weight failures are a scaling effect, and the rescaling fixes them. On a toy with w ≈ 3e-4, the dual is about 1e3 in scaled units, so a solver-relative stop leaves about 1e-5 relative error.
+- **Same floor, P-RB.** The P-RB cross-check's per-sector duals scale only to 1.6–2.2e-6 while its weights agree to 1.9e-7 (L1).
+- **Contrast with the barrier.** Gurobi's barrier duals on the same relaxation were 1e-4 to 5e-2 off (CHECK CORE round 1).
+- **Second A9 instance.** On the K8 2020-03 instance (perspective model, MIPGap 0), Gurobi's final bound B lies below the exactly feasible polished V by 1.6e-7 relative at s_obj = 1000 and by 1.0e-8 at 1e4. At s_obj = 1, B and the raw value lie 1.3e-4 above V (cone slack). The DESIGN §6 flags catch exactly this, and certified intervals in S3 inherit B's tolerance.
+
+### Decisions needed (CHECK CORE round 2)
+13. **K8 reading for the P-RB cross-check duals.** K8's dual clause ("duals (including the perspective-relaxation duals, computed with Clarabel) scale by the factor to 1e-6 relative") follows the P-MI clause. The round-1 checker also applied it to Clarabel's P-RB shadow prices. Measured: per-sector P-RB duals 1.6–2.2e-6 (miss); family totals ≤ 2.7e-7 (pass). Does K8's dual criterion cover the P-RB cross-check's per-element duals? If yes, K8 fails on them with the DESIGN §6 method. The P-RB primary path's duals are exact (dual simplex), and the cross-check's job (K4, K16, P1) is agreement on w, A* and λ*.
+14. **K = round(f·S):** implemented as round half up. Python's round is banker's rounding, and DESIGN doesn't say which.

@@ -33,3 +33,16 @@ def problem(ym: str, mandate: Mandate | None = None) -> ContinuousProblem:
     m = di.model
     return ContinuousProblem(m.B, m.F, m.d, di.sector_matrix(), mandate or base, adv=di.adv,
                              factor_names=FACTORS)
+
+
+# CHECKS K8 (P-MI): two small real-data instances fixed in advance.
+K8_MONTHS = ("2017-12", "2020-03")
+K8_N, K8_F = 30, 0.5
+
+
+@lru_cache(maxsize=4)
+def pmi_case(ym: str):
+    """The K8 P-MI instance at `ym`: top 30 names by ADV, u = 6%, ℓ = 0.25%, K = round(0.5·S),
+    base mandate, λ = λ* (experiments.instances.pmi_instance)."""
+    from experiments.instances import pmi_instance
+    return pmi_instance(month_end(ym), K8_N, K8_F)

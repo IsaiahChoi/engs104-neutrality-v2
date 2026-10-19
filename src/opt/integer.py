@@ -3,19 +3,21 @@
 - Objective scaling. The model is built with α, λ, the borrow cost c and the trading cost κ all
   multiplied by s_obj, which multiplies the objective (and every dual) by s_obj and leaves the
   feasible set unchanged. Everything reported is in original units; raw scaled values are kept.
-- Incumbent value. DESIGN §6: V = max(incumbent, polished). The polish (the exact fixed-integer
-  QP at the incumbent's z, dual simplex at 1e-9) maximizes the continuous part over that support,
-  so it is ≥ the value of any feasible incumbent with that z; the raw incumbent can exceed it
-  only by being infeasible within Gurobi's tolerances (1e-6 rows, cone tolerance), which would
-  overstate V and break V ≤ U* (code review S1, H3). So V = U_polished whenever the polish
-  succeeds (v_source "polished"); only if it fails is V the exact objective at the incumbent's
-  weights (v_source "incumbent"), with the independent checker's verdict on those weights in
-  `incumbent_violations`. B is the solver's final bound; the root bound is recorded too.
-- Duals. relaxation_duals() solves the z ∈ [0, 1] relaxation of both formulations (big-M: a QP,
-  dual simplex; perspective: a QCP, barrier with QCPDual); a failed relaxation (e.g. SUBOPTIMAL)
-  is recorded with its status and no duals, never raised. fixed_integer_duals(z) re-solves the
-  convex problem at fixed z. Shadow prices dU*/db use src.opt.miqp.shadow_price (sign
-  established by the kept tests), divided by s_obj.
+- Incumbent value (DESIGN §6, revised after CHECK CORE round 1). V is the polished value alone:
+  the exact fixed-integer QP at the incumbent's z (dual simplex at 1e-9), exactly feasible, so a
+  valid lower bound on U*. The raw incumbent is recorded (the solver's value U_raw, its weights
+  w_incumbent, the exact objective U_incumbent at them, and the independent checker's verdict on
+  them). Flags (incumbent_flags): U_incumbent > V + 1e-9·|V| (the incumbent violates rows within
+  solver tolerance) and V > B + 1e-9·|V|. If the polish fails, V and w are nan and v_source is
+  "polish_failed": the case is recorded and counted as excluded. B is the solver's final bound;
+  the root bound is recorded too.
+- Duals. relaxation_duals() solves the z ∈ [0, 1] relaxation of both formulations: big-M by
+  Gurobi dual simplex (a QP); perspective by Clarabel (src/opt/relaxation.py, an SOCP), with
+  Gurobi's barrier on the same relaxation kept only as a value cross-check (U_gurobi_barrier).
+  A failed relaxation is recorded with its status and no duals, never raised; Clarabel's status
+  and residuals are recorded for every solve, AlmostSolved flagged (almost_solved).
+  fixed_integer_duals(z) re-solves the convex problem at fixed z. Shadow prices dU*/db use
+  src.opt.miqp.shadow_price (sign established by the kept tests), divided by s_obj.
 - Effort. Work (deterministic) and Runtime are recorded; work_limit sets Gurobi's WorkLimit.
 """
 from __future__ import annotations
@@ -30,8 +32,10 @@ from src.opt.continuous import Mandate
 from src.opt.gurobi_env import DEFAULT_SEED, DEFAULT_THREADS
 from src.opt.feasibility import pmi_violations
 from src.opt.miqp import MIQPModel, shadow_price
+from src.opt.relaxation import perspective_relaxation
 
 FORMULATIONS = ("bigm", "perspective")
+FLAG_RTOL = 1e-9                     # DESIGN §6 incumbent flags: slack 1e-9·|V|
 
 
 def choose_s_obj(U_abs: float) -> float:
@@ -44,6 +48,16 @@ def choose_s_obj(U_abs: float) -> float:
     if U_abs * s < 1.0:              # guard against log10 rounding at exact powers of ten
         s *= 10.0
     return s
+
+
+def incumbent_flags(U_incumbent: float, V: float, B: float,
+                    rtol: float = FLAG_RTOL) -> tuple[bool, bool]:
+    """(exact objective at the incumbent's weights > V + rtol·|V|, V > B + rtol·|V|); both False
+    when V is undefined (the polish failed)."""
+    if not np.isfinite(V):
+        return False, False
+    slack = rtol * abs(V)
+    return bool(U_incumbent > V + slack), bool(V > B + slack)
 
 
 def exact_objective(w, alpha, lam: float, B, F, d, mandate: Mandate) -> float:
@@ -79,8 +93,10 @@ class PMIResult:
     s_obj: float
     formulation: str
     settings: dict = field(default_factory=dict)
-    v_source: str = "polished"   # "polished" or "incumbent" (polish failed)
+    v_source: str = "polished"   # "polished", "polish_failed" (V = nan) or "none" (no incumbent)
     incumbent_violations: str = "{}"   # JSON: the checker on the raw incumbent weights
+    flag_incumbent_exceeds_polished: bool = False
+    flag_polished_exceeds_bound: bool = False
 
     @property
     def final_gap(self) -> float:
@@ -128,6 +144,22 @@ class PMI:
     def style_names(self):
         return self.model.style_names
 
+    def bound_of(self, key: str) -> float:
+        """The bound b behind a shadow-price key: dollar, beta, gross, cardinality (K), style and
+        sector (the common bound; nan if not common), style:<factor>, sector:<j>."""
+        fam, _, tail = key.partition(":")
+        if fam == "cardinality":
+            return float(self.K) if self.K is not None else float("nan")
+        b = self.bound(fam)
+        if tail:
+            i = (self.style_names or [str(k) for k in self.model.style_idx]).index(tail) \
+                if fam == "style" else int(tail)
+            return float(np.asarray(b)[i])
+        if np.ndim(b) == 0:
+            return float(b)
+        b = np.asarray(b, float)
+        return float(b[0]) if np.all(b == b[0]) else float("nan")
+
     # ----- solves -----
     def solve(self, mip_gap: float, work_limit: float | None = None,
               time_limit: float = float("inf"), presolve: int = -1) -> PMIResult:
@@ -147,19 +179,22 @@ class PMI:
             except RuntimeError as err:
                 pstat = str(err)
         use_pol = has and bool(np.isfinite(U_pol))
-        V = (U_pol if use_pol else U_inc) if has else np.nan
-        w = w_pol if use_pol else r.w
+        V = U_pol if use_pol else np.nan
+        w = w_pol if use_pol else np.full(M.N, np.nan)
+        B = r.bound / s
+        f_inc, f_bnd = incumbent_flags(U_inc, V, B)
         inc_viol = json.dumps(pmi_violations(r.w, r.zp, r.zm, self.B, self.S, self.mandate,
                                              self.K, self.ell, self.adv, mkt=M.mkt),
                               sort_keys=True) if has else "no incumbent"
-        return PMIResult(V=V, B=r.bound / s, w=w, zp=r.zp, zm=r.zm, status_name=r.status_name,
+        return PMIResult(V=V, B=B, w=w, zp=r.zp, zm=r.zm, status_name=r.status_name,
                          reached_gap=r.reached_gap, runtime=r.runtime, work=r.work,
                          nodes=r.nodes, root_bound=r.root_bound / s, U_incumbent=U_inc,
                          w_incumbent=r.w, U_polished=U_pol, polish_status=pstat,
                          U_raw=r.U / s, U_raw_scaled=r.U, B_scaled=r.bound, s_obj=s,
                          formulation=self.formulation, settings=settings,
-                         v_source="polished" if use_pol else ("incumbent" if has else "none"),
-                         incumbent_violations=inc_viol)
+                         v_source="polished" if use_pol else ("polish_failed" if has else "none"),
+                         incumbent_violations=inc_viol, flag_incumbent_exceeds_polished=f_inc,
+                         flag_polished_exceeds_bound=f_bnd)
 
     def _shadows(self, res) -> dict[str, float]:
         """Raw (scaled) dU*/db per key: dollar, beta, gross, style and style:<f>, sector and
@@ -183,17 +218,30 @@ class PMI:
         return {"ok": True, "status": status, "U": res.U / self.s_obj, "work": res.work,
                 "raw_shadow": raw, "shadow": {k: v / self.s_obj for k, v in raw.items()}}
 
+    @staticmethod
+    def _failed(status: str) -> dict:
+        return {"ok": False, "status": status, "U": np.nan, "work": np.nan,
+                "raw_shadow": {}, "shadow": {}}
+
     def fixed_integer_duals(self, zp, zm) -> dict:
         return self._dual_record(self.model.fixed_integer(zp, zm))
 
+    def _model(self, form: str) -> MIQPModel:
+        return self.model if form == self.formulation else self._make(form, self.model.bounds)
+
     def relaxation_duals(self) -> dict[str, dict]:
-        """Both relaxations at the current bounds; failures are recorded, not raised."""
-        out = {}
-        for form in FORMULATIONS:
-            M = self.model if form == self.formulation else self._make(form, self.model.bounds)
-            try:
-                out[form] = self._dual_record(M.relax())
-            except RuntimeError as err:
-                out[form] = {"ok": False, "status": str(err), "U": np.nan, "work": np.nan,
-                             "raw_shadow": {}, "shadow": {}}
-        return out
+        """Both relaxations at the current bounds (module docstring); failures are recorded."""
+        try:
+            bigm = {**self._dual_record(self._model("bigm").relax()), "solver": "gurobi"}
+        except RuntimeError as err:
+            bigm = {**self._failed(str(err)), "solver": "gurobi"}
+        P = self._model("perspective")
+        cl = perspective_relaxation(P)
+        persp = self._dual_record(cl.result, cl.status) if cl.ok else self._failed(cl.status)
+        persp.update(solver="clarabel", clarabel=cl.info,
+                     almost_solved=cl.info.get("clarabel_status") == "AlmostSolved")
+        try:
+            persp.update(U_gurobi_barrier=P.relax().U / self.s_obj, gurobi_barrier_status="OPTIMAL")
+        except RuntimeError as err:
+            persp.update(U_gurobi_barrier=np.nan, gurobi_barrier_status=str(err))
+        return {"bigm": bigm, "perspective": persp}

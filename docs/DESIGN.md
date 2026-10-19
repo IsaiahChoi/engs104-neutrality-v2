@@ -102,14 +102,17 @@ P-RB is a convex QCQP, SOC-representable. When the risk row binds it has a uniqu
 ## 6. Numerics and solver policy
 
 - **P-RB, primary path: the kept QP at a root-found λ.** Solve the kept mean-variance QP (`src/opt/continuous.py`: Gurobi dual simplex, FeasibilityTol = OptimalityTol = 1e-9, which gives exact active sets and duals and is validated by the kept tests) with λ chosen by a root-finder so that ex-ante volatility equals 3%/yr to relative 1e-10 (Brent on log λ, bracket warm-started from the neighboring sweep point). By the KKT equivalence (A1), that solution and its duals are P-RB's, and μ_risk = λ*. If λ_min = 1e-6 still gives volatility below 3%, the risk budget is slack: solve at λ_min and record risk_binding = false.
-- **P-RB, cross-check:** the explicit QCQP in Clarabel (tolerances 1e-12) with the risk row divided by σ_m² (right-hand side 1; unscaled it would be ≈ 7.5e-5).
+- **P-RB, cross-check:** the explicit P-RB in Clarabel (tolerances 1e-12), with the risk row written as the second-order cone ‖(L_Fᵀy, √d∘w)‖₂/σ_m ≤ 1. This is the same set as yᵀFy + Σdᵢwᵢ² ≤ σ_m², normalized to right-hand side 1 (unnormalized it would be ≈ 7.5e-5). Its multiplier ν gives μ_risk = ν/(2σ_m²), divided by any objective scale. Clarabel's AlmostSolved status is accepted and recorded; accuracy is judged by agreement with the primary path (K4, P1, K16).
 - **P-MI (gurobipy, kept `src/opt/miqp.py`).**
   - The objective is multiplied by s_obj, a power of 10 chosen in pilot P1 so that |U*| at base lies in [1, 100]. The v1 diagnosis (`reference/v1/results/scratch/q8_numerics_diag.py`) showed ×1000 restored formulation agreement.
-  - Incumbent values use the kept polish: V = max(incumbent, the fixed-integer re-solve at the incumbent's z).
+  - V is the polished value alone: the fixed-integer QP re-solved exactly (dual simplex) at the incumbent's z. It is exactly feasible, so V is a valid lower bound. The raw incumbent is recorded: the solver's value, its weights, and the exact objective at those weights. Two flags are recorded and counted: the exact objective at the incumbent's weights exceeds V by more than 1e-9·|V|; V exceeds the final bound B by more than 1e-9·|V|. If the polish fails, V is undefined; the case is recorded with its status and counted as excluded, never dropped silently.
   - All reporting is in original units; scaled raw values are stored alongside; metadata records s_obj.
 - **Relaxation duals in P-MI come in two kinds.**
   - The big-M relaxation is a QP, solved by dual simplex.
-  - The perspective relaxation is a QCP, solved by barrier with QCPDual on and BarQCPConvTol 1e-9 (kept code). v1 saw occasional SUBOPTIMAL statuses here: record them and count them, never crash on them.
+  - The perspective relaxation (z ∈ [0,1], rotated cones) is an SOCP. Its value and duals come from Clarabel (tolerances 1e-12), built from the same instance data and bounds as the Gurobi model. Clarabel solves an equivalent rescaled problem: weights divided by the largest position bound, each cone by its name's bound. Values and duals are mapped back to original units, and the factors are recorded.
+  - Gurobi's barrier on the same relaxation (QCPDual on, BarQCPConvTol 1e-9) gave duals accurate only to about 1e-3 and dependent on s_obj (CHECK CORE round 1). It is kept only as a cross-check of the relaxation value: 1e-6 relative at the chosen s_obj.
+  - Clarabel's status is recorded. AlmostSolved is accepted and counted; any other status records the relaxation as failed, with no duals, and is never fatal.
+  - Gurobi does the rest: branch-and-bound, N1 root bounds, the big-M relaxation (dual simplex), and the fixed-integer QP.
 - **Settings.**
   - I1 and I2: MIPGap 1e-6, Threads 1, Seed 0, WorkLimit 2·W\*.
   - N1: MIPGap 1e-4, Threads 1, Seed 0, WorkLimit W\*, default tolerances and presolve; robustness with presolve off at N = 250.
@@ -179,7 +182,7 @@ D12 = {2008-10, 2009-03, 2011-08, 2013-06, 2015-08, 2017-12, 2018-12, 2020-03, 2
 | P3 | Continuous support size S | Names with \|wᵢ\| > 1e-6 in P-RB with u = 6%, for every I1/N1 (date, N); gives the K grids |
 | P4 | Formulation agreement | 8 instances (2 dates × 2 K × {base, tight}, N = 250), MIPGap 1e-4, chosen s_obj. Pass if \|V_bigM − V_persp\| ≤ the larger of the two absolute certified gaps; any failure stops S2 |
 | P5 | Work calibration | Confirm the Work attribute and WorkLimit parameter in Gurobi 13; measure Work per second on the P4 instances; W* = the Work equivalent of 300 s, rounded to 2 significant figures |
-| P6 | I1 constraint selection | Candidates: the 4 families with the largest median elasticity in C1 at the I1 dates, plus the Mom bound at 0.025. Compute certified central differences at f = 0.5 on 2017-12. Keep candidates with L > 0, at most 4, including a factor bound if any factor bound binds |
+| P6 | I1 constraint selection | Candidates: the 4 families with the largest median elasticity in C1 at the I1 dates, excluding position (u) and liquidity (θ), plus the Mom bound at 0.025. In P-MI, u and θ set the big-M constants and the perspective bounds, so perturbing them changes the formulation; their costs are reported in Q1 only. Compute certified central differences at f = 0.5 on 2017-12. Keep candidates with L > 0, at most 4, including a factor bound if any factor bound binds |
 | P7 | Run-time projection for S3 | Expected Work and wall time per experiment at 4 workers |
 
 The pilot proposes `experiments/configs/integer.yaml` and `experiments/configs/numerics.yaml` from these rules. Isaiah confirms or edits them at GATE DESIGN, after the instructor discussion.
@@ -235,7 +238,7 @@ Cut order if over 8 pages: Fig. 3; C3; Table III to text; Fig. 5 to one panel; r
 ### 11.3 Content requirements by section
 
 - **II.** Define for an optimization reader, on first use: alpha, factor exposure, beta, dollar/beta/sector neutrality, gross leverage, ADV and the liquidity cap, borrow and trading costs, information ratio, transfer coefficient. State the problem classes (§3.5). Present λ* as the Lagrange multiplier of the risk budget.
-- **III.** Which algorithm solved what: the dual simplex QP at a root-found λ for P-RB (A1 makes it exact), Clarabel's primal–dual interior-point method for the QCQP cross-check, Gurobi branch-and-bound for P-MI (with barrier for the perspective relaxations). Then A1–A9, compactly, and the validation tests with negative controls.
+- **III.** Which algorithm solved what: the dual simplex QP at a root-found λ for P-RB (A1 makes it exact), Clarabel's primal–dual interior-point method for the P-RB cross-check and the perspective relaxation's value and duals, Gurobi branch-and-bound for P-MI (with barrier for the perspective relaxations). Then A1–A9, compactly, and the validation tests with negative controls.
 - **IV.** Each subsection opens with setup, instances, and evaluation criterion; every statistic carries its n and instance set; single-instance figures say so.
 
 ### 11.4 Discussion coverage list

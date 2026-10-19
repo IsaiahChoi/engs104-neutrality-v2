@@ -13,7 +13,7 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [x] 4. v2 foundations with tests first: P-RB root-found QP + Clarabel cross-check; λ*; P-MI scaling, V, both relaxation duals (failures recorded); decomposition, φ, normalization; elasticities; closed-form predictor; certified intervals; Work/WorkLimit (confirmed); feasibility checker for P-RB and P-MI; runners refuse a dirty tree (K4–K13)
 - [x] 5. tools/spec_check.py; scaffolds proposal/proposal.tex, report/main.tex, report/refs.bib; src/figures/make_all.py → report/numbers.tex
 - [x] 6. This PLAN; python-reviewer review saved to results/checks/code_review_S1_<UTC>.md; clear bugs fixed, the rest listed in PROGRESS
-- [ ] 7. **CHECK CORE** (K1–K13) by the result-checker — round 1 FAIL (K8, K9; results/checks/CORE_20261019T010452Z.md); stopped on a CHECKS–DESIGN conflict, awaiting Isaiah (PROGRESS Decisions 10–12)
+- [ ] 7. **CHECK CORE** (K1–K13) by the result-checker — round 1 FAIL (K8, K9; results/checks/CORE_20261019T010452Z.md). Isaiah's decisions applied (DESIGN §6/§8/§11.3 edits; Clarabel perspective relaxation; V = polished; K8 on fixed real instances); round 2 pending (PROGRESS 2026-10-19, Decisions 13–14)
 - [ ] 8. S1 entry in PROGRESS; commit; continue with S2 if CHECK CORE is PASS
 
 ## S2 — Design pilot and continuous experiments (Claude Code, Sun 10/18 night, inside S1)
