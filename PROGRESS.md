@@ -215,3 +215,4 @@ Isaiah asked for this to be recorded as report material. **Every number below co
   - K11: 16 solutions, 0 violations.
   - K12: 3 points checked, ≤ 3.9e-7.
   - K13: ≤ 1.5e-15.
+- **Isaiah, Decision 13** (answered in-session through the question tool, 2026-10-19; recorded by Claude Code): "P-MI duals only". K8's dual clause covers the P-MI estimators (fixed-integer, big-M relaxation, perspective relaxation by Clarabel). P-RB is gated on w (1e-6 relative L1) and by K4/K16. The P-RB per-element dual-scaling floor (1.6–2.2e-6) stays a reported A9 finding. The CHECKS K8 text is unchanged at 90d960b; Isaiah may clarify its wording.
