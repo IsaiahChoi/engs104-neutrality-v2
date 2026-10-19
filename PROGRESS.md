@@ -201,3 +201,17 @@ Isaiah asked for this to be recorded as report material. **Every number below co
 ### Decisions needed (CHECK CORE round 2)
 13. **K8 reading for the P-RB cross-check duals.** K8's dual clause ("duals (including the perspective-relaxation duals, computed with Clarabel) scale by the factor to 1e-6 relative") follows the P-MI clause. The round-1 checker also applied it to Clarabel's P-RB shadow prices. Measured: per-sector P-RB duals 1.6–2.2e-6 (miss); family totals ≤ 2.7e-7 (pass). Does K8's dual criterion cover the P-RB cross-check's per-element duals? If yes, K8 fails on them with the DESIGN §6 method. The P-RB primary path's duals are exact (dual simplex), and the cross-check's job (K4, K16, P1) is agreement on w, A* and λ*.
 14. **K = round(f·S):** implemented as round half up. Python's round is banker's rounding, and DESIGN doesn't say which.
+- **CORE evidence run (round 2):** results/core/run_20261019T022653Z at commit 6a8e8c1 (clean). RUN_LOG row "ok", DONE present, exit 0; log at logs/core_20261019T022651Z.log. It reproduces the dry run exactly. The round-1 run (results/core/run_20261019T003108Z) is marked superseded (SUPERSEDED marker, RUN_LOG status). The runner's own summary (the result-checker recomputes):
+  - K4: ‖Δw‖₁/‖w‖₁ ≤ 4.4e-7; A* 1.2e-10; λ* 3.8e-8; vol 1.4e-11. AlmostSolved: 2 of 3 Clarabel solves.
+  - K8, gated P-MI (2017-12, 2020-03; top 30; S = 18, 19; K = 9, 10; s_obj = 1e4): z equal, max |Δw| ≤ 5.6e-17. Worst dual-scaling ratio (|Δμ| / 1e-6·max(|μ|, threshold); ≤ 1 passes):
+    - fixed-integer 6.0e-3;
+    - big-M 6.8e-2;
+    - perspective (Clarabel) 0.14 and 0.82.
+  - K8, Clarabel vs barrier value: ≤ 2.8e-9. Flags at 2020-03, s_obj = 1e4: both raised (finding above).
+  - K8, P-RB: w L1 1.4e-7 and 1.9e-7. Dual ratios: family 0.15 and 0.27; all elements 2.24 and 1.56 (Decision 13). AlmostSolved: 2 rows.
+  - K8, synthetic diagnostic: perspective ratio 2.42 (the floor); simplex ratios ≤ 2e-2.
+  - K9: value ≤ 6.9e-18 on 82 points (both formulations, two toys). Over 74 estimator points: perspective ≤ 5.0e-7 relative, big-M and fixed-integer ≤ 5.6e-15. AlmostSolved: 29 of 74.
+  - K10 (toy): 4 of 4 intervals contain the secant.
+  - K11: 16 solutions, 0 violations.
+  - K12: 3 points checked, ≤ 3.9e-7.
+  - K13: ≤ 1.5e-15.

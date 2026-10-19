@@ -1,0 +1,96 @@
+{
+ "name": "core",
+ "created_utc": "2026-10-19T02:26:53Z",
+ "git_commit": "6a8e8c1b3c5fada6f93cbf8d41a86e62bd0997c6",
+ "config_path": "experiments/configs/core.yaml",
+ "config_sha256": "adb94fb91ec25b73575e04f16142b02543c2833ae4b6519e81c73839cf31ef09",
+ "config": {
+  "mandate_config": "experiments/configs/base_mandate.yaml",
+  "k4_months": [
+   "2008-10",
+   "2017-12",
+   "2020-03"
+  ],
+  "k5_months": [
+   "2008-10",
+   "2017-12",
+   "2020-03"
+  ],
+  "k6_months": [
+   "2008-10",
+   "2017-12",
+   "2020-03"
+  ],
+  "k7_months": [
+   "2017-12",
+   "2020-03"
+  ],
+  "k7_rel_step": 0.01,
+  "k8_months": [
+   "2017-12",
+   "2020-03"
+  ],
+  "k8_pmi_months": [
+   "2017-12",
+   "2020-03"
+  ],
+  "k8_pmi_N": 30,
+  "k8_pmi_f": 0.5,
+  "k8_pmi_seed": 63,
+  "k9_toys": {
+   "T1": {
+    "a": 1.0,
+    "lam": 1.0,
+    "d": 10.0,
+    "ell": 0.02,
+    "u": 0.08,
+    "b_max": 0.1
+   },
+   "T2": {
+    "a": 0.004,
+    "lam": 10.0,
+    "d": 0.02,
+    "ell": 0.0025,
+    "u": 0.015,
+    "b_max": 0.02
+   }
+  },
+  "k10_toy_points": [
+   0.01,
+   0.02,
+   0.03,
+   0.06
+  ],
+  "k10_toy_delta": 0.005,
+  "k12_month": "2020-03",
+  "k12_rel_step": 0.001,
+  "k13_months": [
+   "2017-12",
+   "2020-03"
+  ],
+  "k13_N": 100
+ },
+ "finish_status": "ok",
+ "args": {},
+ "data": {
+  "panel_sha256_manifest": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "panel_sha256_build_meta": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "files": {
+   "data/processed/panel.parquet": "64bfa137742934c24328a9fabe7d54c3a33ffc827d3a80c9af9db0790f95081e",
+   "data/processed/factors_daily.parquet": "4c295060b1d7d9160fbccbe264b22507e716fde80815d73f025c2fb5134399cc",
+   "data/processed/risk/w252_loadings.parquet": "eab160341656cf72bec51fb4dd2ff7d0edb95ef774c3ec94bdabb617322eaceb",
+   "data/processed/risk/w252_factor_cov.parquet": "6202357042b1e20205d2361ae864b8e7401b33a84b5af571b05a16cfd4da1293"
+  }
+ },
+ "provenance": {
+  "python": "3.12.4",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.0.6",
+  "cvxpy": "1.9.3",
+  "clarabel": "0.11.1",
+  "gurobipy": "13.0.3"
+ }
+}
