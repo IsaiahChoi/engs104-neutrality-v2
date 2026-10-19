@@ -7,7 +7,7 @@ mandate_config: experiments/configs/base_mandate.yaml
 # √(α'Σ⁻¹α)/(2σ_m) (C1), stepping ×e^0.5, doubling the step; λ_min = 1e-6 (slack budget).
 p_rb: {target_annual_vol: 0.03, root_rtol: 1.0e-10, lambda_min: 1.0e-6,
        bracket: "warm start at the neighbouring point's λ*, else the unconstrained multiplier"}
-s_obj: null                     # P-MI objective scale (DESIGN §6): set from pilot P1 before C1
+s_obj: 10000.0                  # P-MI objective scale (DESIGN §6), pilot P1: results/pilot/run_20261019T191206Z
 d12: ["2008-10", "2009-03", "2011-08", "2013-06", "2015-08", "2017-12", "2018-12", "2020-03",
       "2020-11", "2022-06", "2023-03", "2025-04"]
 envelope_rel_step: 0.01         # CHECKS K15: δ = 1% of the bound

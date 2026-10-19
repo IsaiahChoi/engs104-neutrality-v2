@@ -1,0 +1,121 @@
+{
+ "name": "pilot",
+ "created_utc": "2026-10-19T19:12:06Z",
+ "git_commit": "00eff1c11ad55d41b9c47a262803e651f0d31f7a",
+ "config_path": "experiments/configs/pilot.yaml",
+ "config_sha256": "9b1ef3ef4b88f04eb446d66f64d9eea88ef3a3efb7228de17d48e7cceda2fb08",
+ "config": {
+  "mandate_config": "experiments/configs/base_mandate.yaml",
+  "d12": [
+   "2008-10",
+   "2009-03",
+   "2011-08",
+   "2013-06",
+   "2015-08",
+   "2017-12",
+   "2018-12",
+   "2020-03",
+   "2020-11",
+   "2022-06",
+   "2023-03",
+   "2025-04"
+  ],
+  "p1_tol": {
+   "A_rel": 1e-06,
+   "lam_rel": 1e-05,
+   "dual_rel": 0.0001
+  },
+  "s_obj_window": [
+   1.0,
+   100.0
+  ],
+  "i1": {
+   "dates": [
+    "2009-03",
+    "2017-12",
+    "2020-03"
+   ],
+   "N": 250,
+   "f": [
+    0.25,
+    0.5,
+    0.75
+   ]
+  },
+  "n1": {
+   "dates": [
+    "2017-12",
+    "2020-03"
+   ],
+   "N": [
+    100,
+    250,
+    "full"
+   ],
+   "f": [
+    0.25,
+    0.5
+   ],
+   "tight": {
+    "style": 0.025,
+    "beta": 0.0125
+   }
+  },
+  "p4": {
+   "dates": [
+    "2017-12",
+    "2020-03"
+   ],
+   "N": 250,
+   "f": [
+    0.25,
+    0.5
+   ],
+   "tightness": [
+    "base",
+    "tight"
+   ],
+   "mip_gap": 0.0001,
+   "time_limit": 300.0
+  },
+  "p5": {
+   "reference_seconds": 300.0,
+   "probe_work_limit": 0.001
+  },
+  "p6": {
+   "date": "2017-12",
+   "N": 250,
+   "f": 0.5,
+   "n_families": 4,
+   "mom_bound": 0.025,
+   "rel_delta": 0.1,
+   "mip_gap": 1e-06,
+   "work_limit_factor": 2.0,
+   "max_keep": 4
+  },
+  "workers": 4
+ },
+ "finish_status": "pilot",
+ "args": {},
+ "data": {
+  "panel_sha256_manifest": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "panel_sha256_build_meta": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "files": {
+   "data/processed/panel.parquet": "64bfa137742934c24328a9fabe7d54c3a33ffc827d3a80c9af9db0790f95081e",
+   "data/processed/factors_daily.parquet": "4c295060b1d7d9160fbccbe264b22507e716fde80815d73f025c2fb5134399cc",
+   "data/processed/risk/w252_loadings.parquet": "eab160341656cf72bec51fb4dd2ff7d0edb95ef774c3ec94bdabb617322eaceb",
+   "data/processed/risk/w252_factor_cov.parquet": "6202357042b1e20205d2361ae864b8e7401b33a84b5af571b05a16cfd4da1293"
+  }
+ },
+ "provenance": {
+  "python": "3.12.4",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.0.6",
+  "cvxpy": "1.9.3",
+  "clarabel": "0.11.1",
+  "gurobipy": "13.0.3"
+ }
+}

@@ -591,3 +591,35 @@ Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). Thes
   - **The risk budget can be slack under α∥.** At 2017-12, base, α∥ holds 20 names, risk_binding = false, solved at λ_min = 1e-6. The Stubbs–Vandenbussche attribution at λ = μ_risk = 1e-6 is then degenerate (total "loss" 1.3e5). C1 records it with the risk_binding flag; P2 lists every exception. Fig. 3 is α_mom only.
 - **Suite:** 256 passed, 2 xfailed (logs/test_s2_pre_pilot_*.log).
 - Next: commit, then `make pilot` in the background.
+
+## 2026-10-19 — S2: pilot P1–P7 done (results/pilot/run_20261019T191206Z at 00eff1c; RUN_LOG "pilot")
+- **Completion** agrees: make exit 0 (suite 256 passed, 2 xfailed), DONE present, RUN_LOG status "pilot". The pilot took 40 s; N = 250 MIQPs solve in 0.5–2 s.
+- **P1 PASS** (12/12 D12 dates): A* ≤ 2.1e-10 relative (tol 1e-6); λ* vs Clarabel's risk dual ≤ 1.6e-7 (tol 1e-5); binding duals ≤ 1.8e-5 (tol 1e-4). Root-finder: 6–9 QP solves, 0.35–0.73 s per point. Clarabel AlmostSolved at 6 of 12 (accepted, DESIGN §6).
+- **s_obj = 1e4.** The P3 proxies scale to 9.1–20.5; every P4 |V|·s_obj lies in [10.1, 13.6].
+- **P2:** 36 solves. The risk budget is slack at 4, all α∥: 2011-08 (vol 2.61%), 2013-06 (2.31%), 2015-08 (2.70%), 2017-12 (2.21%).
+- **P3:** S at (date, N):
+  - 2009-03/250: 188
+  - 2017-12: 100 → 50, 250 → 133, full (466) → 217
+  - 2020-03: 100 → 61, 250 → 158, full (477) → 316
+  - K grids are in configs/integer.yaml and numerics.yaml.
+- **P4 PASS (8/8).** All 16 solves OPTIMAL at MIPGap 1e-4; 0 checker violations at 1e-7 and at 1e-9; 0 flags. |V_bigM − V_persp| is 0 at 5 instances. 2020-03 K40 tight: 8.6e-7 vs allowed 2.0e-6. 2020-03 K79 base: 4.0e-6 vs allowed 4.49e-6 (ratio 0.89, the tightest).
+- **A9 finding for GATE DESIGN (P4 diagnostic, Isaiah's instruction): the perspective MIQP's cones are violated within Gurobi's tolerances by enough to distort its gap.**
+  - At the raw incumbent, λ*·Σ d_i·max(0, w_i²/ζ_i − s_i) runs from 0 to 4.8e-3·|V| (median 1.7e-3) across the 8 perspective solves.
+  - Gurobi measures MIPGap 1e-4 against that inflated raw value. So the perspective's B − V against the exact polished V reaches 3.4e-3·|V| (2020-03), against ≤ 1e-4 for big-M.
+  - At 2020-03 the perspective stops on a support whose exact V is 0.08–0.3% below big-M's. P4 still passes, because the inflated perspective bound sets the allowance.
+  - Mechanism, as in round-3 Finding C: FeasibilityTol 1e-6 is absolute, and s ~ w² is ~1e-6 to 4e-3 at these weights.
+  - Relevant to N1 (DESIGN: default tolerances) and K22; a candidate topic for Q3/A9.
+- **P5:** Gurobi 13.0.3; Work recorded on every solve. WorkLimit works: a P4 instance at limit 0.001 stopped with WORK_LIMIT. Work/s median 1.124 (range 1.04–1.31; 4 concurrent solves). **W* = 340.**
+- **P6:**
+  - Candidates by median α_mom elasticity at the I1 dates (P2): sector 0.0137, dollar 9.6e-4, then beta and gross. beta and gross are tied at median 0 with every style key, and the tie was broken alphabetically. Position and liquidity, the two largest, are excluded by the rule. The Mom bound at 0.025 is added.
+  - Certified intervals (B_eff) at 2017-12, N = 250, K = 67, MIPGap 1e-6, WorkLimit 680; all 10 solves OPTIMAL:
+    - sector L 1.23e-3 > 0;
+    - Mom@0.025 L 1.77e-3 > 0;
+    - dollar L −2.1e-5;
+    - beta L −3.0e-5;
+    - gross L −1.1e-6.
+  - **Proposed I1 constraints: sector (b = 0.02) and Mom (b = 0.025).** A factor bound (Mom) is included. The tie-break does not matter here: the tied candidates have L ≤ 0.
+- **P7** (Work at the median per solve; wall time at 4 workers; WorkLimit-capped worst case in brackets): I1 57 solves 0.005 h (2.4 h); I2 82 solves 0.007 h (3.5 h); N1 96 solves 0.008 h (2.0 h); N2(a) 16 solves 0.001 h (0.3 h). N1 Work at N = 100 and full is extrapolated from N = 250.
+- **Configs:** continuous.yaml s_obj = 1e4. integer.yaml and numerics.yaml drafted, marked "proposed, pending GATE DESIGN". ECOS is not installed, so N2(b)'s solvers are Gurobi barrier, Clarabel and SCS.
+- **Figures:** src/figures/fig_c.py drafts Figs. 1–3 and the C3 summary ("_preliminary" names), registered in make_all.FIGURES. The palette was validated with the dataviz validator; slots 3–4 have contrast < 3:1, so markers, line styles and hatching carry identity too. Text is 8 pt in these figures, overriding style.py's 7 pt tick and legend sizes, because DESIGN §10 says ≥ 8 pt.
+- Next: commit; `make c1 c2 c3` in the background.

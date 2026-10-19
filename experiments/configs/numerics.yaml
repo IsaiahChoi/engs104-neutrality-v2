@@ -1,0 +1,25 @@
+# PROPOSED, PENDING GATE DESIGN (Isaiah confirms or edits after the instructor discussion).
+# Drafted by S2 from DESIGN §7 (N1, N2) and the pilot: results/pilot/run_20261019T191206Z (00eff1c).
+status: "proposed, pending GATE DESIGN"
+s_obj: 10000.0
+W_star: 340.0
+n1:
+  dates: ["2017-12", "2020-03"]
+  N: [100, 250, "full"]
+  f: [0.25, 0.5]
+  K:                                # P3: K = round(f·S), half up
+    "2017-12": {"100": {S: 50, K: [13, 25]}, "250": {S: 133, K: [33, 67]}, "full": {N: 466, S: 217, K: [54, 109]}}
+    "2020-03": {"100": {S: 61, K: [15, 31]}, "250": {S: 158, K: [40, 79]}, "full": {N: 477, S: 316, K: [79, 158]}}
+  tightness:
+    loose: {style: 0.40, beta: 0.20}
+    base: {style: 0.10, beta: 0.05}
+    tight: {style: 0.025, beta: 0.0125}
+  formulations: [bigm, perspective]
+  settings: {mip_gap: 1.0e-4, threads: 1, seed: 0, work_limit_factor: 1.0, presolve: -1}   # WorkLimit W*
+  presolve_off: {N: 250, presolve: 0}
+n2:
+  miqp: {N: 250, tightness: base, s_obj: [1.0, 10000.0], mip_gap: 1.0e-4, work_limit_factor: 1.0}
+  convex:
+    dates: ["2008-10", "2013-06", "2017-12", "2020-03", "2025-04"]
+    solvers: [GUROBI_BARRIER, CLARABEL, SCS]   # installed conic solvers among Clarabel, SCS, ECOS (ECOS not installed)
+    reference: {solver: CLARABEL, scaled: true, tol: 1.0e-10}
