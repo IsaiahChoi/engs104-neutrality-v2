@@ -105,13 +105,13 @@ P-RB is a convex QCQP, SOC-representable. When the risk row binds it has a uniqu
 - **P-RB, cross-check:** the explicit P-RB in Clarabel (tolerances 1e-12), with the risk row written as the second-order cone ‖(L_Fᵀy, √d∘w)‖₂/σ_m ≤ 1. This is the same set as yᵀFy + Σdᵢwᵢ² ≤ σ_m², normalized to right-hand side 1 (unnormalized it would be ≈ 7.5e-5). Its multiplier ν gives μ_risk = ν/(2σ_m²), divided by any objective scale. Clarabel's AlmostSolved status is accepted and recorded; accuracy is judged by agreement with the primary path (K4, P1, K16).
 - **P-MI (gurobipy, kept `src/opt/miqp.py`).**
   - The objective is multiplied by s_obj, a power of 10 chosen in pilot P1 so that |U*| at base lies in [1, 100]. The v1 diagnosis (`reference/v1/results/scratch/q8_numerics_diag.py`) showed ×1000 restored formulation agreement.
-  - V is the polished value alone: the fixed-integer QP re-solved exactly (dual simplex) at the incumbent's z. It is exactly feasible, so V is a valid lower bound. The raw incumbent is recorded: the solver's value, its weights, and the exact objective at those weights. Two flags are recorded and counted: the exact objective at the incumbent's weights exceeds V by more than 1e-9·|V|; V exceeds the final bound B by more than 1e-9·|V|. If the polish fails, V is undefined; the case is recorded with its status and counted as excluded, never dropped silently.
+  - V is the polished value alone: the fixed-integer QP re-solved exactly (dual simplex) at the incumbent's z. It is exactly feasible, so V is a valid lower bound. The raw incumbent is recorded: the solver's value, its weights, and the exact objective at those weights. Gurobi's final bound B is valid only up to its tolerances, so wherever it enters (certified intervals, the gaps of P4 and K22) it is used as B_eff = max(B, V) + 1e-6·|V|. Two flags are recorded and counted, both at B_eff's slack of 1e-6·|V|: the exact objective at the incumbent's weights exceeds V by more than 1e-6·|V|; V exceeds B by more than 1e-6·|V|. The signed discrepancies B − V and (exact objective at the incumbent's weights) − V are recorded for every solve and reported as distributions (A9). If the polish fails, V is undefined; the case is recorded with its status and counted as excluded, never dropped silently.
   - All reporting is in original units; scaled raw values are stored alongside; metadata records s_obj.
 - **Relaxation duals in P-MI come in two kinds.**
   - The big-M relaxation is a QP, solved by dual simplex.
   - The perspective relaxation (z ∈ [0,1], rotated cones) is an SOCP. Its value and duals come from Clarabel (tolerances 1e-12), built from the same instance data and bounds as the Gurobi model. Clarabel solves an equivalent rescaled problem: weights divided by the largest position bound, each cone by its name's bound. Values and duals are mapped back to original units, and the factors are recorded.
   - Gurobi's barrier on the same relaxation (QCPDual on, BarQCPConvTol 1e-9) gave duals accurate only to about 1e-3 and dependent on s_obj (CHECK CORE round 1). It is kept only as a cross-check of the relaxation value: 1e-6 relative at the chosen s_obj.
-  - Clarabel's status is recorded. AlmostSolved is accepted and counted; any other status records the relaxation as failed, with no duals, and is never fatal.
+  - The perspective estimator (a′) is the slope of the relaxation's value function: a central finite difference of Clarabel optimal values at b ± δ_r, with δ_r = 1e-3·b. The forward and backward differences are recorded too; if they differ by more than 1e-4 relative, the case is flagged as a kink and both one-sided slopes are reported. A relaxation counts as failed only if its status is neither Solved nor AlmostSolved, or its relative residuals exceed 1e-8; a failure is recorded with its status and is never fatal. Raw Clarabel duals and statuses are recorded for every solve as diagnostics (A9).
   - Gurobi does the rest: branch-and-bound, N1 root bounds, the big-M relaxation (dual simplex), and the fixed-integer QP.
 - **Settings.**
   - I1 and I2: MIPGap 1e-6, Threads 1, Seed 0, WorkLimit 2·W\*.
@@ -119,7 +119,7 @@ P-RB is a convex QCQP, SOC-representable. When the risk row binds it has a uniqu
   - W\* comes from pilot P5. If Gurobi 13 lacks WorkLimit, fall back to TimeLimit 300 s (600 s for I1 and I2) and run N1 strictly alone.
 - **Recorded per solve:** status, Runtime, Work, nodes, root bound, final bound B, incumbent V, achieved gap, the scale factors, and the worker count.
 - **Parallelism.** Up to 4 workers are allowed everywhere. Effort comparisons use Work, which is deterministic, so results don't depend on concurrency, sleep, or thermal throttling; wall-clock is secondary.
-- **Certified slope interval** (maximization, original units). For a bound b perturbed by ±δ, the interval is [L, H] = [(V₊ − B₋)/(2δ), (B₊ − V₋)/(2δ)], and the point slope is s = (V₊ − V₋)/(2δ). A case is binding iff L > 0. H < 0 is impossible at true optima (the value function is nondecreasing in b) and is a solver-error flag.
+- **Certified slope interval** (maximization, original units). For a bound b perturbed by ±δ, the interval is [L, H] = [(V₊ − B_eff,₋)/(2δ), (B_eff,₊ − V₋)/(2δ)], with B_eff = max(B, V) + 1e-6·|V| at each point (the interval from the raw B is recorded alongside), and the point slope is s = (V₊ − V₋)/(2δ). A case is binding iff L > 0. H < 0 is impossible at true optima (the value function is nondecreasing in b) and is a solver-error flag.
 - **Continuous bindingness.** A constraint binds iff its elasticity e_j ≥ 1e-4.
 
 ## 7. Experiments
@@ -143,20 +143,21 @@ D12 = {2008-10, 2009-03, 2011-08, 2013-06, 2015-08, 2017-12, 2018-12, 2020-03, 2
 **C3 — time series (cheap; in the report only if space allows).** Base mandate; α_mom; all 241 month-ends: A*, φ, and the elasticity of each family.
 
 **I1 — sensitivity under integrality.**
-- Instances: dates {2009-03, 2017-12, 2020-03}; N = 250; K = round(f·S) for f ∈ {0.25, 0.5, 0.75}, where S is the continuous support size from P3; ℓ = 0.25%; u = 6%; base mandate; perspective formulation; λ* per (date, N).
+- Instances: dates {2009-03, 2017-12, 2020-03}; N = 250; K = round(f·S), rounding half up (⌊f·S + ½⌋), at least 1, for f ∈ {0.25, 0.5, 0.75}, where S is the continuous support size from P3; ℓ = 0.25%; u = 6%; base mandate; perspective formulation; λ* per (date, N).
 - Constraints: chosen by pilot P6, at most 4. δ = 10% of the bound, with 5% robustness at 2017-12.
-- Estimators: (a) relaxation duals (z ∈ [0,1]) from both the big-M and the perspective relaxations, since they differ (A7); (b) the fixed-integer dual (z fixed at the incumbent, the convex problem re-solved); (c) the certified central difference.
+- Estimators: (a) relaxation duals (z ∈ [0,1]) from both the big-M and the perspective relaxations, since they differ (A7); perspective slope by central finite differences of Clarabel relaxation values (§6); (b) the fixed-integer dual (z fixed at the incumbent, the convex problem re-solved); (c) the certified central difference, with B_eff (§6).
 - Convex baseline: (d) the same constraint in the continuous problem (ℓ = 0, no K), dual versus slope.
 - Report:
   - each estimator's relative error |μ̂ − s|/|s| over binding cases, with n;
   - whether each μ̂ lies in [L, H];
   - the non-binding count, broken down by which estimators are zero or nonzero;
+  - the count of failed perspective relaxations and flagged kinks; raw-dual errors as a diagnostic;
   - the baseline errors.
 
-**I2 — value functions.** Two instances (2017-12 and 2020-03; N = 250; K = round(0.5·S)), on the I1 constraint with the largest median slope. Sweep the bound over 41 equally spaced points on [0, 2·b_base] for both P-MI and the continuous baseline. At 0.5·b, b, and 1.5·b, record all three estimators. Feeds Fig. 4.
+**I2 — value functions.** Two instances (2017-12 and 2020-03; N = 250; K = round(0.5·S), rounded half up as in I1), on the I1 constraint with the largest median slope. Sweep the bound over 41 equally spaced points on [0, 2·b_base] for both P-MI and the continuous baseline. At 0.5·b, b, and 1.5·b, record all three estimators. Feeds Fig. 4.
 
 **N1 — formulations.**
-- Instances: dates {2017-12, 2020-03}; N ∈ {100, 250, full}; K = round(f·S) for f ∈ {0.25, 0.5}.
+- Instances: dates {2017-12, 2020-03}; N ∈ {100, 250, full}; K = round(f·S), rounded half up as in I1, for f ∈ {0.25, 0.5}.
 - Tightness: loose (styles 0.40, beta 0.20); base (0.10, 0.05); tight (0.025, 0.0125).
 - Both formulations: 72 solves, plus 24 presolve-off solves at N = 250.
 - Report:
@@ -165,7 +166,7 @@ D12 = {2008-10, 2009-03, 2011-08, 2013-06, 2015-08, 2017-12, 2018-12, 2020-03, 2
   - nodes;
   - Work;
   - Runtime (secondary);
-  - agreement between the formulations.
+  - agreement between the formulations: |V_bigM − V_persp| against the larger certified gap B_eff − V (K22).
 - Feeds Fig. 5.
 
 **N2 — numerics.**
@@ -180,9 +181,9 @@ D12 = {2008-10, 2009-03, 2011-08, 2013-06, 2015-08, 2017-12, 2018-12, 2020-03, 2
 | P1 | P-RB path and scaling | At D12, base, α_mom: the root-found QP and the Clarabel QCQP agree on A* within 1e-6 relative, λ* matches Clarabel's risk-row dual within 1e-5, and binding duals agree within 1e-4. Record root-finder iterations and time per point. Choose s_obj for P-MI (§6) |
 | P2 | Risk budget at base, D12, all three alphas | Record the binding flag; list exceptions |
 | P3 | Continuous support size S | Names with \|wᵢ\| > 1e-6 in P-RB with u = 6%, for every I1/N1 (date, N); gives the K grids |
-| P4 | Formulation agreement | 8 instances (2 dates × 2 K × {base, tight}, N = 250), MIPGap 1e-4, chosen s_obj. Pass if \|V_bigM − V_persp\| ≤ the larger of the two absolute certified gaps; any failure stops S2 |
+| P4 | Formulation agreement | 8 instances (2 dates × 2 K × {base, tight}, N = 250), MIPGap 1e-4, chosen s_obj. Pass if \|V_bigM − V_persp\| ≤ the larger of the two certified gaps B_eff − V (§6); any failure stops S2 |
 | P5 | Work calibration | Confirm the Work attribute and WorkLimit parameter in Gurobi 13; measure Work per second on the P4 instances; W* = the Work equivalent of 300 s, rounded to 2 significant figures |
-| P6 | I1 constraint selection | Candidates: the 4 families with the largest median elasticity in C1 at the I1 dates, excluding position (u) and liquidity (θ), plus the Mom bound at 0.025. In P-MI, u and θ set the big-M constants and the perspective bounds, so perturbing them changes the formulation; their costs are reported in Q1 only. Compute certified central differences at f = 0.5 on 2017-12. Keep candidates with L > 0, at most 4, including a factor bound if any factor bound binds |
+| P6 | I1 constraint selection | Candidates: the 4 families with the largest median elasticity in C1 at the I1 dates, excluding position (u) and liquidity (θ), plus the Mom bound at 0.025. In P-MI, u and θ set the big-M constants and the perspective bounds, so perturbing them changes the formulation; their costs are reported in Q1 only. Compute certified central differences at f = 0.5 on 2017-12. Keep candidates with L > 0, with L computed from B_eff (§6), at most 4, including a factor bound if any factor bound binds |
 | P7 | Run-time projection for S3 | Expected Work and wall time per experiment at 4 workers |
 
 The pilot proposes `experiments/configs/integer.yaml` and `experiments/configs/numerics.yaml` from these rules. Isaiah confirms or edits them at GATE DESIGN, after the instructor discussion.

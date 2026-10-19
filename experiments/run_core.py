@@ -5,6 +5,13 @@ in results/core/run_<UTC>/ (weights, duals, λ*, A*, closed forms, finite-differ
 consistency chain, the independent checker's verdict on every solution), with the run's own
 summary of each criterion. The result-checker recomputes from these files and the stored inputs;
 the summary is the runner's claim, not the verdict. No number here is reported.
+
+CHECKS as revised 2026-10-19 (a74fb78): K8 and K9 gate the perspective relaxation's optimal value
+(its slope method is gated by K29c before I1); Clarabel's raw perspective duals, statuses and
+residuals are stored as a diagnostic. K9 runs the fixed toys T1 and T2 and a seeded random family
+(src.opt.toy.random_toys; seed in core.yaml). Every P-MI solve adds a row to pmi_solves with the
+signed discrepancies B − V and U_incumbent − V (DESIGN §6, A9). K10 stores the raw-B and the
+B_eff intervals (DESIGN §6) for the toy and for two small MIQPs.
 """
 from __future__ import annotations
 
@@ -21,7 +28,7 @@ from experiments.sweep import C2_GRIDS, apply_point, build, sweep_date
 from src.alpha.decompose import alignment_share, alpha_set, decompose, sigma_solve
 from src.alpha.momentum import momentum_alpha
 from src.opt.attribution import shadow_prices, transfer_coefficient
-from src.opt.certified import certified_interval
+from src.opt.certified import certified_interval, certified_interval_eff
 from src.opt.closed_form import IDEALIZED, equality_case, idealized_mandate
 from src.opt.continuous import ContinuousProblem, Mandate, load_config
 from src.opt.feasibility import pmi_violations, prb_violations
@@ -29,19 +36,72 @@ from src.opt.integer import PMI, choose_s_obj, exact_objective
 from src.opt.inputs import date_inputs, market_data
 from src.opt.risk_budget import SIGMA_M, solve_qcqp, solve_risk_budget
 from src.opt.sensitivity import BINDING_ELASTICITY, bound_value, elasticities, fd_slope_rb
-from src.opt.toy import Toy
+from src.opt.toy import Toy, random_toys
 from src.risk.factor_model import FACTORS
+from tests.test_opt import random_instance
 
 CONFIG = "experiments/configs/core.yaml"
 OFF = dict(dollar=None, beta=None, style=None, sector=None, gross=None, position=None,
            liquidity_theta=None, borrow_annual=0.0, trade_cost=0.0)
 
 
-def _k9_err(k9: pd.DataFrame, e: str) -> float:
-    """Max |μ̂ − μ|/|μ| over non-kink points (|μ̂|/a where the closed form is 0)."""
+def _rel_err(est: pd.Series, cf: pd.Series, scale: pd.Series) -> pd.Series:
+    """|est − cf|/|cf|, read against scale where the closed form is 0."""
+    return (est - cf).abs() / cf.abs().where(cf != 0, scale)
+
+
+def _k9_err(k9: pd.DataFrame, mu: str, cf: str) -> float:
+    """Max |μ̂ − μ|/|μ| over non-kink points (|μ̂|/a where the closed form is 0); nan if none."""
     r = k9[~k9["kink"]]
-    scale = r["cf_" + e].abs().where(r["cf_" + e] != 0, r["a"])
-    return float(((r["mu_" + e] - r["cf_" + e]).abs() / scale).max())
+    return float(_rel_err(r[mu], r[cf], r["a"]).max()) if len(r) else float("nan")
+
+
+def _k9_summary(k9: pd.DataFrame) -> dict:
+    """The runner's K9 claims on a subset of toys (CHECKS K9, revised 2026-10-19)."""
+    est = k9[~k9["kink"]]
+    raw = _rel_err(est["mu_persp_raw"], est["cf_persp"], est["a"])
+    st = est["clarabel_status"]
+    undefined = k9[k9["V_bigm"].isna() | k9["V_perspective"].isna()]
+    return {
+        "n_toys": int(k9["toy"].nunique()), "n_value_points": len(k9),
+        # V undefined (exact polish infeasible; DESIGN §6): counted and listed, never dropped
+        "n_V_undefined": {f: int(k9[f"V_{f}"].isna().sum()) for f in ("bigm", "perspective")},
+        "V_undefined_points": undefined[["toy", "b", "ell_minus_b", "v_source_bigm",
+                                         "v_source_perspective"]].to_dict("records"),
+        "n_fixed_failed": int((est["fixed_status"] != "OPTIMAL").sum()),
+        "max_abs_value_err_defined": float(max((k9[f"V_{f}"] - k9["U_cf"]).abs().max()
+                                               for f in ("bigm", "perspective"))),
+        "max_rel_err_R_persp": float(_rel_err(k9["R_persp"], k9["R_persp_cf"], k9["value_scale"]).max()),
+        "max_rel_err_R_bigm": float(_rel_err(k9["R_bigm"], k9["R_bigm_cf"], k9["value_scale"]).max()),
+        "n_persp_failed": int((~k9["persp_ok"]).sum()),
+        "clarabel_status_counts": {str(k): int(v) for k, v in k9["clarabel_status"].value_counts().items()},
+        "max_r_prim": float(k9["r_prim"].max()), "max_r_dual": float(k9["r_dual"].max()),
+        "n_estimator_points": len(est),
+        "max_rel_err_bigm": _k9_err(k9, "mu_bigm", "cf_bigm"),
+        "max_rel_err_fixed": _k9_err(k9, "mu_fixed", "cf_fixed"),
+        "diagnostic_persp_raw_dual": {
+            "max_rel_err": float(raw.max()), "n_above_1e-6": int((raw > 1e-6).sum()),
+            "max_rel_err_solved": float(raw[st == "Solved"].max()),
+            "max_rel_err_almost_solved": float(raw[st == "AlmostSolved"].max())}}
+
+
+def _solve_row(out: dict, case: str, r) -> None:
+    """One pmi_solves row per P-MI solve: V, B, the incumbent, and the signed discrepancies B − V
+    and U_incumbent − V in original units and relative to |V| (DESIGN §6, A9)."""
+    rel = (lambda x: x / abs(r.V)) if np.isfinite(r.V) and r.V != 0 else (lambda x: np.nan)
+    out["pmi_solves"].append({
+        "case": case, "formulation": r.formulation, "s_obj": r.s_obj, "status": r.status_name,
+        "v_source": r.v_source, "V": r.V, "B": r.B, "U_incumbent": r.U_incumbent, "U_raw": r.U_raw,
+        "B_minus_V": r.B_minus_V, "incumbent_minus_V": r.incumbent_minus_V,
+        "B_minus_V_rel": rel(r.B_minus_V), "incumbent_minus_V_rel": rel(r.incumbent_minus_V),
+        "flag_incumbent_exceeds_polished": r.flag_incumbent_exceeds_polished,
+        "flag_polished_exceeds_bound": r.flag_polished_exceeds_bound})
+
+
+def _quantiles(x: pd.Series) -> dict:
+    x = x.dropna()
+    q = x.quantile([0.0, 0.01, 0.5, 0.99, 1.0]) if len(x) else pd.Series(dtype=float)
+    return {"n": len(x), **{f"q{int(100 * k)}": float(v) for k, v in q.items()}}
 
 
 def _case(ym):
@@ -87,23 +147,26 @@ def _pmi_scale(case: str, kwargs: dict, out: dict, gated: bool, s_obj: float | N
            "max_abs_dw": float(np.abs(r2.w - r1.w).max()),
            "dw_l1_rel": float(np.abs(r2.w - r1.w).sum() / np.abs(r1.w).sum()),
            "A_rel_diff": abs(r2.V / r1.V - 1), "V_s1": r1.V, "V_s": r2.V,
-           "roundtrip_U_rel": abs(r2.U_raw_scaled / (s * r2.U_raw) - 1),
-           "roundtrip_B_rel": abs(r2.B_scaled / (s * r2.B) - 1),
            "status_raw": r1.status_name, "status_scaled": r2.status_name,
            "flags_s1": f"{r1.flag_incumbent_exceeds_polished},{r1.flag_polished_exceeds_bound}",
            "flags_s": f"{r2.flag_incumbent_exceeds_polished},{r2.flag_polished_exceeds_bound}",
            "persp_status_s1": rl1["perspective"]["status"], "persp_status_s": rl2["perspective"]["status"],
            "persp_almost_solved": int(rl1["perspective"]["almost_solved"]) + int(rl2["perspective"]["almost_solved"]),
-           "persp_U_clarabel_s": rl2["perspective"]["U"],
+           "persp_ok_s1": rl1["perspective"]["ok"], "persp_ok_s": rl2["perspective"]["ok"],
+           "persp_U_s1": rl1["perspective"]["U"], "persp_U_clarabel_s": rl2["perspective"]["U"],
+           "persp_U_rel_diff": abs(rl2["perspective"]["U"] / rl1["perspective"]["U"] - 1),
            "persp_U_gurobi_barrier_s": rl2["perspective"]["U_gurobi_barrier"],
            "persp_U_rel_vs_barrier_s": abs(rl2["perspective"]["U"] / rl2["perspective"]["U_gurobi_barrier"] - 1),
            "_r1": r1, "_r2": r2}
+    _solve_row(out, f"{case} s=1", r1)
+    _solve_row(out, f"{case} s={s:g}", r2)
     for name, (a, b) in est.items():
         ratios = {}
         for k, mu1 in a["shadow"].items():
             bk = M1.bound_of(k)
             ratios[k] = _scale_ratio(mu1, b["shadow"][k], bk, r1.V)
             out["k8_duals"].append({"case": case, "estimator": name, "key": k, "bound": bk,
+                                    "dual_gated": bool(gated and name != "perspective"),
                                     "value_unscaled": r1.V, "mu_unscaled": mu1,
                                     "mu_scaled": b["shadow"][k], "raw_scaled": b["raw_shadow"][k],
                                     "s_obj": s, "ratio": ratios[k]})
@@ -124,7 +187,9 @@ def main() -> int:
         run, meta = open_run("core", CONFIG, status="ok")
         out: dict[str, list] = {k: [] for k in ("k4", "k4_weights", "k4_duals", "k5", "k6",
                                                 "k6_weights", "k7", "k8", "k8_duals", "k8_weights",
-                                                "k9", "k10", "k11", "k12", "k13")}
+                                                "k9", "k9_toys", "k10", "k10_mip", "k11", "k12",
+                                                "k13", "pmi_solves")}
+        extra = []
         feas = out["k11"]
 
         # K4: root-found QP vs Clarabel SOC at base
@@ -227,7 +292,7 @@ def main() -> int:
             out["k8_duals"] += [{"case": f"P-RB {ds}", "estimator": "prb_clarabel", "key": k,
                                  "bound": bound_value(P, k), "value_unscaled": raw.objective,
                                  "mu_unscaled": v, "mu_scaled": sp_sc[k], "s_obj": s,
-                                 "ratio": ratio[k]} for k, v in sp_raw.items()]
+                                 "dual_gated": False, "ratio": ratio[k]} for k, v in sp_raw.items()]
 
         # K8 (P-MI), gated: two real-data instances fixed in advance (core.yaml)
         for ym in cfg["k8_pmi_months"]:
@@ -248,11 +313,11 @@ def main() -> int:
                                inst.ell, inst.adv))})
 
         # K8 (P-MI), diagnostic only: the degenerate synthetic instance (n = 20, u = 20%)
-        from tests.test_opt import random_instance
         B, F, d, S, adv, a = random_instance(n=20, seed=cfg["k8_pmi_seed"])
         mk = Mandate(dollar=0.02, beta=0.05, style=0.10, sector=0.05, gross=2.0, position=0.2,
                      liquidity_theta=None)
         np.savez(run / "k8_pmi_instance.npz", B=B, F=F, d=d, S=S, adv=adv, alpha=a)   # raw inputs
+        extra.append(run / "k8_pmi_instance.npz")
         case = f"P-MI synthetic n=20 seed {cfg['k8_pmi_seed']}"
         rec = _pmi_scale(case, dict(B=B, F=F, d=d, S=S, alpha=a, lam=2.0, mandate=mk, adv=adv,
                                     K=8, ell=0.01, factor_names=FACTORS), out, gated=False,
@@ -263,28 +328,52 @@ def main() -> int:
         feas.append({"source": "k8 P-MI synthetic s=1", "violations": json.dumps(
             pmi_violations(r1.w, r1.zp, r1.zm, B, S, mk, 8, 0.01, adv))})
 
-        # K9: one-asset toys, 41-point grids: value function (both formulations) and the three
-        # dual estimators against the closed forms (A7)
-        for name, tp in cfg["k9_toys"].items():
-            T = Toy(**{k: tp[k] for k in ("a", "lam", "d", "ell", "u")})
+        # K9: one-asset toys (A7) on 41-point grids, the fixed toys T1, T2 and a seeded random
+        # family: the MIQP value function (both formulations); the relaxation values at every
+        # point, kinks included (perspective by Clarabel, big-M by dual simplex); the big-M and
+        # fixed-integer duals off the kinks; Clarabel's raw perspective duals, statuses and
+        # residuals as a diagnostic
+        toys = [(name, "fixed", Toy(**{k: tp[k] for k in ("a", "lam", "d", "ell", "u")}), tp["b_max"])
+                for name, tp in cfg["k9_toys"].items()]
+        toys += [(f"R{i:03d}", "random", T, bm) for i, (T, bm) in
+                 enumerate(random_toys(cfg["k9_random_seed"], cfg["k9_random_n"]))]
+        for name, family, T, b_max in toys:
+            out["k9_toys"].append({"toy": name, "family": family, "a": T.a, "lam": T.lam, "d": T.d,
+                                   "ell": T.ell, "u": T.u, "w_opt": T.w_opt, "b_max": b_max,
+                                   "seed": cfg["k9_random_seed"] if family == "random" else -1})
             kinks = (0.0, T.ell, T.w_opt, T.u)
-            for b in np.linspace(0.0, tp["b_max"], 41):
+            for b in np.linspace(0.0, b_max, 41):
                 kink = min(abs(b - k) for k in kinks) <= 1e-12
-                row = {"toy": name, "a": T.a, "b": float(b), "kink": kink, "U_cf": T.value(b),
-                       "s_obj": choose_s_obj(T.value(T.w_opt))}
+                row = {"toy": name, "family": family, "a": T.a, "b": float(b), "kink": kink,
+                       "U_cf": T.value(b), "value_scale": T.value(T.w_opt),
+                       "s_obj": choose_s_obj(T.value(T.w_opt)),
+                       "R_persp_cf": T.relaxation_value(b, "perspective"),
+                       "R_bigm_cf": T.relaxation_value(b, "bigm")}
+                row["ell_minus_b"] = T.ell - float(b)
                 for form in ("bigm", "perspective"):
-                    row[f"V_{form}"] = _toy_pmi(T, b, form).solve(mip_gap=0.0).V
+                    r = _toy_pmi(T, b, form).solve(mip_gap=0.0)
+                    row[f"V_{form}"], row[f"v_source_{form}"] = r.V, r.v_source
+                    _solve_row(out, f"k9 {name} b={b:.9g}", r)
+                M = _toy_pmi(T, b)
+                rl = M.relaxation_duals()
+                pr, info = rl["perspective"], rl["perspective"]["clarabel"]
+                row.update(R_persp=pr["U"], R_bigm=rl["bigm"]["U"], persp_ok=pr["ok"],
+                           persp_status=pr["status"], clarabel_status=info.get("clarabel_status"),
+                           r_prim=info.get("r_prim"), r_dual=info.get("r_dual"),
+                           gap_rel=info.get("gap_rel"), iterations=info.get("iterations"),
+                           U_gurobi_barrier=pr["U_gurobi_barrier"],
+                           mu_persp_raw=pr["shadow"].get("gross", np.nan))
                 if not kink:
                     cf = T.slopes(b)
-                    M = _toy_pmi(T, b)
-                    rl = M.relaxation_duals()
                     inc = M.solve(mip_gap=0.0)
-                    row.update(mu_bigm=rl["bigm"]["shadow"]["gross"],
-                               mu_persp=rl["perspective"]["shadow"]["gross"],
-                               mu_fixed=M.fixed_integer_duals(inc.zp, inc.zm)["shadow"]["gross"],
-                               cf_bigm=cf["bigm"], cf_persp=cf["perspective"], cf_fixed=cf["fixed"],
-                               persp_status=rl["perspective"]["status"],
-                               clarabel_status=rl["perspective"]["clarabel"]["clarabel_status"])
+                    try:                    # a failed fixed-integer QP is recorded, not fatal
+                        mu_fixed = M.fixed_integer_duals(inc.zp, inc.zm)["shadow"]["gross"]
+                        fixed_status = "OPTIMAL"
+                    except RuntimeError as err:
+                        mu_fixed, fixed_status = np.nan, str(err)
+                    row.update(mu_bigm=rl["bigm"]["shadow"]["gross"], mu_fixed=mu_fixed,
+                               fixed_status=fixed_status, cf_bigm=cf["bigm"],
+                               cf_persp=cf["perspective"], cf_fixed=cf["fixed"])
                 out["k9"].append(row)
 
         # K10 (toy part): certified intervals on T1 against the closed-form secant
@@ -292,11 +381,42 @@ def main() -> int:
         dl = cfg["k10_toy_delta"]
         for b in cfg["k10_toy_points"]:
             sol = {sg: _toy_pmi(T, b + sg * dl).solve(mip_gap=0.0) for sg in (+1, -1)}
+            for sg in (+1, -1):
+                _solve_row(out, f"k10 T1 b={b + sg * dl:.9g}", sol[sg])
             ci = certified_interval(sol[1].V, sol[1].B, sol[-1].V, sol[-1].B, dl)
+            ce = certified_interval_eff(sol[1].V, sol[1].B, sol[-1].V, sol[-1].B, dl)
             out["k10"].append({"toy": "T1", "b": b, "delta": dl, "V_plus": sol[1].V,
                                "B_plus": sol[1].B, "V_minus": sol[-1].V, "B_minus": sol[-1].B,
-                               "L": ci.L, "H": ci.H, "s": ci.s, "exact_secant": T.secant(b, dl),
-                               "solver_error": ci.solver_error})
+                               "L_raw": ci.L, "H_raw": ci.H, "L": ce.L, "H": ce.H, "s": ce.s,
+                               "exact_secant": T.secant(b, dl), "solver_error": ce.solver_error,
+                               "solver_error_raw": ci.solver_error})
+
+        # K10 (MIQP part): two small MIQPs (as tests/test_certified.py), beta bound b0 ± δ, both
+        # formulations, MIPGap 0; raw inputs stored (hashed) for an independent exact solve
+        b0 = 0.01
+        dm = 0.1 * b0
+        for seed in cfg["k10_mip_seeds"]:
+            B_, F_, d_, S_, adv_, a_ = random_instance(n=24, seed=seed)
+            fn = run / f"k10_mip_seed{seed}.npz"
+            np.savez(fn, B=B_, F=F_, d=d_, S=S_, adv=adv_, alpha=a_)
+            extra.append(fn)
+            for form in ("bigm", "perspective"):
+                sol = {}
+                for sg in (+1, -1):
+                    md = Mandate(dollar=0.02, beta=b0 + sg * dm, style=0.05, sector=0.05, gross=2.0,
+                                 position=0.2, liquidity_theta=None)
+                    sol[sg] = PMI(B_, F_, d_, S_, a_, 2.0, md, adv_, K=8, ell=0.01, formulation=form,
+                                  factor_names=FACTORS).solve(mip_gap=0.0)
+                    _solve_row(out, f"k10 seed{seed} {form} beta={b0 + sg * dm:g}", sol[sg])
+                ci = certified_interval(sol[1].V, sol[1].B, sol[-1].V, sol[-1].B, dm)
+                ce = certified_interval_eff(sol[1].V, sol[1].B, sol[-1].V, sol[-1].B, dm)
+                out["k10_mip"].append({"seed": seed, "n": 24, "formulation": form, "key": "beta",
+                                       "b": b0, "delta": dm, "lam": 2.0, "K": 8, "ell": 0.01,
+                                       "V_plus": sol[1].V, "B_plus": sol[1].B, "V_minus": sol[-1].V,
+                                       "B_minus": sol[-1].B, "L_raw": ci.L, "H_raw": ci.H,
+                                       "L": ce.L, "H": ce.H, "s": ce.s,
+                                       "solver_error": ce.solver_error,
+                                       "status_plus": sol[1].status_name, "status_minus": sol[-1].status_name})
 
         # K12: swept caps; recorded shadow prices vs FD at each binding swept point
         di, alpha = _case(cfg["k12_month"])
@@ -326,6 +446,7 @@ def main() -> int:
             for form in ("bigm", "perspective"):
                 r = PMI(B, F, d, S, alpha, rb.lam, md, adv, K=len(idx), ell=0.0, formulation=form,
                         factor_names=FACTORS).solve(mip_gap=0.0)
+                _solve_row(out, f"k13 {di.date:%Y-%m-%d} {form}", r)
                 out["k13"].append({"date": f"{di.date:%Y-%m-%d}", "N": len(idx), "formulation": form,
                                    "lam_star": rb.lam, "risk_binding": rb.risk_binding,
                                    "V_pmi": r.V, "U_mv": mv.objective, "A_rb": rb.A,
@@ -352,15 +473,26 @@ def main() -> int:
                    "max_tc_vs_retained": ((frames["k6"]["tc_num"] / frames["k6"]["retained_num"]) - 1).abs().max()},
             "K7": {"n": len(frames["k7"]), "max_rel_err": frames["k7"]["rel_err"].max()},
             "K8": frames["k8"].to_dict("records"),
-            "K9": {"n_value_points": len(frames["k9"]),
-                   "max_abs_value_err": float(max((frames["k9"][f"V_{f}"] - frames["k9"]["U_cf"]).abs().max()
-                                                  for f in ("bigm", "perspective"))),
-                   **{f"max_rel_err_{e}": float(_k9_err(frames["k9"], e)) for e in ("bigm", "persp", "fixed")},
-                   "n_estimator_points": int((~frames["k9"]["kink"]).sum()),
-                   "n_almost_solved": int((frames["k9"]["clarabel_status"] == "AlmostSolved").sum())},
+            "K9": {"random_seed": cfg["k9_random_seed"],
+                   **{fam: _k9_summary(frames["k9"][frames["k9"]["family"].isin(sel)])
+                      for fam, sel in (("all", ("fixed", "random")), ("fixed", ("fixed",)),
+                                       ("random", ("random",)))}},
             "K10_toy": {"n": len(frames["k10"]),
-                        "all_contain": bool(((frames["k10"]["L"] - 1e-6 <= frames["k10"]["exact_secant"])
-                                             & (frames["k10"]["exact_secant"] <= frames["k10"]["H"] + 1e-6)).all())},
+                        "all_contain_eff": bool(((frames["k10"]["L"] <= frames["k10"]["exact_secant"])
+                                                 & (frames["k10"]["exact_secant"] <= frames["k10"]["H"])).all()),
+                        "all_contain_raw": bool(((frames["k10"]["L_raw"] <= frames["k10"]["exact_secant"])
+                                                 & (frames["k10"]["exact_secant"] <= frames["k10"]["H_raw"])).all()),
+                        "any_solver_error": bool(frames["k10"]["solver_error"].any())},
+            "K10_mip": {"n": len(frames["k10_mip"]),
+                        "any_solver_error": bool(frames["k10_mip"]["solver_error"].any()),
+                        "min_H": float(frames["k10_mip"]["H"].min())},
+            "pmi_solves": {"n": len(frames["pmi_solves"]),
+                           "B_minus_V_rel": _quantiles(frames["pmi_solves"]["B_minus_V_rel"]),
+                           "incumbent_minus_V_rel": _quantiles(frames["pmi_solves"]["incumbent_minus_V_rel"]),
+                           "B_minus_V_abs_where_V0": _quantiles(frames["pmi_solves"].loc[
+                               frames["pmi_solves"]["V"] == 0, "B_minus_V"]),
+                           "n_flag_incumbent": int(frames["pmi_solves"]["flag_incumbent_exceeds_polished"].sum()),
+                           "n_flag_bound": int(frames["pmi_solves"]["flag_polished_exceeds_bound"].sum())},
             "AlmostSolved": {"k4_qcqp": int((frames["k4"]["qcqp_status"] == "optimal_inaccurate").sum()),
                              "k8_prb": int(((frames["k8"]["status_raw"] == "optimal_inaccurate")
                                             | (frames["k8"]["status_scaled"] == "optimal_inaccurate")).sum())},
@@ -374,7 +506,7 @@ def main() -> int:
         }
         (run / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
         finish(run, CONFIG, frames, "core verification: " + "; ".join(
-            f"{k} n={len(v)}" for k, v in frames.items()))
+            f"{k} n={len(v)}" for k, v in frames.items()), extra_files=extra)
         print(json.dumps(summary, indent=1, default=float))
     except Exception as e:
         fail(run, CONFIG, e)

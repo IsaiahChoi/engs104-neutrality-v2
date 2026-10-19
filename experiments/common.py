@@ -244,13 +244,18 @@ def run_meta(run: Path) -> dict:
 
 
 def finish(run: Path, config_path: str, outputs: dict[str, pd.DataFrame], note: str,
-           root: Path = ROOT) -> None:
+           root: Path = ROOT, extra_files=()) -> None:
     """Write each output (temporary file, then rename; outputs are derived from the chunks, so a
-    finish interrupted before DONE may rewrite them), record their sha256, close the RUN_LOG
-    row, then write DONE. If the RUN_LOG row cannot be closed, no DONE is written."""
+    finish interrupted before DONE may rewrite them), record their sha256 together with those of
+    extra_files (other files the runner wrote inside the run directory), close the RUN_LOG row,
+    then write DONE. If the RUN_LOG row cannot be closed, no DONE is written."""
     root = Path(root)
     if (run / "DONE").exists():
         raise FileExistsError(run / "DONE")
+    extra = [Path(f) for f in extra_files]
+    for f in extra:
+        if f.resolve().parent != Path(run).resolve() or not f.is_file():
+            raise ValueError(f"extra output {f} is not a file in the run directory {run}")
     hashes = {}
     for name, df in outputs.items():
         out = run / f"{name}.parquet"
@@ -258,6 +263,7 @@ def finish(run: Path, config_path: str, outputs: dict[str, pd.DataFrame], note: 
         df.to_parquet(tmp, index=False)
         tmp.replace(out)
         hashes[out.name] = file_sha256(out)
+    hashes.update({f.name: file_sha256(f) for f in extra})
     (run / "outputs.json").write_text(json.dumps(hashes, indent=1))
     if not log_end(root, _rel(run, root), run_meta(run).get("finish_status", "ok"), note):
         raise RuntimeError(f"no running RUN_LOG row for {_rel(run, root)}; DONE not written")

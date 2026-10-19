@@ -267,3 +267,97 @@ Isaiah asked for this to be recorded as report material. **Every number below co
     - Related: K29b (INT) checks production perspective duals at 1e-6, and the K8 real-instance margin is already 8.2e-7.
 16. **tests/test_make_all.py regex:** approve restoring a strict balanced-brace check (above).
 17. **To resume:** answer 15 and 16. The next session implements, reruns run_core at a clean commit, and runs CHECK CORE round 3 (the last). S2 follows only on PASS.
+
+## 2026-10-19 — S1, CHECK CORE round 3 (Claude Code, Opus 5.5): DESIGN edits proposed; K8 conflict with Decision 15; stopped before implementing
+- Read Isaiah's 41fc2ce (K8 wording; K9/K29b perspective duals Solved-only at 1e-5; B_eff in K22/K23; rm denied) and his answers to Decisions 15–17 (in-session, 2026-10-19): 15 = option (b), Solved-only, no formulation changes and no new solver settings; 16 = restore a strict balanced-brace check in tests/test_make_all.py; 17 = rm denied, no-delete line in result-checker.md.
+- The DESIGN §6/§7 edits these require were proposed in-session and are not applied. No code changed this round. The tree is clean except for this entry.
+- **Conflict: CHECKS K8 vs Decision 15 (to become DESIGN §6).** Under Solved-only, the perspective relaxation at the chosen s_obj yields no duals on either gated K8 instance.
+  - In the round-2 run (results/core/run_20261019T022653Z/k8.parquet), Clarabel reports Solved at s = 1 and AlmostSolved at s_obj = 1e4, on both 2017-12 and 2020-03 (top 30).
+  - These statuses reproduce bit-exactly (round-2 checker), and round 3 does not change the relaxation build.
+  - K8 requires those duals to scale to 1e-6 relative, so its perspective clause has nothing to compare. Under CHECKS, a check that cannot be evaluated is BLOCKED.
+  - Scratch probe (not evidence):
+    - 2017-12 is Solved only at s ≤ 10; 2020-03 only at s = 1.
+    - In the AlmostSolved cases, r_prim stalls at 3e-12 to 1e-10, against tol_feas 1e-12.
+    - The AlmostSolved duals agree with the s = 1 duals to ≤ 8.9e-7 relative.
+- **Production consequence (scratch probe, not evidence).** N = 250, base mandate, dates 2009-03, 2017-12, 2020-03 × f ∈ {0.25, 0.5, 0.75}:
+  - at s_obj chosen by the DESIGN rule from the relaxation value (a proxy for |U*|, giving 1e3): 9 of 9 relaxations AlmostSolved;
+  - at 10·s_obj: 7 of 9 AlmostSolved;
+  - at s = 1: 8 of 9 Solved.
+  - So Solved-only would leave Q2's perspective estimator (a) missing in nearly every I1 case. K29b would be close to vacuous, and its ">10% AlmostSolved" GATE I flag would be certain to fire.
+- **State:** CHECK CORE rounds used: 2 of 3. S2 not started.
+
+### Decisions needed (CHECK CORE round 3)
+18. **How K8's perspective-dual clause reads under Solved-only (blocks round 3).**
+    - (A) K8 compares the duals Clarabel returns at both scales, whatever the status: for AlmostSolved, the diagnostic duals Decision 15 keeps. Status is recorded. Solved-only governs which duals become estimates, not the scaling check. Round 2 measured 1.4e-7 and 8.2e-7 here, so this passes, with a thin margin.
+    - (B) K8 counts Solved pairs only. On the gated instances at s_obj there are none (0 of 2), so the clause is vacuous and reported as such; the checker needs K8's text to allow this.
+    - Recommendation: (A). It keeps K8 testing scaling invariance (A9) and leaves the Solved-only rule for estimates intact.
+19. **Solved-only in production (for GATE DESIGN, not blocking round 3).** See the probe above. Pilot P1/P4 can measure the AlmostSolved rate on logged instances before I1 is configured.
+20. **Makefile:** add `core` to RUNNERS so the core evidence run goes through make with a log (rule 12). With seeded random toys it takes minutes, not 25 s.
+
+## 2026-10-19 — Isaiah: decisions 18–20 (in-session; recorded by Claude Code)
+- **Decisions 18–19:** Solved-only (Decision 15) is withdrawn, because Clarabel's status flips with scale even at residuals of 1e-10 (Decision 19 probe).
+  - New perspective estimator (a′): the slope of the relaxation's value function, a central finite difference of Clarabel optimal values with δ_r = 1e-3·b.
+  - Forward and backward differences are recorded too. If they differ by more than 1e-4 relative, the kink is flagged and both one-sided slopes are reported.
+  - A relaxation fails only if its status is neither Solved nor AlmostSolved, or its relative residuals exceed 1e-8.
+  - Raw Clarabel duals and statuses are recorded for every solve as diagnostics (A9).
+- **Scope:** the perspective estimator is used only in I1/I2, so CORE no longer gates its slope. CHECKS a74fb78: K8 and K9 check the perspective relaxation's value (1e-9), and the new K29c gates the slope method before I1. Implement and validate the slope at the start of S3; don't touch code S2 is using while S2 runs.
+- **DESIGN edits:** approved as proposed, with three replacements (the §6 status sentence becomes the method above; the I1 (a) addition; the I1 report bullet).
+- **Decision 20:** add `core` to the Makefile runner list.
+- **Test changes:** approved as listed (S1-added tests only, each logged here; T1 and T2 stay at 1e-6).
+- **Order:** CORE items, then `make core`, then CHECK CORE round 3; on PASS, start S2.
+
+## 2026-10-19 — S1, CHECK CORE round 3 (Claude Code, Opus 5.5): implementation before the evidence run
+- **DESIGN edits applied** (the text Isaiah approved; nothing else in DESIGN changed):
+  - §6 incumbent bullet:
+    - B_eff = max(B, V) + 1e-6·|V| wherever B enters (certified intervals, the P4 and K22 gaps);
+    - both flags at 1e-6·|V|;
+    - the signed B − V and incumbent − V recorded per solve and reported as distributions (A9).
+  - §6 perspective-relaxation status: Isaiah's finite-difference method (a′), the failure rule, raw duals as diagnostics.
+  - §6 certified interval with B_eff (raw-B interval recorded alongside).
+  - §7: K = round(f·S) rounded half up, at least 1 (I1, I2, N1); I1 (a) and (c) additions; I1 report bullet; N1 agreement against B_eff − V.
+  - §8: P4 gap B_eff − V; P6 L from B_eff.
+  - **Not applied:** my proposed P-RB parenthetical ("the perspective relaxation is Solved-only"). It became false when Solved-only was withdrawn.
+  - Left unchanged: §6 "Its value and duals come from Clarabel" (still true; the duals are now diagnostics).
+- **Makefile** (present at v2-start; not kept core per DESIGN §12): `core` added to RUNNERS (Decision 20). `make core` runs `make test` first, then experiments.run_core with a timestamped log.
+- **Clarabel residuals** (DESIGN §6 failure rule), confirmed from the Clarabel.rs v0.11.1 source (src/solver/implementations/default/info.rs; installed clarabel 0.11.1):
+  - r_prim = ‖Ax + s − b‖/max(1, ‖b‖ + ‖x‖ + ‖s‖) and r_dual = ‖Px + Aᵀz + q‖/max(1, ‖q‖ + ‖x‖ + ‖z‖);
+  - Solved and AlmostSolved apply the same tests at full and at reduced tolerances.
+  - The max(1, ·) makes them absolute when the norms are small.
+  - The docs-lookup agent had no documentation tools in this environment, so I read the source directly (clarabel.org settings page plus the GitHub source).
+- **Code (v2 files only; no file present at v2-start changed except DESIGN and the Makefile):**
+  - src/opt/certified.py: BOUND_RTOL, effective_bound, certified_interval_eff. The raw certified_interval is unchanged.
+  - src/opt/integer.py: FLAG_RTOL = BOUND_RTOL = 1e-6; PMIResult.B_minus_V and .incumbent_minus_V (signed, nan when V is undefined); docstrings.
+  - src/opt/relaxation.py: RESIDUAL_MAX = 1e-8. A solve with r_prim or r_dual > 1e-8 is failed, with its status and residuals recorded. Solved and AlmostSolved are accepted as before.
+  - src/opt/toy.py: Toy.relaxation_value (big-M f(min(b, w°)); perspective (a − λdℓ)·b for b ≤ ℓ, then f(min(b, w°))); random_toys(seed, n).
+  - experiments/common.py: finish(extra_files=…) hashes other files in the run directory. This fixes the round-2 note that the .npz was unhashed.
+  - experiments/run_core.py and configs/core.yaml:
+    - K9 adds relaxation values at every point, Clarabel status, residuals and raw duals (diagnostic), plus 200 seeded random toys (seed 20261019);
+    - K8 adds the perspective value scaling, with a dual_gated column;
+    - K10 stores raw and B_eff intervals, plus two small MIQPs (seeds 51, 52) with hashed inputs;
+    - pmi_solves holds one row per P-MI solve with the signed discrepancies;
+    - the two tautological roundtrip_* fields are dropped (round-2 checker note).
+- **Tests, test-first.** RED before code: import errors for random_toys and BOUND_RTOL; test_incumbent_flags (1e-9 ≠ 1e-6); test_signed_discrepancies_recorded (no B_minus_V); test_finish_hashes_extra_files (no extra_files). RED log: logs/test_s1r3_red_*.log. New tests:
+  - test_toy_relaxation_value_closed_forms;
+  - test_k9_relaxation_values_match_closed_forms[T1, T2] (41 points, kinks included, 1e-9);
+  - test_k9_relaxation_values_on_seeded_random_toys (seed 20261019, 12 toys, 1e-9);
+  - test_relaxation_failure_rule (4 cases);
+  - test_effective_bound;
+  - test_certified_interval_with_effective_bounds;
+  - test_signed_discrepancies_recorded[bigm, perspective];
+  - test_brace_check_rejects_unbalanced_macro_bodies;
+  - test_finish_hashes_extra_files.
+  The K9 value and toy closed-form tests were RED only at import. Once the functions existed they passed on their first run, which checks properties of unchanged solver code.
+- **Changes to S1-added tests** (approved by Isaiah; none existed at v2-start):
+  - test_integer.py::test_incumbent_flags: the default threshold is now 1e-6·|V| (DESIGN §6). All five S1 1e-9 cases are kept, at an explicit rtol=1e-9.
+  - test_integer.py::test_k8_real_instances_scale: perspective value scaling tightened from 1e-6 to 1e-9 (CHECKS K8). Its perspective raw-dual scaling assertions (1e-6) are kept unchanged; they are stricter than CHECKS now requires.
+  - test_certified.py::test_k10_intervals_contain_exact_slope: B_eff assertions added (they contain the secant with no tolerance and contain the raw interval). Nothing removed.
+  - test_relaxation.py and test_toy_miqp.py: the existing perspective raw-dual assertions (T1 and T2 at 1e-6; test_toy_miqp at 1e-5 absolute) are unchanged and still pass.
+  - test_risk_budget.py: the strict xfail's reason now cites Decision 13 (diagnostic, not gated; P1 checks those duals at 1e-4).
+  - test_make_all.py (Decision 16): see the correction below.
+- **Correction (Decision 16; rule 5).**
+  - Round 1 (c23289c) loosened the macro-body regex in tests/test_make_all.py::test_numbers_tex_is_deterministic_and_sourced from one level of nested braces to `\{(.*)\}`, so `\ensuremath{10^{-6}}` would match. That accepted unbalanced bodies, and PROGRESS did not record it until round 2.
+  - Reversed now: the pattern is unchanged and not loosened further, and every macro body must pass a brace count (depth never negative, ending at 0). A negative-control test shows four lines the pattern alone accepts being rejected.
+- **Suite:** 230 passed, 2 xfailed (the strict xfail above), 67.7 s; logs/test_s1r3_full_*.log.
+- **Runner fix found by the scratch dry run** (results/scratch/dryrun_core_r3*, not evidence). The first dry run crashed with "fixed solve status INFEASIBLE" in the K9 loop. Cause: run_core called fixed_integer_duals unguarded. The fixed-integer QP failure is now recorded (fixed_status, mu_fixed nan), not fatal.
+  - The same points have V undefined (polish infeasible). pandas max() would have skipped them silently, so the K9 summary now counts and lists them (n_V_undefined, V_undefined_points, n_fixed_failed) and names the value error over defined points max_abs_value_err_defined.
+  - No module code changed for this; src.opt.integer already records polish failures as DESIGN §6 says.

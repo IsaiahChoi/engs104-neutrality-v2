@@ -19,7 +19,7 @@ import pytest
 import src.opt.relaxation as relaxation
 from src.opt.continuous import Mandate
 from src.opt.integer import PMI, choose_s_obj
-from src.opt.toy import Toy
+from src.opt.toy import Toy, random_toys
 from src.risk.factor_model import FACTORS
 from tests import realdata
 
@@ -66,6 +66,72 @@ def test_k9_relaxation_and_fixed_integer_duals_match_closed_forms(name):
         assert close(rl["perspective"]["shadow"]["gross"], cf["perspective"], T.a), \
             (b, rl["perspective"]["shadow"]["gross"], cf["perspective"])
         assert close(fixed, cf["fixed"], T.a), b
+
+
+def test_toy_relaxation_value_closed_forms():
+    """The relaxation values on the toy (src/opt/toy.py): big-M R(b) = f(min(b, w°)); perspective
+    R(b) = (a − λdℓ)·b for b ≤ ℓ and f(min(b, w°)) above, continuous at ℓ; both bound the MIQP
+    value U(b) from above, and their slopes are Toy.slopes off the kinks."""
+    for T, grid in TOYS.values():
+        assert T.relaxation_value(T.ell, "perspective") == pytest.approx(T.f(T.ell), rel=1e-15)
+        for b in grid:
+            for form in ("bigm", "perspective"):
+                assert T.relaxation_value(b, form) >= T.value(b) - 1e-18, (form, b)
+            assert T.relaxation_value(b, "bigm") >= T.relaxation_value(b, "perspective") - 1e-18
+        for b in off_kinks(T, grid):
+            h = 1e-7 * T.u
+            for form in ("bigm", "perspective"):
+                fd = (T.relaxation_value(b + h, form) - T.relaxation_value(b - h, form)) / (2 * h)
+                assert fd == pytest.approx(T.slopes(b)[form], rel=1e-6, abs=1e-9 * T.a), (form, b)
+    with pytest.raises(ValueError):
+        TOYS["T1"][0].relaxation_value(0.01, "other")
+
+
+def _value_close(est: float, cf: float, scale: float, rtol: float = 1e-9) -> bool:
+    """K9 value criterion: |R̂ − R| ≤ rtol·|R|; where R = 0 (b = 0) against the toy's value scale."""
+    return abs(est - cf) <= rtol * (abs(cf) if cf != 0 else scale)
+
+
+def _k9_relaxation_values(T: Toy, grid) -> list[tuple]:
+    """(b, form, Clarabel/Gurobi relaxation value, closed form, Clarabel status) on every point."""
+    out = []
+    for b in grid:
+        rl = toy_pmi(T, b).relaxation_duals()
+        assert rl["bigm"]["ok"] and rl["perspective"]["ok"], (b, rl["perspective"]["status"])
+        st = rl["perspective"]["clarabel"]["clarabel_status"]
+        out += [(b, f, rl[f]["U"], T.relaxation_value(b, f), st) for f in ("bigm", "perspective")]
+    return out
+
+
+@pytest.mark.parametrize("name", list(TOYS))
+def test_k9_relaxation_values_match_closed_forms(name):
+    """CHECKS K9: the perspective relaxation's optimal value (Clarabel) matches its closed form to
+    1e-9 relative on all 41 grid points, kinks included (the value is continuous); the big-M
+    relaxation value (Gurobi dual simplex) too."""
+    T, grid = TOYS[name]
+    scale = T.value(T.w_opt)
+    for b, form, est, cf, st in _k9_relaxation_values(T, grid):
+        assert _value_close(est, cf, scale), (name, form, b, est, cf, st)
+
+
+K9_RANDOM_SEED = 20261019            # recorded seed (CHECKS K9: random toys)
+K9_RANDOM_N = 12
+
+
+def test_k9_relaxation_values_on_seeded_random_toys():
+    """CHECKS K9 on a seeded random family (src.opt.toy.random_toys, recorded seed): the
+    perspective and big-M relaxation values match their closed forms to 1e-9 relative on 41-point
+    grids; Clarabel's status is recorded (Solved or AlmostSolved, both accepted, DESIGN §6)."""
+    toys = random_toys(K9_RANDOM_SEED, K9_RANDOM_N)
+    assert len(toys) == K9_RANDOM_N and toys == random_toys(K9_RANDOM_SEED, K9_RANDOM_N)
+    statuses = set()
+    for i, (T, b_max) in enumerate(toys):
+        assert 0 < T.ell < T.w_opt < T.u < b_max
+        scale = T.value(T.w_opt)
+        for b, form, est, cf, st in _k9_relaxation_values(T, np.linspace(0.0, b_max, 41)):
+            statuses.add(st)
+            assert _value_close(est, cf, scale), (i, T, form, b, est, cf, st)
+    assert statuses <= {"Solved", "AlmostSolved"}
 
 
 def test_k9_value_function_second_toy():
@@ -136,3 +202,34 @@ def test_clarabel_failure_is_recorded_not_fatal(monkeypatch):
     assert rec["clarabel"]["clarabel_status"] == "InsufficientProgress"
     assert "r_prim" in rec["clarabel"]
     assert M.relaxation_duals()["bigm"]["ok"]                # the big-M relaxation is unaffected
+
+
+@pytest.mark.parametrize("status,cvx,r_prim,r_dual,ok", [
+    ("Solved", cp.OPTIMAL, 5e-9, 5e-9, True),
+    ("AlmostSolved", cp.OPTIMAL_INACCURATE, 1e-9, 1e-10, True),      # accepted (DESIGN §6)
+    ("Solved", cp.OPTIMAL, 2e-8, 1e-12, False),                      # primal residual > 1e-8
+    ("AlmostSolved", cp.OPTIMAL_INACCURATE, 1e-12, 3e-8, False),     # dual residual > 1e-8
+])
+def test_relaxation_failure_rule(monkeypatch, status, cvx, r_prim, r_dual, ok):
+    """DESIGN §6: a perspective relaxation counts as failed only if Clarabel's status is neither
+    Solved nor AlmostSolved, or its relative residuals (Clarabel's r_prim, r_dual) exceed 1e-8;
+    a failure keeps its status and residuals, carries no value or duals, and is never raised."""
+    T, _ = TOYS["T2"]
+    M = toy_pmi(T, 0.005)
+    real = relaxation._solve
+
+    def patched(prob, opts):
+        raw = real(prob, opts)
+        raw.update(status=status, cvxpy_status=cvx, r_prim=r_prim, r_dual=r_dual)
+        return raw
+
+    monkeypatch.setattr(relaxation, "_solve", patched)
+    assert relaxation.RESIDUAL_MAX == 1e-8
+    rec = M.relaxation_duals()["perspective"]
+    assert rec["ok"] is ok and rec["clarabel"]["clarabel_status"] == status
+    assert (rec["clarabel"]["r_prim"], rec["clarabel"]["r_dual"]) == (r_prim, r_dual)
+    assert rec["almost_solved"] == (status == "AlmostSolved")
+    if ok:
+        assert np.isfinite(rec["U"]) and rec["shadow"]
+    else:
+        assert np.isnan(rec["U"]) and rec["shadow"] == {} and "residual" in rec["status"]

@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.opt.certified import certified_interval
+from src.opt.certified import BOUND_RTOL, certified_interval, certified_interval_eff, effective_bound
 from src.opt.continuous import Mandate
 from src.opt.integer import PMI
 from src.risk.factor_model import FACTORS
@@ -51,6 +51,9 @@ def test_k10_intervals_contain_exact_slope(seed):
         ci = certified_interval(r[1].V, r[1].B, r[-1].V, r[-1].B, delta)
         assert ci.L - tol <= slope <= ci.H + tol, (gap, ci, slope)
         assert not ci.solver_error
+        ce = certified_interval_eff(r[1].V, r[1].B, r[-1].V, r[-1].B, delta)   # DESIGN §6
+        assert ce.contains(slope) and ce.L <= ci.L and ce.H >= ci.H, (gap, ce, slope)
+        assert not ce.solver_error
     assert np.isfinite(slope)
 
 
@@ -60,3 +63,33 @@ def test_non_finite_inputs_are_refused():
         certified_interval(float("nan"), 1.0, 1.0, 1.0, 0.1)
     with pytest.raises(ValueError):
         certified_interval(1.0, float("inf"), 1.0, 1.0, 0.1)
+
+
+def test_effective_bound():
+    """DESIGN §6: B_eff = max(B, V) + 1e-6·|V| (Gurobi's bound is valid only up to tolerance)."""
+    assert BOUND_RTOL == 1e-6
+    assert effective_bound(B=1.02, V=1.00) == pytest.approx(1.02 + 1e-6, rel=1e-15)
+    assert effective_bound(B=0.99, V=1.00) == pytest.approx(1.00 + 1e-6, rel=1e-15)   # B below V
+    assert effective_bound(B=-1.5, V=-2.0) == pytest.approx(-1.5 + 2e-6, rel=1e-15)   # |V|
+    with pytest.raises(ValueError):
+        effective_bound(float("nan"), 1.0)
+
+
+def test_certified_interval_with_effective_bounds():
+    """[L, H] from B_eff at each point (DESIGN §6; CHECKS K23): equal to the raw formula applied
+    to B_eff; it contains the secant where a MIPGap-0 bound equals V and the reference slope
+    differs from s by rounding (the round-2 K10 note); H < 0 is still flagged."""
+    V_p, B_p, V_m, B_m, delta = 1.10, 1.12, 1.00, 0.99, 0.5         # B₋ below V₋ (tolerance)
+    ci = certified_interval_eff(V_p, B_p, V_m, B_m, delta)
+    raw = certified_interval(V_p, effective_bound(B_p, V_p), V_m, effective_bound(B_m, V_m), delta)
+    assert (ci.L, ci.H, ci.s) == (raw.L, raw.H, raw.s)
+    assert ci.L == pytest.approx((1.10 - 1.00 - 1e-6) / 1.0, rel=1e-12)
+    assert ci.H == pytest.approx((1.12 + 1.1e-6 - 1.00) / 1.0, rel=1e-12)
+    pt = certified_interval_eff(1.10, 1.10, 1.00, 1.00, 0.5)        # B = V at both points
+    assert pt.contains(pt.s - 1e-15) and pt.contains(pt.s + 1e-15) and pt.L < pt.s < pt.H
+    collapsed = certified_interval(1.10, 1.10, 1.00, 1.00, 0.5)     # raw: [s, s]
+    assert collapsed.L == collapsed.H == collapsed.s and not collapsed.contains(pt.s - 1e-15)
+    bad = certified_interval_eff(0.90, 0.95, 1.00, 1.00, 0.5)
+    assert bad.H < 0 and bad.solver_error
+    with pytest.raises(ValueError):
+        certified_interval_eff(float("nan"), 1.0, 1.0, 1.0, 0.1)

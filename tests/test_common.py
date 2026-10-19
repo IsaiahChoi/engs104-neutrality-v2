@@ -140,3 +140,20 @@ def test_data_fingerprint_recorded_and_manifest_mismatch_refused(repo):
     _git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "data manifests")
     with pytest.raises(RuntimeError, match="manifest"):
         common.open_run("c1", cfg, root=repo, extra_meta={"x": 1})
+
+
+def test_finish_hashes_extra_files(repo):
+    """Raw inputs a run stores beside its parquet outputs (e.g. run_core's synthetic instance,
+    an .npz) are hashed in outputs.json too (round-2 checker note); files outside the run
+    directory are refused."""
+    import numpy as np
+    cfg = "experiments/configs/x.yaml"
+    run, _ = common.open_run("core", cfg, root=repo)
+    np.savez(run / "inst.npz", a=np.arange(3))
+    with pytest.raises(ValueError):
+        common.finish(run, cfg, {}, "x", root=repo, extra_files=[repo / "elsewhere.npz"])
+    common.finish(run, cfg, {"t": pd.DataFrame({"a": [1]})}, "x", root=repo,
+                  extra_files=[run / "inst.npz"])
+    outs = json.loads((run / "outputs.json").read_text())
+    assert set(outs) == {"t.parquet", "inst.npz"}
+    assert outs["inst.npz"] == common.file_sha256(run / "inst.npz")

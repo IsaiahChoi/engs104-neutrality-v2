@@ -8,6 +8,19 @@ import re
 from src.figures import make_all
 from src.utils import ROOT
 
+MACRO = r"\\newcommand\{\\([A-Za-z]+)\}\{(.*)\}"
+
+
+def _balanced(body: str) -> bool:
+    """Decision 16 (PROGRESS 2026-10-19): the macro-line pattern accepts any body (so
+    \\ensuremath{10^{-6}} matches); this brace count rejects unbalanced ones."""
+    depth = 0
+    for ch in body:
+        depth += (ch == "{") - (ch == "}")
+        if depth < 0:
+            return False
+    return depth == 0
+
 
 def test_numbers_tex_is_deterministic_and_sourced(tmp_path):
     a, b = tmp_path / "a.tex", tmp_path / "b.tex"
@@ -19,8 +32,9 @@ def test_numbers_tex_is_deterministic_and_sourced(tmp_path):
     assert len(macros) >= 10
     names = []
     for i in macros:
-        m = re.fullmatch(r"\\newcommand\{\\([A-Za-z]+)\}\{(.*)\}", lines[i])
+        m = re.fullmatch(MACRO, lines[i])
         assert m, lines[i]
+        assert _balanced(m.group(2)), lines[i]
         names.append(m.group(1))
         src = re.fullmatch(r"% source: (\S+) sha256=([0-9a-f]{64})", lines[i - 1])
         assert src, lines[i - 1]
@@ -49,3 +63,14 @@ def test_number_formatting():
     assert make_all._fixed(0.10, 2) == "0.10"
     with pytest.raises(ValueError):
         make_all._fixed(0.025, 2)
+
+
+def test_brace_check_rejects_unbalanced_macro_bodies():
+    """Negative control for Decision 16: lines the pattern alone would accept are rejected when
+    their body's braces do not balance; nested and \\ensuremath bodies pass."""
+    for good in ("3", "0.10", "\\ensuremath{10^{-6}}", "\\ensuremath{\\sqrt{1-\\phi}}"):
+        assert _balanced(good), good
+    for line in ("\\newcommand{\\X}{a}{b}", "\\newcommand{\\X}{\\ensuremath{10^{-6}}",
+                 "\\newcommand{\\X}{}}{}", "\\newcommand{\\X}{{}"):
+        m = re.fullmatch(MACRO, line)
+        assert m and not _balanced(m.group(2)), line

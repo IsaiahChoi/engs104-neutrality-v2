@@ -14,11 +14,15 @@ back: w = c·w', and duals are returned in Gurobi's convention for `expr <= b` i
 (Pi = −dU/db), so src.opt.miqp.shadow_price applies unchanged. Values stay in the model's units
 (× s_obj); src.opt.integer divides by s_obj.
 
-Status. "Solved" (CVXPY optimal) and "AlmostSolved" (optimal_inaccurate) are accepted; the latter
-is counted separately by the caller. Anything else, or a CVXPY SolverError, returns ok = False
-with no result. Clarabel's final status, iterations, residuals (r_prim, r_dual), primal and
-dual objectives and their gap are recorded for every solve (CHECKS K29b); gap_rel is
-|p − d|/max(|p|, |d|) in Clarabel's (scaled, minimization) objective.
+Status (DESIGN §6). A solve counts as failed (ok = False, no result) only if Clarabel's status is
+neither "Solved" (CVXPY optimal) nor "AlmostSolved" (optimal_inaccurate), a CVXPY SolverError
+occurs, or a relative residual exceeds RESIDUAL_MAX = 1e-8. The residuals are Clarabel's own
+(r_prim = ‖Ax + s − b‖/max(1, ‖b‖ + ‖x‖ + ‖s‖), r_dual = ‖Px + Aᵀz + q‖/max(1, ‖q‖ + ‖x‖ + ‖z‖),
+Clarabel.rs 0.11.1 info.rs), in the rescaled problem solved here. AlmostSolved is counted
+separately by the caller. Clarabel's final status, iterations, residuals, primal and dual
+objectives and their gap are recorded for every solve (CHECKS K29b); gap_rel is
+|p − d|/max(|p|, |d|) in Clarabel's (scaled, minimization) objective. The duals returned are
+Clarabel's raw duals, a diagnostic (the perspective estimator is a finite difference of values).
 """
 from __future__ import annotations
 
@@ -33,6 +37,7 @@ from src.opt.miqp import MIQPModel, MIQPResult
 
 ACCEPTED = (cp.OPTIMAL, cp.OPTIMAL_INACCURATE)
 CLARABEL_OPTS = SOLVER_OPTS["CLARABEL"]          # tol_gap_abs = tol_gap_rel = tol_feas = 1e-12
+RESIDUAL_MAX = 1e-8                               # DESIGN §6: larger relative residual = failed
 
 
 @dataclass
@@ -112,6 +117,10 @@ def perspective_relaxation(model: MIQPModel, opts: dict | None = None) -> Clarab
     if status not in ACCEPTED:
         return ClarabelRelaxation(ok=False, status=f"clarabel relax status {raw['status']} "
                                   f"({status})", info=info)
+    if not (raw["r_prim"] <= RESIDUAL_MAX and raw["r_dual"] <= RESIDUAL_MAX):
+        return ClarabelRelaxation(ok=False, status=f"clarabel relax residual above {RESIDUAL_MAX:g} "
+                                  f"(r_prim {raw['r_prim']:.2e}, r_dual {raw['r_dual']:.2e}; "
+                                  f"{raw['status']})", info=info)
     duals = {}
     for key, con in rows.items():
         k = 1.0 if key[0] == "cardinality" else c

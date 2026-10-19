@@ -15,8 +15,11 @@ k8_pmi_seed: 63                                  # synthetic n = 20, u = 20%: di
 k9_toys:                                         # one-asset toys (A7), 41-point grids [0, b_max]
   T1: {a: 1.0, lam: 1.0, d: 10.0, ell: 0.02, u: 0.08, b_max: 0.10}
   T2: {a: 0.004, lam: 10.0, d: 0.02, ell: 0.0025, u: 0.015, b_max: 0.02}
+k9_random_seed: 20261019                         # src.opt.toy.random_toys (CHECKS K9: recorded seed)
+k9_random_n: 200                                 # toys, 41-point grids on [0, 1.25·u]
 k10_toy_points: [0.01, 0.02, 0.03, 0.06]         # T1, δ = 0.005 (certified interval on the toy)
 k10_toy_delta: 0.005
+k10_mip_seeds: [51, 52]                          # 2 small MIQPs (n = 24, beta bound 0.01, δ = 10%)
 k12_month: "2020-03"                             # swept caps (position, liquidity)
 k12_rel_step: 0.001
 k13_months: ["2017-12", "2020-03"]

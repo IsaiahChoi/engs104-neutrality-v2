@@ -178,16 +178,40 @@ def test_overstated_raw_incumbent_never_sets_V(monkeypatch):
 
 
 def test_incumbent_flags():
-    """DESIGN §6: flag (i) the exact objective at the incumbent's weights above V by more than
-    1e-9·|V|, (ii) V above the final bound B by more than 1e-9·|V|; no flag when V is undefined."""
+    """DESIGN §6 (Isaiah's bound-tolerance decision, 2026-10-19): flag (i) the exact objective at
+    the incumbent's weights above V by more than 1e-6·|V| (B_eff's slack), (ii) V above the final
+    bound B by more than 1e-6·|V|; no flag when V is undefined. The slack is a parameter, and the
+    S1 cases at 1e-9·|V| still hold at rtol=1e-9."""
+    from src.opt.integer import FLAG_RTOL
+    assert FLAG_RTOL == 1e-6
     V = 2.0e-3
     assert incumbent_flags(V, V, V) == (False, False)
-    assert incumbent_flags(V * (1 + 2e-9), V, V) == (True, False)
-    assert incumbent_flags(V * (1 + 5e-10), V, V) == (False, False)
-    assert incumbent_flags(V, V, V * (1 - 2e-9)) == (False, True)
-    assert incumbent_flags(V, V, V * (1 - 5e-10)) == (False, False)
+    assert incumbent_flags(V * (1 + 2e-6), V, V) == (True, False)
+    assert incumbent_flags(V * (1 + 5e-7), V, V) == (False, False)
+    assert incumbent_flags(V, V, V * (1 - 2e-6)) == (False, True)
+    assert incumbent_flags(V, V, V * (1 - 5e-7)) == (False, False)
     assert incumbent_flags(V, np.nan, V) == (False, False)
-    assert incumbent_flags(-V * (1 - 2e-9), -V, -V) == (True, False)     # |V| for negative values
+    assert incumbent_flags(-V * (1 - 2e-6), -V, -V) == (True, False)     # |V| for negative values
+    r9 = 1e-9                                                            # the S1 cases
+    assert incumbent_flags(V * (1 + 2e-9), V, V, rtol=r9) == (True, False)
+    assert incumbent_flags(V * (1 + 5e-10), V, V, rtol=r9) == (False, False)
+    assert incumbent_flags(V, V, V * (1 - 2e-9), rtol=r9) == (False, True)
+    assert incumbent_flags(V, V, V * (1 - 5e-10), rtol=r9) == (False, False)
+    assert incumbent_flags(-V * (1 - 2e-9), -V, -V, rtol=r9) == (True, False)
+
+
+@pytest.mark.parametrize("form", FORMS)
+def test_signed_discrepancies_recorded(form):
+    """DESIGN §6: the signed discrepancies B − V and (exact objective at the incumbent's
+    weights) − V are recorded for every solve (original units), nan when V is undefined."""
+    from dataclasses import replace as dc_replace
+    M, _ = small(seed=68, form=form)
+    r = M.solve(mip_gap=1e-6)
+    assert r.B_minus_V == r.B - r.V and r.incumbent_minus_V == r.U_incumbent - r.V
+    below = dc_replace(r, B=r.V - 1e-3)
+    assert below.B_minus_V == pytest.approx(-1e-3, rel=1e-9)            # signed, not |·|
+    undefined = dc_replace(r, V=np.nan)
+    assert np.isnan(undefined.B_minus_V) and np.isnan(undefined.incumbent_minus_V)
 
 
 @pytest.mark.parametrize("form", FORMS)
@@ -276,4 +300,5 @@ def test_k8_real_instances_scale(ym):
         for k, mu1 in a["shadow"].items():
             assert _scale_ok(mu1, b["shadow"][k], _key_bound(M1, k), r1.V), (est, k, mu1, b["shadow"][k])
             assert b["raw_shadow"][k] == pytest.approx(s * b["shadow"][k], rel=1e-12, abs=1e-300), (est, k)
-    assert rl1["perspective"]["U"] == pytest.approx(rl2["perspective"]["U"], rel=1e-6)
+    # CHECKS K8 (revised 2026-10-19): the perspective relaxation's optimal value scales to 1e-9
+    assert rl1["perspective"]["U"] == pytest.approx(rl2["perspective"]["U"], rel=1e-9)

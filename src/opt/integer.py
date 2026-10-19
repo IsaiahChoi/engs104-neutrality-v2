@@ -7,15 +7,20 @@
   the exact fixed-integer QP at the incumbent's z (dual simplex at 1e-9), exactly feasible, so a
   valid lower bound on U*. The raw incumbent is recorded (the solver's value U_raw, its weights
   w_incumbent, the exact objective U_incumbent at them, and the independent checker's verdict on
-  them). Flags (incumbent_flags): U_incumbent > V + 1e-9·|V| (the incumbent violates rows within
-  solver tolerance) and V > B + 1e-9·|V|. If the polish fails, V and w are nan and v_source is
-  "polish_failed": the case is recorded and counted as excluded. B is the solver's final bound;
-  the root bound is recorded too.
+  them). Flags (incumbent_flags), both at B_eff's slack 1e-6·|V| (src.opt.certified):
+  U_incumbent > V + 1e-6·|V| (the incumbent violates rows within solver tolerance) and
+  V > B + 1e-6·|V|. The signed discrepancies B − V and U_incumbent − V are recorded for every
+  solve (B_minus_V, incumbent_minus_V; reported as distributions, A9). If the polish fails, V and
+  w are nan and v_source is "polish_failed": the case is recorded and counted as excluded. B is
+  the solver's final bound (raw; certified intervals use B_eff); the root bound is recorded too.
 - Duals. relaxation_duals() solves the z ∈ [0, 1] relaxation of both formulations: big-M by
   Gurobi dual simplex (a QP); perspective by Clarabel (src/opt/relaxation.py, an SOCP), with
   Gurobi's barrier on the same relaxation kept only as a value cross-check (U_gurobi_barrier).
-  A failed relaxation is recorded with its status and no duals, never raised; Clarabel's status
-  and residuals are recorded for every solve, AlmostSolved flagged (almost_solved).
+  A failed relaxation (DESIGN §6: Clarabel status neither Solved nor AlmostSolved, or a relative
+  residual above 1e-8) is recorded with its status and no value or duals, never raised; Clarabel's
+  status and residuals are recorded for every solve, AlmostSolved flagged (almost_solved). The
+  perspective estimator is the finite-difference slope of these values (DESIGN §6, gated by
+  CHECKS K29c in S3); Clarabel's raw perspective duals here are a diagnostic.
   fixed_integer_duals(z) re-solves the convex problem at fixed z. Shadow prices dU*/db use
   src.opt.miqp.shadow_price (sign established by the kept tests), divided by s_obj.
 - Effort. Work (deterministic) and Runtime are recorded; work_limit sets Gurobi's WorkLimit.
@@ -28,6 +33,7 @@ from dataclasses import dataclass, field, replace
 
 import numpy as np
 
+from src.opt.certified import BOUND_RTOL
 from src.opt.continuous import Mandate
 from src.opt.gurobi_env import DEFAULT_SEED, DEFAULT_THREADS
 from src.opt.feasibility import pmi_violations
@@ -35,7 +41,7 @@ from src.opt.miqp import MIQPModel, shadow_price
 from src.opt.relaxation import perspective_relaxation
 
 FORMULATIONS = ("bigm", "perspective")
-FLAG_RTOL = 1e-9                     # DESIGN §6 incumbent flags: slack 1e-9·|V|
+FLAG_RTOL = BOUND_RTOL               # DESIGN §6 incumbent flags: B_eff's slack 1e-6·|V|
 
 
 def choose_s_obj(U_abs: float) -> float:
@@ -101,6 +107,16 @@ class PMIResult:
     @property
     def final_gap(self) -> float:
         return (self.B - self.V) / abs(self.V) if np.isfinite(self.V) and self.V != 0 else np.nan
+
+    @property
+    def B_minus_V(self) -> float:
+        """Signed B − V, original units (nan if V is undefined); DESIGN §6, A9."""
+        return self.B - self.V if np.isfinite(self.V) else np.nan
+
+    @property
+    def incumbent_minus_V(self) -> float:
+        """Signed U_incumbent − V, original units (nan if V is undefined); DESIGN §6, A9."""
+        return self.U_incumbent - self.V if np.isfinite(self.V) else np.nan
 
     @property
     def root_gap(self) -> float:

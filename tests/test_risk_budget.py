@@ -149,10 +149,11 @@ def test_k8_prb_clarabel_family_duals_scale(ym):
     assert _prb_k8_dual_scaling(ym, lambda k: ":" not in k) <= 1.0
 
 
-@pytest.mark.xfail(strict=True, reason="Known miss, reported to Isaiah (PROGRESS, S1 CHECK CORE "
-                   "round 2): Clarabel P-RB per-sector duals scale to 1.6e-6–2.2e-6 relative, "
-                   "the interior-point accuracy floor; whether K8's 1e-6 covers per-element "
-                   "P-RB cross-check duals is Isaiah's reading. strict: a pass fails the suite.")
+@pytest.mark.xfail(strict=True, reason="Diagnostic, not gated: Decision 13 (PROGRESS 2026-10-19) "
+                   "limits K8's dual clause to P-MI duals; the Clarabel P-RB cross-check's duals "
+                   "are checked against the exact primary path in P1 (1e-4). Its per-sector duals "
+                   "scale to 1.6e-6–2.2e-6 relative, the interior-point floor (A9 finding). "
+                   "strict: a pass fails the suite.")
 @pytest.mark.parametrize("ym", ["2017-12", "2020-03"])
 def test_k8_prb_clarabel_per_element_duals_scale(ym):
     assert _prb_k8_dual_scaling(ym, lambda k: True) <= 1.0
