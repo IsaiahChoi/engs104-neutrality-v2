@@ -94,7 +94,7 @@ def solve_risk_budget(problem: ContinuousProblem, alpha, target_vol: float = TAR
         v = ev(x)[1]
         if abs(v / target_vol - 1.0) <= rtol:
             raise _Converged(x)
-        return float(np.log(v / target_vol))
+        return float(np.log(v / target_vol)) if v > 0 else -np.inf
 
     def result(x: float, binding: bool) -> RiskBudgetSolution:
         s, v = evals[x]
@@ -103,7 +103,14 @@ def solve_risk_budget(problem: ContinuousProblem, alpha, target_vol: float = TAR
                                   solve_time=float(sum(e[0].solve_time for e in evals.values())))
 
     x_min = float(np.log(lam_min))
-    guess = lam_guess if lam_guess is not None else unconstrained_lambda(problem, alpha, target_vol)
+    if lam_guess is not None:
+        if not (np.isfinite(lam_guess) and lam_guess > 0):
+            raise ValueError(f"lam_guess must be positive and finite, got {lam_guess}")
+        guess = lam_guess
+    else:
+        guess = unconstrained_lambda(problem, alpha, target_vol)
+        if not (np.isfinite(guess) and guess > 0):        # e.g. α = 0: start at λ_min
+            guess = lam_min
     x0 = max(float(np.log(guess)), x_min)
     try:
         if f(x0) > 0:                    # vol > target at x0: step up until vol < target

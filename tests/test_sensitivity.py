@@ -83,3 +83,23 @@ def test_k7_envelope_real(ym):
         if abs(fd / sp[k] - 1) > 0.01:
             bad[k] = (fd, sp[k], e[k])
     assert not bad, bad
+
+
+def test_fd_slope_refuses_zero_infinite_or_missing_bounds(rand):
+    """Review M7: zero, infinite, non-common, or switched-off bounds raise instead of returning
+    NaN or dividing by zero."""
+    P, alpha = rand
+    snap = snapshot(P)
+    set_bound_by_key(P, "beta", 0.0)
+    with pytest.raises(ValueError):
+        fd_slope_rb(P, alpha, "beta")
+    set_bound_by_key(P, f"style:{P.style_names[0]}", float("inf"))
+    with pytest.raises(ValueError):
+        fd_slope_rb(P, alpha, f"style:{P.style_names[0]}")
+    with pytest.raises(ValueError):
+        fd_slope_rb(P, alpha, "style")                      # no longer a common bound
+    restore(P, snap)
+    P.set_position_caps(None, 0.05)
+    with pytest.raises(ValueError):
+        bound_value(P, "position")
+    restore(P, snap)

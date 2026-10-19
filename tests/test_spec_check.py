@@ -116,3 +116,11 @@ def test_run_checks_table_and_exit_code(tmp_path, capsys):
     status = {r[0]: r[2] for r in rows}
     assert status["PR-2"] == "PASS" and status["PR-3"] == "FAIL" and status["PR-4"] == "FAIL"
     assert sc.exit_code(rows) == 1
+
+
+def test_red_text_and_layout_variants():
+    """Review L4: other ways of writing red text and negative/parskip spacing are caught."""
+    for red in ("\\color{red} x", "\\textcolor{red!50}{x}", "\\textcolor{Red}{x}"):
+        assert "red text" in sc.draft_markers(red, ("red text",)), red
+    found = sc.forbidden_layout("\\begin{document}a\\vskip -2pt b\\setlength{\\parskip}{0pt}\\end{document}")
+    assert "negative \\vskip" in found and "\\setlength{\\parskip}" in found

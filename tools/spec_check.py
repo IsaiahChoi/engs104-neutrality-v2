@@ -114,6 +114,10 @@ def forbidden_layout(tex: str) -> list[str]:
             found.append(f"\\{cmd}")
     if re.search(r"\\vspace\*?\s*\{\s*-", _without_floats(t)):
         found.append("negative \\vspace")
+    if re.search(r"\\vskip\s*-", _without_floats(t)):
+        found.append("negative \\vskip")
+    if re.search(r"\\setlength\s*\{?\s*\\parskip", t):
+        found.append("\\setlength{\\parskip}")
     body = _without_floats(t.split("\\begin{document}", 1)[-1])
     for s in SIZE_SWITCHES:
         if re.search(rf"\\{s}(?![A-Za-z])", body):
@@ -139,11 +143,20 @@ def has_ai_use(tex: str) -> bool:
     return any(re.search(r"\bAI\b", h) and re.search(r"acknowledg", h, re.I) for h in heads)
 
 
+RED_TEXT = re.compile(r"\\(?:text)?color\s*\{\s*red[^}]*\}", re.I)   # \color{red}, \textcolor{Red!50}
+
+
 def draft_markers(text: str, markers=FINAL_MARKERS) -> list[str]:
     """Markers present: TODO and red text in the comment-stripped text; drafted-by-agent in the
-    raw text (it is a comment)."""
+    raw text (it is a comment). The pseudo-marker "red text" matches any \\color{red...} or
+    \\textcolor{red...} spelling, any case."""
     stripped = strip_comments(text)
-    return [m for m in markers if (m in text if m.startswith("%") else m in stripped)]
+
+    def present(m):
+        if m == "red text":
+            return bool(RED_TEXT.search(stripped))
+        return m in text if m.startswith("%") else m in stripped
+    return [m for m in markers if present(m)]
 
 
 def label_page(aux: str, label: str) -> int | None:
@@ -226,7 +239,7 @@ def run(target: str, mode: str, root: Path = ROOT, build: bool = False) -> list[
         unresolved = sorted(keys - set(entries))
         add("PR-4", len(keys) >= 2 and not unresolved,
             f"{len(keys)} distinct keys; unresolved {unresolved}")
-        found = draft_markers(tex, ("TODO", "\\textcolor{red}"))
+        found = draft_markers(tex, ("TODO", "red text"))
         add("PR-5", not found, f"found {found}" if found else "none", na=not final)
         return rows
 
@@ -257,7 +270,7 @@ def run(target: str, mode: str, root: Path = ROOT, build: bool = False) -> list[
     unresolved, extra = sorted(keys - set(entries)), not_allowed(entries)
     add("RP-7", not unresolved and not extra,
         f"{len(keys)} cited; unresolved {unresolved}; outside DESIGN §13 {extra}")
-    found = draft_markers(all_tex, ("TODO(Isaiah)", "\\textcolor{red}", "% drafted-by-agent"))
+    found = draft_markers(all_tex, ("TODO(Isaiah)", "red text", "% drafted-by-agent"))
     add("RP-8", not found, f"found {found}" if found else "none", na=not final)
     add("RP-9", has_ai_use(tex), "AI-use acknowledgment heading")
     log_path = d / "main.log"
@@ -285,10 +298,9 @@ def main() -> int:
     p.add_argument("--build", action="store_true", help="build here with logs and .aux")
     a = p.parse_args()
     rows = run(a.target, a.mode, build=a.build)
-    w = max(len(r[3]) for r in rows)
     print(f"{'check':<6} {'req':<6} {'status':<6} detail")
     for cid, req, status, detail in rows:
-        print(f"{cid:<6} {req:<6} {status:<6} {detail[:w]}")
+        print(f"{cid:<6} {req:<6} {status:<6} {detail}")
     code = exit_code(rows)
     print(f"spec_check {a.target} ({a.mode}): {'FAIL' if code else 'PASS'}")
     return code

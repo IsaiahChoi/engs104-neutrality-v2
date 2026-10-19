@@ -29,10 +29,11 @@ def _index(problem: ContinuousProblem, fam: str, tail: str) -> int:
 def bound_value(problem: ContinuousProblem, key: str) -> float:
     """The bound b behind a shadow-price key (nan for a family bound that is not common)."""
     fam, tail = _split(key)
-    if fam == "position":
-        return float(problem.position_caps[0])
-    if fam == "liquidity":
-        return float(problem.position_caps[1])
+    if fam in ("position", "liquidity"):
+        cap = problem.position_caps[0 if fam == "position" else 1]
+        if cap is None:
+            raise ValueError(f"{fam} cap is off in this problem")
+        return float(cap)
     b = problem.bound(fam)
     if tail is not None:
         return float(b[_index(problem, fam, tail)])
@@ -79,6 +80,8 @@ def fd_slope_rb(problem: ContinuousProblem, alpha, key: str, rel_step: float = 0
     value in the bound behind `key`; the problem's bounds are restored afterwards."""
     from src.opt.risk_budget import solve_risk_budget
     b0 = bound_value(problem, key)
+    if not (np.isfinite(b0) and b0 > 0):
+        raise ValueError(f"no relative step for {key}: bound {b0} (zero, infinite, or not common)")
     h = rel_step * b0
     snap = snapshot(problem)
     vals = []

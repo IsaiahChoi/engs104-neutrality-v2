@@ -3,10 +3,14 @@
 - Objective scaling. The model is built with α, λ, the borrow cost c and the trading cost κ all
   multiplied by s_obj, which multiplies the objective (and every dual) by s_obj and leaves the
   feasible set unchanged. Everything reported is in original units; raw scaled values are kept.
-- Incumbent value. V = max(U(w_incumbent), U_polished): U(·) is the objective evaluated exactly
-  at the solver's incumbent weights (exact_objective, so the perspective cone tolerance cannot
-  overstate it), U_polished the exact fixed-integer QP at the incumbent's z. A failed polish is
-  recorded, not fatal. B is the solver's final bound; the root bound is recorded too.
+- Incumbent value. DESIGN §6: V = max(incumbent, polished). The polish (the exact fixed-integer
+  QP at the incumbent's z, dual simplex at 1e-9) maximizes the continuous part over that support,
+  so it is ≥ the value of any feasible incumbent with that z; the raw incumbent can exceed it
+  only by being infeasible within Gurobi's tolerances (1e-6 rows, cone tolerance), which would
+  overstate V and break V ≤ U* (code review S1, H3). So V = U_polished whenever the polish
+  succeeds (v_source "polished"); only if it fails is V the exact objective at the incumbent's
+  weights (v_source "incumbent"), with the independent checker's verdict on those weights in
+  `incumbent_violations`. B is the solver's final bound; the root bound is recorded too.
 - Duals. relaxation_duals() solves the z ∈ [0, 1] relaxation of both formulations (big-M: a QP,
   dual simplex; perspective: a QCP, barrier with QCPDual); a failed relaxation (e.g. SUBOPTIMAL)
   is recorded with its status and no duals, never raised. fixed_integer_duals(z) re-solves the
@@ -17,20 +21,22 @@
 from __future__ import annotations
 
 import copy
+import json
 from dataclasses import dataclass, field, replace
 
 import numpy as np
 
 from src.opt.continuous import Mandate
 from src.opt.gurobi_env import DEFAULT_SEED, DEFAULT_THREADS
-from src.opt.miqp import TWO_SIDED, MIQPModel, shadow_price
+from src.opt.feasibility import pmi_violations
+from src.opt.miqp import MIQPModel, shadow_price
 
 FORMULATIONS = ("bigm", "perspective")
 
 
 def choose_s_obj(U_abs: float) -> float:
-    """DESIGN §6 / pilot P1: the power of 10 that puts |U*|·s_obj in [1, 100]. Returns the
-    smallest such power, for which |U*|·s_obj ∈ [1, 10)."""
+    """DESIGN §6 / pilot P1: a power of 10 with |U*|·s_obj in DESIGN's [1, 100]. This returns
+    the smallest such power, so |U*|·s_obj lands in [1, 10)."""
     U_abs = abs(float(U_abs))
     if not (np.isfinite(U_abs) and U_abs > 0):
         raise ValueError(f"|U*| must be positive and finite, got {U_abs}")
@@ -73,6 +79,8 @@ class PMIResult:
     s_obj: float
     formulation: str
     settings: dict = field(default_factory=dict)
+    v_source: str = "polished"   # "polished" or "incumbent" (polish failed)
+    incumbent_violations: str = "{}"   # JSON: the checker on the raw incumbent weights
 
     @property
     def final_gap(self) -> float:
@@ -138,15 +146,20 @@ class PMI:
                 U_pol, w_pol, pstat = fx.U / s, fx.w, "OPTIMAL"
             except RuntimeError as err:
                 pstat = str(err)
-        use_pol = has and np.isfinite(U_pol) and U_pol >= U_inc
+        use_pol = has and bool(np.isfinite(U_pol))
         V = (U_pol if use_pol else U_inc) if has else np.nan
         w = w_pol if use_pol else r.w
+        inc_viol = json.dumps(pmi_violations(r.w, r.zp, r.zm, self.B, self.S, self.mandate,
+                                             self.K, self.ell, self.adv, mkt=M.mkt),
+                              sort_keys=True) if has else "no incumbent"
         return PMIResult(V=V, B=r.bound / s, w=w, zp=r.zp, zm=r.zm, status_name=r.status_name,
                          reached_gap=r.reached_gap, runtime=r.runtime, work=r.work,
                          nodes=r.nodes, root_bound=r.root_bound / s, U_incumbent=U_inc,
                          w_incumbent=r.w, U_polished=U_pol, polish_status=pstat,
                          U_raw=r.U / s, U_raw_scaled=r.U, B_scaled=r.bound, s_obj=s,
-                         formulation=self.formulation, settings=settings)
+                         formulation=self.formulation, settings=settings,
+                         v_source="polished" if use_pol else ("incumbent" if has else "none"),
+                         incumbent_violations=inc_viol)
 
     def _shadows(self, res) -> dict[str, float]:
         """Raw (scaled) dU*/db per key: dollar, beta, gross, style and style:<f>, sector and
@@ -163,7 +176,6 @@ class PMI:
             out["sector"] = shadow_price(res, "sector")
             out.update({f"sector:{j}": shadow_price(res, "sector", j)
                         for j in range(len(res.duals[("sector", "upper")]))})
-        assert set(TWO_SIDED) >= {"dollar", "beta", "style", "sector"}
         return out
 
     def _dual_record(self, res, status: str = "OPTIMAL") -> dict:

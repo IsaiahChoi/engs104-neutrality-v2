@@ -70,7 +70,9 @@ def integer_violations(w, zp, zm, K: int | None, ell: float, mandate, adv=None,
                        tol: float = 1e-7) -> dict[str, float]:
     """P-MI rows from (w, z⁺, z⁻) alone: binary z, one side per name, linking (w_i > 0 needs
     z⁺_i = 1, w_i < 0 needs z⁻_i = 1, |w_i| ≤ cap_i), minimum position (held names |w_i| ≥ ℓ),
-    and cardinality (Σ(z⁺ + z⁻) ≤ K and #{|w_i| > tol} ≤ K). Name -> worst violation."""
+    and cardinality (Σ(z⁺ + z⁻) ≤ K and #{|w_i| > tol} ≤ K). Name -> worst violation.
+    tol defaults to 1e-7, tighter than Gurobi's FeasibilityTol (1e-6): apply it to polished
+    weights (exactly feasible), or pass tol ≥ the solver's tolerances for raw incumbents."""
     w, zp, zm = (np.asarray(a, float) for a in (w, zp, zm))
     cap = _cap_vector(len(w), mandate, adv)
     out = {}
@@ -81,8 +83,9 @@ def integer_violations(w, zp, zm, K: int | None, ell: float, mandate, adv=None,
     both = (zp + zm - 1.0).max()
     if both > tol:
         out["one_sided"] = float(both)
+    held = (zp + zm) > 0.5
     link = max(np.max(np.where(zp < 0.5, w, 0.0)), np.max(np.where(zm < 0.5, -w, 0.0)),
-               np.max(np.abs(w) - cap * (zp + zm)))
+               np.max(np.where(held, np.abs(w) - cap, 0.0)))
     if link > tol:
         out["linking"] = float(link)
     short = np.max(np.where(zp > 0.5, ell - w, -np.inf), initial=-np.inf)

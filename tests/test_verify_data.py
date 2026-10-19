@@ -45,3 +45,12 @@ def test_compare_meta_ignores_timestamps_and_reports_provenance():
     changed = {**same, "config": {"window": 126}, "extra_key": 1}
     diffs, _ = compare_meta(changed, manifest)
     assert set(diffs) == {"config", "extra_key"}
+
+
+def test_missing_manifest_key_is_a_fail_row(tmp_path):
+    """Review L5: a manifest without panel_sha256 gives FAIL rows, not a KeyError."""
+    from tools.verify_data import meta_rows
+    rows = meta_rows(man_data={"raw_sha256": {}}, build_meta={"raw_sha256": {}, "panel_sha256": "x"},
+                     panel_hash_value="x")
+    status = {name: ok for name, ok, _ in rows}
+    assert status["build_meta panel hash"] is False and status["panel content hash"] is False

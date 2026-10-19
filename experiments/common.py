@@ -3,21 +3,28 @@ and fixed-λ book are removed): clean-tree refusal, run directories, resume, wri
 DONE marker, provenance, and the run log.
 
 A run lives in results/<name>/run_<UTC>/. It starts only from a clean tree (no modified, staged,
-or untracked files outside results/), and records that commit (CLAUDE.md rule 6). Each finished
-chunk (a date, an instance) is one parquet file written once and never overwritten; a crashed
-run resumes in the same directory, skipping finished chunks, but only if the config hash and the
-commit match (`run_meta.json`). `finish` writes the combined outputs, their sha256 in
-`outputs.json`, and a DONE marker. The run's RUN_LOG row is written when it starts (status
-"running") and updated in place when it ends: "ok" (or "pilot" for pilot runs) or "failed"
-(CLAUDE.md rule 7).
+or untracked files outside results/), and records that commit (CLAUDE.md rule 6) plus a
+fingerprint of the processed data (data/ is gitignored, so git cannot see it); a processed panel
+whose recorded hash differs from the committed manifest is refused. Each finished chunk (a date,
+an instance) is one parquet file written once and never overwritten. A run that was killed
+(crash, kill, power loss) resumes in the same directory, skipping finished chunks, but only if
+the config hash, the commit, the finish status, the run arguments (extra_meta) and the data
+fingerprint all match (`run_meta.json`). A run whose runner raised is marked FAILED by `fail`
+and is not resumed: rerunning starts a new run. `finish` writes the combined outputs (via
+temporary files), their sha256 in `outputs.json`, closes the RUN_LOG row, and only then writes
+DONE. The run's RUN_LOG row is written when it starts (status "running") and updated in place
+when it ends: "ok" (or "pilot" for pilot runs), "failed", or later "superseded" (CLAUDE.md
+rule 7). Every RUN_LOG access holds an exclusive lock on results/RUN_LOG.lock.
 """
 from __future__ import annotations
 
 import csv
+import fcntl
 import hashlib
 import json
 import platform
 import subprocess
+from contextlib import contextmanager
 from pathlib import Path
 
 import pandas as pd
@@ -26,6 +33,9 @@ import yaml
 from src.utils import ROOT, RUN_LOG_HEADER, utc_timestamp
 
 END_STATUSES = ("ok", "failed", "pilot", "superseded")
+DATA_FILES = ("data/processed/panel.parquet", "data/processed/factors_daily.parquet",
+              "data/processed/risk/w252_loadings.parquet",
+              "data/processed/risk/w252_factor_cov.parquet")
 
 
 # ----- git -----
@@ -57,7 +67,11 @@ def require_clean_tree(root: Path = ROOT) -> str:
 # ----- provenance -----
 
 def file_sha256(path: Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
 
 
 def provenance() -> dict:
@@ -73,10 +87,40 @@ def provenance() -> dict:
             "gurobipy": ".".join(map(str, gurobipy.gurobi.version()))}
 
 
+def data_fingerprint(root: Path = ROOT) -> dict:
+    """sha256 of the processed inputs the runners read, and the panel hash recorded in
+    build_meta.json against the committed manifest. RuntimeError if those two differ."""
+    root = Path(root)
+
+    def read(rel):
+        p = root / rel
+        return json.loads(p.read_text()) if p.exists() else {}
+
+    manifest = read("data/MANIFEST_data.json").get("panel_sha256")
+    built = read("data/processed/build_meta.json").get("panel_sha256")
+    if manifest is not None and built is not None and manifest != built:
+        raise RuntimeError(f"processed panel hash {built[:16]} does not match the committed "
+                           f"manifest {manifest[:16]} (run `make data-verify`)")
+    return {"panel_sha256_manifest": manifest, "panel_sha256_build_meta": built,
+            "files": {rel: file_sha256(root / rel) for rel in DATA_FILES if (root / rel).exists()}}
+
+
 # ----- the run log -----
 
 def _log_path(root: Path) -> Path:
     return Path(root) / "results" / "RUN_LOG.csv"
+
+
+@contextmanager
+def _locked(root: Path):
+    lock = Path(root) / "results" / "RUN_LOG.lock"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock, "a") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
 
 
 def _rel(path: Path, root: Path) -> str:
@@ -84,36 +128,48 @@ def _rel(path: Path, root: Path) -> str:
     return str(p.relative_to(root)) if p.is_absolute() and p.is_relative_to(root) else str(p)
 
 
-def log_start(root: Path, commit: str, config_path: str, output_path: str, notes: str) -> None:
+def _append(root: Path, row: list) -> None:
     log = _log_path(root)
-    log.parent.mkdir(parents=True, exist_ok=True)
-    new = not log.exists()
+    new = not log.exists() or log.stat().st_size == 0
     with log.open("a", newline="") as f:
         w = csv.writer(f)
         if new:
             w.writerow(RUN_LOG_HEADER)
-        w.writerow([utc_timestamp(), commit, config_path, "running", output_path, notes])
+        w.writerow(row)
 
 
-def log_end(root: Path, output_path: str, status: str, note: str) -> None:
-    """Update the newest 'running' row for output_path in place (status, notes += note)."""
+def log_start(root: Path, commit: str, config_path: str, output_path: str, notes: str) -> None:
+    with _locked(root):
+        _append(root, [utc_timestamp(), commit, config_path, "running", output_path, notes])
+
+
+def log_end(root: Path, output_path: str, status: str, note: str,
+            from_status: tuple[str, ...] = ("running",)) -> bool:
+    """Update the newest row for output_path whose status is in from_status, in place
+    (status; notes += note). Returns False if there is no such row."""
     if status not in END_STATUSES:
         raise ValueError(status)
-    log = _log_path(root)
-    with log.open(newline="") as f:
-        rows = list(csv.reader(f))
-    header, body = rows[0], rows[1:]
-    i_status, i_out, i_notes = (header.index(k) for k in ("status", "output_path", "notes"))
-    hits = [k for k, r in enumerate(body) if r[i_out] == output_path and r[i_status] == "running"]
-    if not hits:
-        raise KeyError(f"no running RUN_LOG row for {output_path}")
-    r = body[hits[-1]]
-    r[i_status] = status
-    r[i_notes] = f"{r[i_notes]}; ended {utc_timestamp()}: {note}" if r[i_notes] else note
-    tmp = log.with_suffix(".tmp")
-    with tmp.open("w", newline="") as f:
-        csv.writer(f).writerows([header, *body])
-    tmp.replace(log)
+    with _locked(root):
+        log = _log_path(root)
+        if not log.exists():
+            return False
+        with log.open(newline="") as f:
+            rows = list(csv.reader(f))
+        if not rows:
+            return False
+        header, body = rows[0], rows[1:]
+        i_status, i_out, i_notes = (header.index(k) for k in ("status", "output_path", "notes"))
+        hits = [k for k, r in enumerate(body) if r[i_out] == output_path and r[i_status] in from_status]
+        if not hits:
+            return False
+        r = body[hits[-1]]
+        r[i_status] = status
+        r[i_notes] = f"{r[i_notes]}; {status} {utc_timestamp()}: {note}" if r[i_notes] else note
+        tmp = log.with_suffix(".tmp")
+        with tmp.open("w", newline="") as f:
+            csv.writer(f).writerows([header, *body])
+        tmp.replace(log)
+        return True
 
 
 # ----- runs -----
@@ -122,33 +178,43 @@ def config_hash(config_path: str, root: Path = ROOT) -> str:
     return file_sha256(Path(root) / config_path)
 
 
+def _canon(x) -> str:
+    return json.dumps(x, sort_keys=True, default=str)
+
+
 def open_run(name: str, config_path: str, root: Path = ROOT, status: str = "ok",
              extra_meta: dict | None = None) -> tuple[Path, dict]:
-    """Refuse a dirty tree; resume the newest unfinished, unfailed run with the same config and
-    commit, or start a new one. `status` is the RUN_LOG status written by `finish`."""
+    """Refuse a dirty tree or a data/manifest mismatch; resume the newest killed run with the same
+    config, commit, finish status, arguments and data, or start a new one. `status` is the
+    RUN_LOG status written by `finish`."""
     root = Path(root)
     commit = require_clean_tree(root)
+    data = data_fingerprint(root)
     cfg_hash = config_hash(config_path, root)
+    args = extra_meta or {}
     base = root / "results" / name
     base.mkdir(parents=True, exist_ok=True)
     for d in sorted(base.glob("run_*"), reverse=True):
         meta_path = d / "run_meta.json"
-        if (d / "DONE").exists() or (d / "FAILED").exists() or not meta_path.exists():
+        if any((d / m).exists() for m in ("DONE", "FAILED", "SUPERSEDED")) or not meta_path.exists():
             continue
         meta = json.loads(meta_path.read_text())
-        if meta["config_sha256"] == cfg_hash and meta["git_commit"] == commit:
+        if (meta["config_sha256"] == cfg_hash and meta["git_commit"] == commit
+                and meta.get("finish_status") == status and _canon(meta.get("args", {})) == _canon(args)
+                and _canon(meta.get("data")) == _canon(data)):
             print(f"resuming {d.name}", flush=True)
             return d, meta
-    stamp = utc_timestamp().replace(":", "").replace("-", "")
+    meta = {"name": name, "created_utc": utc_timestamp(), "git_commit": commit,
+            "config_path": config_path, "config_sha256": cfg_hash,
+            "config": yaml.safe_load((root / config_path).read_text()),
+            "finish_status": status, "args": args, "data": data, "provenance": provenance(),
+            **args}
+    stamp = meta["created_utc"].replace(":", "").replace("-", "")
     d = base / f"run_{stamp}"
     k = 1
     while d.exists():                                   # two runs started in the same second
         d, k = base / f"run_{stamp}_{k}", k + 1
     d.mkdir()
-    meta = {"name": name, "created_utc": utc_timestamp(), "git_commit": commit,
-            "config_path": config_path, "config_sha256": cfg_hash,
-            "config": yaml.safe_load((root / config_path).read_text()),
-            "finish_status": status, "provenance": provenance(), **(extra_meta or {})}
     (d / "run_meta.json").write_text(json.dumps(meta, indent=1, default=str))
     log_start(root, commit, config_path, _rel(d, root), f"{name} {d.name}")
     return d, meta
@@ -179,34 +245,60 @@ def run_meta(run: Path) -> dict:
 
 def finish(run: Path, config_path: str, outputs: dict[str, pd.DataFrame], note: str,
            root: Path = ROOT) -> None:
-    """Write each output once, record their sha256, write DONE, close the RUN_LOG row."""
+    """Write each output (temporary file, then rename; outputs are derived from the chunks, so a
+    finish interrupted before DONE may rewrite them), record their sha256, close the RUN_LOG
+    row, then write DONE. If the RUN_LOG row cannot be closed, no DONE is written."""
+    root = Path(root)
+    if (run / "DONE").exists():
+        raise FileExistsError(run / "DONE")
     hashes = {}
     for name, df in outputs.items():
         out = run / f"{name}.parquet"
-        if out.exists():
-            raise FileExistsError(out)
-        df.to_parquet(out, index=False)
+        tmp = out.with_suffix(".parquet.tmp")
+        df.to_parquet(tmp, index=False)
+        tmp.replace(out)
         hashes[out.name] = file_sha256(out)
     (run / "outputs.json").write_text(json.dumps(hashes, indent=1))
+    if not log_end(root, _rel(run, root), run_meta(run).get("finish_status", "ok"), note):
+        raise RuntimeError(f"no running RUN_LOG row for {_rel(run, root)}; DONE not written")
     (run / "DONE").write_text(utc_timestamp() + "\n")
-    log_end(Path(root), _rel(run, Path(root)), run_meta(run).get("finish_status", "ok"), note)
 
 
 def fail(run: Path | None, config_path: str, err: BaseException, root: Path = ROOT) -> None:
-    """Mark the run failed (FAILED marker; RUN_LOG row updated). A failure before the run
-    directory exists gets its own row."""
+    """Mark the run failed (FAILED marker; its RUN_LOG row updated, or a new failed row if it has
+    none in "running", e.g. a failure after finish). Never raises over the original error."""
     msg = f"{type(err).__name__}: {err}"
     root = Path(root)
-    if run is None:
-        log_start(root, head_commit(root), config_path, "", "failed before the run started")
-        log_end(root, "", "failed", msg)
-        return
-    (run / "FAILED").write_text(utc_timestamp() + "\n" + msg + "\n")
-    log_end(root, _rel(run, root), "failed", msg)
+    out = _rel(run, root) if run is not None else ""
+    try:
+        commit = head_commit(root)
+    except RuntimeError:
+        commit = "unknown"
+    if run is not None:
+        (run / "FAILED").write_text(utc_timestamp() + "\n" + msg + "\n")
+    if run is None or not log_end(root, out, "failed", msg):
+        with _locked(root):
+            _append(root, [utc_timestamp(), commit, config_path, "failed", out,
+                           msg if run is not None else f"failed before the run started: {msg}"])
 
 
-def latest_done(name: str, root: Path = ROOT) -> Path:
-    runs = [d for d in sorted((Path(root) / "results" / name).glob("run_*")) if (d / "DONE").exists()]
+def supersede(run: Path, note: str, root: Path = ROOT) -> None:
+    """Mark a finished run superseded (SUPERSEDED marker; its RUN_LOG row's status set)."""
+    root = Path(root)
+    (run / "SUPERSEDED").write_text(utc_timestamp() + "\n" + note + "\n")
+    if not log_end(root, _rel(run, root), "superseded", note, from_status=("ok", "pilot", "failed")):
+        with _locked(root):
+            _append(root, [utc_timestamp(), run_meta(run)["git_commit"], run_meta(run)["config_path"],
+                           "superseded", _rel(run, root), note])
+
+
+def latest_done(name: str, root: Path = ROOT, status: str = "ok") -> Path:
+    """The newest run of `name` with DONE, no FAILED or SUPERSEDED marker, and finish status
+    `status` (pilot runs are never returned for "ok")."""
+    runs = [d for d in sorted((Path(root) / "results" / name).glob("run_*"))
+            if (d / "DONE").exists() and not (d / "FAILED").exists()
+            and not (d / "SUPERSEDED").exists()
+            and run_meta(d).get("finish_status", "ok") == status]
     if not runs:
-        raise FileNotFoundError(f"no finished {name} run")
+        raise FileNotFoundError(f"no finished {name} run with status {status}")
     return runs[-1]

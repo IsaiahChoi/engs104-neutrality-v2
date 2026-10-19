@@ -1,0 +1,15 @@
+# S1 core verification run (CHECKS CORE, K4-K13): `uv run python -m experiments.run_core`.
+# Stores the solutions behind the S1 tests (weights, duals, λ*, A*, closed forms, slopes) so the
+# result-checker can recompute from raw outputs. Not a DESIGN §7 experiment; no reported number.
+mandate_config: experiments/configs/base_mandate.yaml
+k4_months: ["2008-10", "2017-12", "2020-03"]     # root-found QP vs Clarabel SOC (P-RB)
+k5_months: ["2008-10", "2017-12", "2020-03"]     # alpha decomposition
+k6_months: ["2008-10", "2017-12", "2020-03"]     # idealized equality mandates vs closed form
+k7_months: ["2017-12", "2020-03"]                # envelope at base
+k7_rel_step: 0.01                                # δ = 1% of the bound (CHECKS K7)
+k8_months: ["2017-12", "2020-03"]                # Clarabel scaled vs unscaled
+k8_pmi_seed: 63                                  # small random P-MI (tests/test_integer.py)
+k12_month: "2020-03"                             # swept caps (position, liquidity)
+k12_rel_step: 0.001
+k13_months: ["2017-12", "2020-03"]
+k13_N: 100                                       # top-100 by ADV; K = N, ℓ = 0

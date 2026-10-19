@@ -121,3 +121,14 @@ def test_k8_scaled_and_unscaled_prb_clarabel(ym):
     assert np.abs(scaled.w - raw.w).max() <= 1e-7
     assert scaled.objective == pytest.approx(raw.objective, rel=1e-8)
     assert scaled.lam == pytest.approx(raw.lam, rel=1e-6)
+
+
+def test_root_finder_guess_validation(rand):
+    """Review L7: a non-positive or NaN λ guess raises; an all-zero alpha is simply slack."""
+    B, F, d, S, adv, alpha, m = rand
+    P = ContinuousProblem(B, F, d, S, m, adv=adv, factor_names=FACTORS)
+    for bad in (0.0, -1.0, float("nan")):
+        with pytest.raises(ValueError):
+            solve_risk_budget(P, alpha, lam_guess=bad)
+    rb = solve_risk_budget(P, np.zeros_like(alpha))
+    assert not rb.risk_binding and rb.lam == LAMBDA_MIN and rb.A == pytest.approx(0.0, abs=1e-15)

@@ -49,42 +49,53 @@ def envelope_check(points: pd.DataFrame, rebuild: Callable, n: int, seed: int,
                                        "rel_err", "within"])
 
 
-def main() -> int:            # pragma: no cover - exercised in S2 on stored runs
+def rebuild_point(row, base) -> tuple:
+    """(base problem with the point applied, alpha) for a stored sweep point: the same date,
+    universe (row n_label: "full" or the subsample size) and alpha kind (mom, perp, par)."""
     from experiments.instances import restricted, subsample
     from experiments.sweep import apply_point, build
     from src.alpha.decompose import alpha_set
+    label = str(row["n_label"])
+    di, alpha_full, idx = subsample(pd.Timestamp(row["date"]), "full" if label == "full" else int(label))
+    B, F, d, S, adv, _ = restricted(di, idx)
+    alpha = alpha_set(alpha_full[idx], B, F, d)["alphas"][row["alpha"]]
+    P = build(di, base, B=B, F=F, d=d, S=S, adv=adv)["base"]
+    apply_point(P, base, row["family"], row["value"])
+    return P, alpha
+
+
+def main() -> int:            # exercised in S2 on stored runs
+    from experiments.common import head_commit, log_end, log_start, require_clean_tree
     from src.opt.continuous import load_config
-    from src.utils import ROOT, append_run_log, git_commit, utc_timestamp
+    from src.utils import ROOT, utc_timestamp
 
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--run", required=True)
     p.add_argument("--n", type=int, default=40)
     p.add_argument("--seed", type=int, default=0)
     a = p.parse_args()
+    commit = require_clean_tree()
     run = Path(a.run).resolve()
     pts = pd.read_parquet(run / "points.parquet")
     meta = json.loads((run / "run_meta.json").read_text())
     base, _ = load_config()
-
-    def rebuild(row):
-        di, alpha_full, idx = subsample(pd.Timestamp(row["date"]), row.get("N_label", "full"))
-        B, F, d, S, adv, _ = restricted(di, idx)
-        alpha = alpha_set(alpha_full[idx], B, F, d)["alphas"][row["alpha"]]
-        P = build(di, base, B=B, F=F, d=d, S=S, adv=adv)["base"]
-        apply_point(P, base, row["family"], row["value"])
-        return P, alpha
-
-    out = envelope_check(pts, rebuild, a.n, a.seed)
     stamp = utc_timestamp()
-    res = {"created_utc": stamp, "git_commit": git_commit(), "run": str(run.relative_to(ROOT)),
-           "run_commit": meta["git_commit"], "n": len(out), "tolerance": 0.01,
-           "max_rel_err": float(out["rel_err"].max()) if len(out) else None,
-           "all_within": bool(out["within"].all()) if len(out) else False,
-           "points": out.to_dict("records")}
     path = run.parent / f"envelope_check_{stamp.replace(':', '').replace('-', '')}.json"
-    path.write_text(json.dumps(res, indent=1, default=float))
-    append_run_log(meta["config_path"], "ok" if res["all_within"] else "failed", str(path),
-                   f"envelope self-check: {len(out)} points, max rel err {res['max_rel_err']}")
+    rel = str(path.relative_to(ROOT))
+    log_start(ROOT, commit, meta["config_path"], rel, f"envelope self-check of {run.name}")
+    try:
+        out = envelope_check(pts, lambda r: rebuild_point(r, base), a.n, a.seed)
+        res = {"created_utc": stamp, "git_commit": head_commit(), "run": str(run.relative_to(ROOT)),
+               "run_commit": meta["git_commit"], "n": len(out), "tolerance": 0.01,
+               "max_rel_err": float(out["rel_err"].max()) if len(out) else None,
+               "all_within": bool(out["within"].all()) if len(out) else False,
+               "points": out.to_dict("records")}
+        path.write_text(json.dumps(res, indent=1, default=float))
+    except Exception as e:
+        log_end(ROOT, rel, "failed", f"{type(e).__name__}: {e}")
+        raise
+    log_end(ROOT, rel, "ok" if res["all_within"] else "failed",
+            f"{len(out)} points, max rel err {res['max_rel_err']}")
     print(json.dumps({k: res[k] for k in ("n", "max_rel_err", "all_within")}))
     return 0 if res["all_within"] else 1
 

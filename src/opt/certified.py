@@ -8,6 +8,7 @@ impossible at true optima (U* is nondecreasing in b) and is a solver-error flag.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 
@@ -33,6 +34,10 @@ def certified_interval(V_plus: float, B_plus: float, V_minus: float, B_minus: fl
                        delta: float) -> CertifiedSlope:
     if not delta > 0:
         raise ValueError("delta must be positive")
+    vals = (V_plus, B_plus, V_minus, B_minus)
+    if not all(math.isfinite(v) for v in vals):
+        raise ValueError(f"non-finite value or bound {vals}: no certified interval (record the "
+                         "case as missing, not as non-binding)")
     two = 2.0 * delta
     return CertifiedSlope(L=(V_plus - B_minus) / two, H=(B_plus - V_minus) / two,
                           s=(V_plus - V_minus) / two)

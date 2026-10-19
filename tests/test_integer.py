@@ -43,9 +43,14 @@ def test_exact_objective_matches_dense_formula():
 def test_incumbent_value_bound_and_feasibility(form):
     M, (B, F, d, S, adv, alpha) = small(form=form)
     r = M.solve(mip_gap=1e-6)
-    assert r.V == max(r.U_incumbent, r.U_polished)
-    assert r.U_incumbent == pytest.approx(exact_objective(r.w_incumbent, alpha, 2.0, B, F, d,
-                                                          M.mandate), rel=1e-12)
+    # V is the exact objective at the returned (polished, exactly feasible) weights, recomputed
+    # here from the dense Σ; the raw incumbent never exceeds it by more than solver tolerance.
+    U_dense = alpha @ r.w - 2.0 * r.w @ dense_sigma(B, F, d) @ r.w \
+        - M.mandate.borrow_monthly * np.maximum(-r.w, 0).sum() - M.mandate.trade_cost * np.abs(r.w).sum()
+    assert r.v_source == "polished" and r.V == r.U_polished
+    assert r.V == pytest.approx(U_dense, rel=1e-10)
+    assert r.U_incumbent <= r.V + 1e-6 * abs(r.V)
+    assert pmi_violations(r.w, r.zp, r.zm, B, S, M.mandate, 8, 0.01, adv, tol=1e-9) == {}
     assert r.V <= r.B + 1e-9 * abs(r.B)
     assert r.work > 0 and np.isfinite(r.work) and r.s_obj == 1.0
     assert pmi_violations(r.w, r.zp, r.zm, B, S, M.mandate, 8, 0.01, adv) == {}
@@ -128,3 +133,26 @@ def test_k13_consistency_chain(ym):
         assert abs(A_mi / rb.A - 1) <= 1e-6, form
         assert pmi_violations(r.w, r.zp, r.zm, B, S, base, len(idx), 0.0, adv) == {}
     assert rb.A == pytest.approx(net_alpha(P, rb.sol), rel=1e-15)
+
+
+def test_overstated_raw_incumbent_never_sets_V(monkeypatch):
+    """Review H3: an incumbent that is slightly infeasible (so its exact objective exceeds the
+    polished value) must not become V; when the polish fails, V comes from the incumbent and
+    says so."""
+    M, _ = small(seed=65)
+    real_solve = miqp.MIQPModel.solve
+
+    def inflated(self, *a, **k):
+        r = real_solve(self, *a, **k)
+        r.w = r.w * 1.01                               # pushes binding rows ~1% past their bounds
+        return r
+
+    honest = M.solve(mip_gap=1e-6)
+    monkeypatch.setattr(miqp.MIQPModel, "solve", inflated)
+    r = M.solve(mip_gap=1e-6)
+    assert r.V == pytest.approx(honest.V, rel=1e-12) and r.v_source == "polished"
+    monkeypatch.setattr(miqp.MIQPModel, "fixed_integer",
+                        lambda self, zp, zm: (_ for _ in ()).throw(RuntimeError("fixed solve status NUMERIC")))
+    r2 = M.solve(mip_gap=1e-6)
+    assert r2.v_source == "incumbent" and "NUMERIC" in r2.polish_status
+    assert r2.V == r2.U_incumbent and r2.incumbent_violations != "{}"

@@ -102,3 +102,25 @@ def test_envelope_self_check_and_negative_control():
     bad.loc[k, "sp_liquidity"] *= 1.10                                  # corrupt one stored price
     flagged = envelope_check(bad.loc[[k]], rebuild, n=1, seed=0)
     assert not flagged["within"].any()
+
+
+def test_subsample_sweep_and_envelope_rebuild_round_trip():
+    """Review H1/H2: a subsample sweep labels weights with the subsample's tickers and stores
+    n_label, and the envelope self-check rebuilds that same universe."""
+    from experiments.check_envelope import rebuild_point
+    from experiments.instances import restricted, subsample
+    from tests.realdata import month_end
+    di, alpha_full, idx = subsample(month_end(YM), 100)
+    B, F, d, S, adv, tickers = restricted(di, idx)
+    _, _, base = realdata.case(YM)
+    pts, w = sweep_date(di, alpha_full[idx], "mom", base, {"liquidity": [0.05, 0.025]},
+                        inputs={"B": B, "F": F, "d": d, "S": S, "adv": adv, "tickers": tickers},
+                        n_label=100)
+    assert (pts["N"] == 100).all() and (pts["n_label"] == "100").all()
+    assert set(w["ticker"]) <= set(tickers)
+    P, a = rebuild_point(pts.iloc[1], base)
+    assert P.N == 100 and len(a) == 100
+    np.testing.assert_allclose(a, alpha_full[idx], rtol=0, atol=0)
+    with pytest.raises(ValueError):                     # inputs without tickers is refused
+        sweep_date(di, alpha_full[idx], "mom", base, {"liquidity": [0.05]},
+                   inputs={"B": B, "F": F, "d": d, "S": S, "adv": adv})

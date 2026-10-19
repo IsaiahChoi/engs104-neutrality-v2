@@ -40,7 +40,7 @@ C2_GRIDS: dict[str, list] = {                          # DESIGN §7 C2 (None = o
     "liquidity": [None, 0.10, 0.05, 0.025],
 }
 
-reset = restore                                         # v1 name
+reset = restore            # v1 name; restores every bound AND position_caps (u, θ)
 
 
 def base_value(mandate: Mandate, family: str):
@@ -123,16 +123,23 @@ def record(P: ContinuousProblem, rb, alpha, ids: dict, tickers) -> tuple[dict, p
 
 
 def sweep_date(di, alpha, alpha_kind: str, mandate: Mandate, grids: dict[str, list],
-               families=None, inputs: dict | None = None,
+               families=None, inputs: dict | None = None, n_label="full",
                rb_kw: dict | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Every point of `grids` (restricted to `families`) at one date for one alpha. `inputs`
-    overrides the full-universe B, F, d, S, adv (subsamples); rb_kw goes to solve_risk_budget."""
-    rb_kw = dict(rb_kw or {})
-    inputs = inputs or {}
+    (a subsample: B, F, d, S, adv and its tickers, as experiments.instances.restricted returns)
+    overrides the full universe; `n_label` ("full" or the subsample size) is stored with each
+    point so the envelope self-check rebuilds the same universe. rb_kw goes to
+    solve_risk_budget (lam_guess is set here, from the neighbouring point)."""
+    rb_kw = {k: v for k, v in (rb_kw or {}).items() if k != "lam_guess"}
+    inputs = dict(inputs or {})
+    if inputs and "tickers" not in inputs:
+        raise ValueError("subsample inputs need their tickers (experiments.instances.restricted)")
+    tickers = inputs.pop("tickers", di.tickers)
     probs = build(di, mandate, **inputs)
     base = probs["base"]
+    if len(tickers) != base.N:
+        raise ValueError(f"{len(tickers)} tickers for {base.N} names")
     snap = snapshot(base)
-    tickers = inputs.get("tickers", di.tickers)
     ds = f"{pd.Timestamp(di.date):%Y-%m-%d}"
     lam_base = solve_risk_budget(base, alpha, **rb_kw).lam
     rows, weights = [], []
@@ -151,10 +158,10 @@ def sweep_date(di, alpha, alpha_kind: str, mandate: Mandate, grids: dict[str, li
             if rb.risk_binding:
                 lam_prev = rb.lam
             is_base = (not off) and bool(np.isclose(value, base_value(mandate, family)))
-            pid = f"{ds}|{alpha_kind}|{family}|{'off' if off else f'{value:g}'}"
+            pid = f"{ds}|N{n_label}|{alpha_kind}|{family}|{'off' if off else f'{value:g}'}"
             ids = {"point_id": pid, "date": ds, "alpha": alpha_kind, "family": family,
                    "value": np.nan if off else float(value), "off": off, "is_base": is_base,
-                   "N": P.N}
+                   "N": P.N, "n_label": str(n_label)}
             row, w = record(P, rb, alpha, ids, tickers)   # before reset: the shadow prices
             reset(base, snap)                              # need the swept caps (K12)
             rows.append(row)

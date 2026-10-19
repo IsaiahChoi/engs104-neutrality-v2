@@ -52,3 +52,11 @@ def test_k10_intervals_contain_exact_slope(seed):
         assert ci.L - tol <= slope <= ci.H + tol, (gap, ci, slope)
         assert not ci.solver_error
     assert np.isfinite(slope)
+
+
+def test_non_finite_inputs_are_refused():
+    """Review M6: a missing incumbent (NaN) must not read as 'not binding'."""
+    with pytest.raises(ValueError):
+        certified_interval(float("nan"), 1.0, 1.0, 1.0, 0.1)
+    with pytest.raises(ValueError):
+        certified_interval(1.0, float("inf"), 1.0, 1.0, 0.1)

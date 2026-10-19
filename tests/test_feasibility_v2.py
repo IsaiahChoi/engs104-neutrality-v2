@@ -6,6 +6,7 @@ from __future__ import annotations
 import inspect
 
 import numpy as np
+import pytest
 
 import src.opt.feasibility as feasibility
 from src.opt.continuous import ContinuousProblem, Mandate
@@ -60,3 +61,16 @@ def test_pmi_pass_and_constructed_violations():
     zp4 = zp.copy()
     zp4[held[2]] = 0.5
     assert "binary" in integer_violations(w, zp4, zm, K, ell, M, adv)
+
+
+def test_integer_rows_without_caps_do_not_warn():
+    """Review L2: no caps means cap = inf; inf·0 must not produce NaN or a RuntimeWarning."""
+    import warnings
+    m = Mandate(dollar=None, beta=None, style=None, sector=None, gross=None, position=None,
+                liquidity_theta=None)
+    w, zp, zm = np.array([0.05, 0.0, -0.02]), np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 1.0])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert integer_violations(w, zp, zm, 2, 0.01, m) == {}
+        assert integer_violations(np.array([0.05, 0.01, 0.0]), zp, np.zeros(3), 3, 0.01, m) == \
+            {"linking": pytest.approx(0.01)}

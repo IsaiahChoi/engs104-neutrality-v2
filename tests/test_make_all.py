@@ -19,7 +19,7 @@ def test_numbers_tex_is_deterministic_and_sourced(tmp_path):
     assert len(macros) >= 10
     names = []
     for i in macros:
-        m = re.fullmatch(r"\\newcommand\{\\([A-Za-z]+)\}\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}", lines[i])
+        m = re.fullmatch(r"\\newcommand\{\\([A-Za-z]+)\}\{(.*)\}", lines[i])
         assert m, lines[i]
         names.append(m.group(1))
         src = re.fullmatch(r"% source: (\S+) sha256=([0-9a-f]{64})", lines[i - 1])
@@ -37,5 +37,15 @@ def test_design_constants_match_the_configs(tmp_path):
     assert vals["BaseSectorPct"] == "2" and vals["BasePositionPct"] == "3"
     assert vals["MiqpPositionPct"] == "6" and vals["BaseLiquidityPct"] == "5"
     assert vals["BorrowBpYear"] == "30" and vals["TradeCostBp"] == "5"
-    assert vals["AUMBillion"] == "1" and vals["LambdaMin"] == "10^{-6}"
-    assert vals["RootRtol"] == "10^{-10}"
+    assert vals["AUMBillion"] == "1" and vals["LambdaMin"] == "\\ensuremath{10^{-6}}"
+    assert vals["RootRtol"] == "\\ensuremath{10^{-10}}"
+
+
+def test_number_formatting():
+    """Review L3: no float noise, no exponent notation, no silent rounding."""
+    import pytest
+    assert make_all._num(100 * 0.07) == "7" and make_all._num(1e4 * 0.0005) == "5"
+    assert make_all._num(0.00001) == "0.00001" and make_all._num(2.5) == "2.5"
+    assert make_all._fixed(0.10, 2) == "0.10"
+    with pytest.raises(ValueError):
+        make_all._fixed(0.025, 2)

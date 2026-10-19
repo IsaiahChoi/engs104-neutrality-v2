@@ -59,6 +59,20 @@ def compare_meta(meta: dict, manifest: dict) -> tuple[dict, dict]:
     return diffs, prov
 
 
+def meta_rows(man_data: dict, build_meta: dict, panel_hash_value: str) -> list[tuple[str, bool, str]]:
+    """The three hash checks against the manifest; a missing key is a FAIL row, not an error."""
+    man_raw, man_panel = man_data.get("raw_sha256"), man_data.get("panel_sha256")
+    return [
+        ("build_meta raw hashes", man_raw is not None and build_meta.get("raw_sha256") == man_raw,
+         f"{len(build_meta.get('raw_sha256') or {})} entries"
+         + ("" if man_raw is not None else "; manifest has no raw_sha256")),
+        ("build_meta panel hash", man_panel is not None and build_meta.get("panel_sha256") == man_panel,
+         (man_panel or "manifest has no panel_sha256")[:32]),
+        ("panel content hash", man_panel is not None and panel_hash_value == man_panel,
+         f"recomputed {panel_hash_value[:16]}"),
+    ]
+
+
 def _short(v) -> str:
     s = json.dumps(v, default=str) if not isinstance(v, str) else v
     return s if len(s) <= 60 else s[:57] + "..."
@@ -76,20 +90,14 @@ def main() -> int:
     rows: list[tuple[str, bool, str]] = []
     notes: list[str] = []
 
-    r = compare_raw(DATA_RAW, man_data["raw_sha256"])
+    r = compare_raw(DATA_RAW, man_data.get("raw_sha256", {}))
     ok = not (r["missing"] or r["extra"] or r["mismatched"])
     rows.append(("raw files vs manifest", ok,
                  f"manifest {r['n_manifest']}, on disk {r['n_disk']}, missing {r['missing'][:5]}, "
                  f"extra {r['extra'][:5]}, mismatched {r['mismatched'][:5]}"))
-    rows.append(("build_meta raw hashes", build_meta.get("raw_sha256") == man_data["raw_sha256"],
-                 f"{len(build_meta.get('raw_sha256', {}))} entries"))
-    rows.append(("build_meta panel hash", build_meta.get("panel_sha256") == man_data["panel_sha256"],
-                 man_data["panel_sha256"][:16]))
-
     import pandas as pd
     from src.data.panel import panel_hash
-    h = panel_hash(pd.read_parquet(PANEL_PATH))
-    rows.append(("panel content hash", h == man_data["panel_sha256"], f"recomputed {h[:16]}"))
+    rows += meta_rows(man_data, build_meta, panel_hash(pd.read_parquet(PANEL_PATH)))
 
     for name, meta, man in (("build_meta fields", build_meta, man_data),
                             ("risk meta fields", risk_meta, man_risk)):

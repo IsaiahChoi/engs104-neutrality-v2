@@ -21,3 +21,5 @@ results/scratch/*
 # v2 additions
 results/checks/scratch/
 .ecc/
+results/RUN_LOG.lock
+results/RUN_LOG.tmp

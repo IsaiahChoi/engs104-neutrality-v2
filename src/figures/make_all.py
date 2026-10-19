@@ -27,17 +27,30 @@ def sha256(rel: str) -> str:
     return hashlib.sha256((ROOT / rel).read_bytes()).hexdigest()
 
 
-def _g(x: float) -> str:
-    """Shortest exact decimal: 2.0 -> '2', 0.05 -> '0.05'."""
-    s = repr(float(x))
-    return s[:-2] if s.endswith(".0") else s
+def _num(x: float) -> str:
+    """Plain decimal for LaTeX: rounded to 10 significant digits (so 100·0.07 prints 7), never in
+    exponent notation, no trailing zeros: 2.0 -> '2', 0.05 -> '0.05'."""
+    v = float(f"{float(x):.10g}")
+    s = f"{v:.12f}".rstrip("0").rstrip(".")
+    if float(s) != v:
+        raise ValueError(f"{x} needs more than 12 decimals")
+    return s
+
+
+def _fixed(x: float, nd: int) -> str:
+    """x with exactly nd decimals; refuses a value that the rounding would change."""
+    s = f"{float(x):.{nd}f}"
+    if not math.isclose(float(s), float(x), rel_tol=0, abs_tol=1e-12):
+        raise ValueError(f"{x} does not have {nd} decimals")
+    return s
 
 
 def _pow10(x: float) -> str:
+    """'\\ensuremath{10^{k}}' for x = 10^k (usable in text and math mode)."""
     k = round(math.log10(x))
     if not math.isclose(x, 10.0**k, rel_tol=1e-12):
         raise ValueError(f"{x} is not a power of ten")
-    return f"10^{{{k}}}"
+    return f"\\ensuremath{{10^{{{k}}}}}"
 
 
 def design_constants() -> list[tuple[str, str, str]]:
@@ -46,20 +59,20 @@ def design_constants() -> list[tuple[str, str, str]]:
     m, rb = cfg["mandate"], cfg["risk_budget"]
     from experiments.instances import MIQP_POSITION_CAP
     return [
-        ("RiskBudgetPct", _g(100 * rb["target_annual_vol"]), BASE_MANDATE),
+        ("RiskBudgetPct", _num(100 * rb["target_annual_vol"]), BASE_MANDATE),
         ("LambdaMin", _pow10(rb["lambda_min"]), BASE_MANDATE),
         ("RootRtol", _pow10(rb["root_rtol"]), BASE_MANDATE),
-        ("BaseGross", _g(m["gross"]), BASE_MANDATE),
-        ("BaseNetPct", _g(100 * m["dollar"]), BASE_MANDATE),
-        ("BaseBeta", f"{m['beta']:.2f}", BASE_MANDATE),
-        ("BaseStyle", f"{m['style']:.2f}", BASE_MANDATE),
-        ("BaseSectorPct", _g(100 * m["sector"]), BASE_MANDATE),
-        ("BasePositionPct", _g(100 * m["position"]), BASE_MANDATE),
-        ("BaseLiquidityPct", _g(100 * m["liquidity_theta"]), BASE_MANDATE),
-        ("AUMBillion", _g(m["aum_usd"] / 1e9), BASE_MANDATE),
-        ("BorrowBpYear", _g(round(1e4 * m["borrow_annual"], 10)), BASE_MANDATE),
-        ("TradeCostBp", _g(round(1e4 * m["trade_cost"], 10)), BASE_MANDATE),
-        ("MiqpPositionPct", _g(round(100 * MIQP_POSITION_CAP, 10)), INSTANCES),
+        ("BaseGross", _num(m["gross"]), BASE_MANDATE),
+        ("BaseNetPct", _num(100 * m["dollar"]), BASE_MANDATE),
+        ("BaseBeta", _fixed(m["beta"], 2), BASE_MANDATE),
+        ("BaseStyle", _fixed(m["style"], 2), BASE_MANDATE),
+        ("BaseSectorPct", _num(100 * m["sector"]), BASE_MANDATE),
+        ("BasePositionPct", _num(100 * m["position"]), BASE_MANDATE),
+        ("BaseLiquidityPct", _num(100 * m["liquidity_theta"]), BASE_MANDATE),
+        ("AUMBillion", _num(m["aum_usd"] / 1e9), BASE_MANDATE),
+        ("BorrowBpYear", _num(1e4 * m["borrow_annual"]), BASE_MANDATE),
+        ("TradeCostBp", _num(1e4 * m["trade_cost"]), BASE_MANDATE),
+        ("MiqpPositionPct", _num(100 * MIQP_POSITION_CAP), INSTANCES),
     ]
 
 
