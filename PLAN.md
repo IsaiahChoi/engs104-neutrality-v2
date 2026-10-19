@@ -22,7 +22,7 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [x] 3. C1, C2, C3 via `make c1 c2 c3` in the background (≤ 4 workers)
 - [x] 4. Figs. 1–3 and the C3 summary, "preliminary" in file names until GATE C
 - [x] 5. proposal/FACTS.md (each fact with source file and sha256)
-- [ ] 6. **CHECK CONT** (K14–K21) by the result-checker
+- [x] 6. **CHECK CONT** (K14–K21) by the result-checker — round 1 PASS (results/checks/CONT_20261019T231627Z.md)
 - [ ] Stop at GATE C with the pilot table, proposed I1/N1 parameters, C1/C2 headlines, the CHECK CONT verdict, the S3 projection
 
 ## GATE C — Isaiah (Mon 10/19)
