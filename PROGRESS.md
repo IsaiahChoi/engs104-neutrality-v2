@@ -134,3 +134,13 @@ Tests cover K4–K13.
     - **Recommendation: (a).** It is an accurate, independent conic solver; it keeps "both relaxation duals" (D7) meaningful; and the checker already showed it scales to ~1e-8 and matches the FD to ~1e-6. I would implement it test-first against the toy closed form (both parameter sets) and the K8 instance, rerun the core verification, and run CHECK CORE round 2, about 1–2 hours.
 11. **K8 P-RB weights at 1e-7 relative.** If, after the accuracy improvement above, Clarabel still cannot meet 1e-7 relative between its scaled and unscaled solves, decide whether K8's "same w to 1e-7" is relative ‖Δw‖₁/‖w‖₁ (the checker's reading) or absolute max |Δw| (fractions of AUM).
 12. **To resume:** answer items 10 and 11 (and preferably 1–9) in a note. The next session implements, reruns `experiments.run_core`, and runs CHECK CORE round 2 (rounds left: 2 of 3). S2 follows only after a PASS.
+
+## 2026-10-19 — Isaiah: decisions on the S1 open items (CHECK CORE round 1 FAIL)
+- Item 10: (a). Perspective-relaxation duals and values come from Clarabel (tolerances 1e-10 or tighter), built from the same mandate data as the Gurobi model; test first against the K9 toy closed forms; add a test that Clarabel's relaxation objective matches Gurobi's barrier relaxation objective to 1e-6 relative. Gurobi stays for branch-and-bound, the big-M relaxation (dual simplex), the fixed-integer QP, and N1 root bounds. Edit DESIGN §6 to match (ask me first).
+- Item 11: relative. I edited CHECKS: K8 Clarabel P-RB weights to 1e-6 relative L1 and duals to 1e-6 relative; K9 estimators to 1e-6 relative; K5 sum identity to 1e-14 relative. Reason: those tolerances were below solver or floating-point precision. The perspective-dual problem is fixed by method, not by tolerance.
+- Clarabel risk row: approved as a second-order cone, normalized ‖·‖/σ_m ≤ 1; λ* = ν/(2σ_m²), divided by any objective scale.
+- MIQP incumbent: V = the polished value alone (exactly feasible, so a valid lower bound). Record the raw incumbent; flag incumbent > polished by more than 1e-9·|V|, and polished > best bound. Edit DESIGN §6.
+- Position (u) and liquidity (θ) caps are excluded from the I1 candidates: in P-MI they set the big-M constants and perspective bounds, so perturbing them changes the formulation. Their costs stay in Q1. Edit DESIGN §8 (P6).
+- ECOS: don't install; N2(b) uses Clarabel and SCS.
+- Tectonic downloading TeX packages is fine (the no-download rule covers market data only). The Makefile flag change is approved if it keeps intermediates and logs for spec_check; otherwise explain it first.
+- iCloud: Desktop is local (checked 2026-10-18).
