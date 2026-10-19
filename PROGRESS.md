@@ -216,3 +216,14 @@ Isaiah asked for this to be recorded as report material. **Every number below co
   - K12: 3 points checked, ≤ 3.9e-7.
   - K13: ≤ 1.5e-15.
 - **Isaiah, Decision 13** (answered in-session through the question tool, 2026-10-19; recorded by Claude Code): "P-MI duals only". K8's dual clause covers the P-MI estimators (fixed-integer, big-M relaxation, perspective relaxation by Clarabel). P-RB is gated on w (1e-6 relative L1) and by K4/K16. The P-RB per-element dual-scaling floor (1.6–2.2e-6) stays a reported A9 finding. The CHECKS K8 text is unchanged at 90d960b; Isaiah may clarify its wording.
+
+## 2026-10-19 — Isaiah: decisions (recorded by Claude Code; apply in S2 exactly as written; folded into DESIGN and CHECKS at GATE C)
+- **Decision 13:** K8's dual clause covers P-MI duals only: the big-M relaxation, the perspective relaxation via Clarabel, and the fixed-integer QP. The Clarabel P-RB solve is a cross-check of the exact primary path; its duals need only agree with the primary path within 1e-4 (P1). K4, K7 and K15 check the primary path.
+- **Decision 14:** K = round(f·S) means round half up, floor(f·S + 0.5). The implementation stays.
+- **Bound tolerance**, fixed before any S2 or S3 result. Gurobi's best bound is valid only up to its tolerances.
+  - Wherever B enters (certified intervals, the V-versus-B flag, K22 gaps), use B_eff = max(B, V) + 1e-6·|V|.
+  - The V-versus-B flag and the incumbent flag fire only beyond 1e-6·|V|. This replaces the 1e-9·|V| slack in DESIGN §6 until GATE C.
+  - Record the raw signed B − V and incumbent − V discrepancies for every solve as distributions (Section III material, A9).
+  - Use B_eff in pilot P6.
+- **xfails** are fine as diagnostics, provided each has a reason string pointing to its PROGRESS entry and none was a pre-existing test. The one xfail test (two parametrizations, test_k8_prb_clarabel_per_element_duals_scale) was added in this round; its reason string will be updated in S2 to cite Decision 13.
+- After CHECK CORE round 2: PASS → continue with S2 as planned; FAIL or BLOCKED → stop and report.
