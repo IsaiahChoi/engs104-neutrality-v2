@@ -1,0 +1,62 @@
+{
+ "name": "c1",
+ "created_utc": "2026-10-19T19:25:00Z",
+ "git_commit": "8ce52deca63ab232ec97f297f34632f07bf72917",
+ "config_path": "experiments/configs/continuous.yaml",
+ "config_sha256": "3dfab818ab480443b7dbc5b496810e10f9452d41a9851f0c491dd4c7d6a34e84",
+ "config": {
+  "mandate_config": "experiments/configs/base_mandate.yaml",
+  "p_rb": {
+   "target_annual_vol": 0.03,
+   "root_rtol": 1e-10,
+   "lambda_min": 1e-06,
+   "bracket": "warm start at the neighbouring point's \u03bb*, else the unconstrained multiplier"
+  },
+  "s_obj": 10000.0,
+  "d12": [
+   "2008-10",
+   "2009-03",
+   "2011-08",
+   "2013-06",
+   "2015-08",
+   "2017-12",
+   "2018-12",
+   "2020-03",
+   "2020-11",
+   "2022-06",
+   "2023-03",
+   "2025-04"
+  ],
+  "envelope_rel_step": 0.01,
+  "envelope_fine_step": 0.001,
+  "c3_chunk": 12,
+  "k16_n": 30,
+  "k16_seed": 16,
+  "k19_n": 5,
+  "k19_seed": 19,
+  "workers": 4
+ },
+ "finish_status": "ok",
+ "args": {},
+ "data": {
+  "panel_sha256_manifest": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "panel_sha256_build_meta": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "files": {
+   "data/processed/panel.parquet": "64bfa137742934c24328a9fabe7d54c3a33ffc827d3a80c9af9db0790f95081e",
+   "data/processed/factors_daily.parquet": "4c295060b1d7d9160fbccbe264b22507e716fde80815d73f025c2fb5134399cc",
+   "data/processed/risk/w252_loadings.parquet": "eab160341656cf72bec51fb4dd2ff7d0edb95ef774c3ec94bdabb617322eaceb",
+   "data/processed/risk/w252_factor_cov.parquet": "6202357042b1e20205d2361ae864b8e7401b33a84b5af571b05a16cfd4da1293"
+  }
+ },
+ "provenance": {
+  "python": "3.12.4",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.0.6",
+  "cvxpy": "1.9.3",
+  "clarabel": "0.11.1",
+  "gurobipy": "13.0.3"
+ }
+}

@@ -1,0 +1,438 @@
+{
+ "n_points": 36,
+ "n_not_optimal": 0,
+ "n_with_violations": 0,
+ "n_not_risk_binding": 4,
+ "not_risk_binding": [
+  {
+   "date": "2011-08-31",
+   "alpha": "par"
+  },
+  {
+   "date": "2013-06-28",
+   "alpha": "par"
+  },
+  {
+   "date": "2015-08-31",
+   "alpha": "par"
+  },
+  {
+   "date": "2017-12-29",
+   "alpha": "par"
+  }
+ ],
+ "envelope": {
+  "n": 115,
+  "n_kink": 64,
+  "kinks": [
+   {
+    "date": "2008-10-31",
+    "key": "sector",
+    "rel_err_coarse": 0.0002369581666809515,
+    "rel_err_fine": 1.2146590994140896e-07
+   },
+   {
+    "date": "2008-10-31",
+    "key": "sector:2",
+    "rel_err_coarse": 4.421173640355028e-05,
+    "rel_err_fine": 6.970420641450704e-09
+   },
+   {
+    "date": "2008-10-31",
+    "key": "sector:5",
+    "rel_err_coarse": 2.100670307124671e-08,
+    "rel_err_fine": 7.134313483287552e-10
+   },
+   {
+    "date": "2008-10-31",
+    "key": "sector:9",
+    "rel_err_coarse": 0.0007455671527584172,
+    "rel_err_fine": 9.957513819077939e-08
+   },
+   {
+    "date": "2008-10-31",
+    "key": "liquidity",
+    "rel_err_coarse": 7.014792550090813e-06,
+    "rel_err_fine": 1.0359349578673956e-07
+   },
+   {
+    "date": "2009-03-31",
+    "key": "sector:0",
+    "rel_err_coarse": 1.4025460371621784e-06,
+    "rel_err_fine": 3.9243259149786744e-07
+   },
+   {
+    "date": "2009-03-31",
+    "key": "sector:6",
+    "rel_err_coarse": 4.5114556111818693e-08,
+    "rel_err_fine": 4.48478048911299e-09
+   },
+   {
+    "date": "2009-03-31",
+    "key": "sector:7",
+    "rel_err_coarse": 4.0150022111148155e-06,
+    "rel_err_fine": 1.4638844158251635e-07
+   },
+   {
+    "date": "2009-03-31",
+    "key": "sector:10",
+    "rel_err_coarse": 2.5305709026477046e-06,
+    "rel_err_fine": 1.6393764352078522e-09
+   },
+   {
+    "date": "2009-03-31",
+    "key": "liquidity",
+    "rel_err_coarse": 2.6279094772361666e-06,
+    "rel_err_fine": 6.759203873643395e-07
+   },
+   {
+    "date": "2011-08-31",
+    "key": "dollar",
+    "rel_err_coarse": 1.7688672168831312e-06,
+    "rel_err_fine": 1.5690516720264714e-07
+   },
+   {
+    "date": "2011-08-31",
+    "key": "style",
+    "rel_err_coarse": 6.618211781893916e-05,
+    "rel_err_fine": 7.390875754843335e-08
+   },
+   {
+    "date": "2011-08-31",
+    "key": "style:CMA",
+    "rel_err_coarse": 0.022547588143209698,
+    "rel_err_fine": 2.4267457475654208e-05
+   },
+   {
+    "date": "2011-08-31",
+    "key": "sector:3",
+    "rel_err_coarse": 0.0019028968443093785,
+    "rel_err_fine": 1.874489400866928e-11
+   },
+   {
+    "date": "2011-08-31",
+    "key": "position",
+    "rel_err_coarse": 1.906926007136573e-05,
+    "rel_err_fine": 4.465423808228466e-06
+   },
+   {
+    "date": "2011-08-31",
+    "key": "liquidity",
+    "rel_err_coarse": 1.911807630347402e-05,
+    "rel_err_fine": 4.166951157514667e-07
+   },
+   {
+    "date": "2013-06-28",
+    "key": "sector:0",
+    "rel_err_coarse": 3.5821269702235186e-06,
+    "rel_err_fine": 1.2819184160756773e-07
+   },
+   {
+    "date": "2013-06-28",
+    "key": "sector:9",
+    "rel_err_coarse": 2.644403698826273e-05,
+    "rel_err_fine": 3.5689771230217042e-09
+   },
+   {
+    "date": "2013-06-28",
+    "key": "liquidity",
+    "rel_err_coarse": 1.0013956531422746e-05,
+    "rel_err_fine": 1.1896514267557151e-07
+   },
+   {
+    "date": "2015-08-31",
+    "key": "style",
+    "rel_err_coarse": 0.00010848312938122489,
+    "rel_err_fine": 9.625050895933013e-07
+   },
+   {
+    "date": "2015-08-31",
+    "key": "style:Mom",
+    "rel_err_coarse": 0.00011079866472417862,
+    "rel_err_fine": 1.5199081858938383e-06
+   },
+   {
+    "date": "2015-08-31",
+    "key": "sector:1",
+    "rel_err_coarse": 2.9611697873043016e-07,
+    "rel_err_fine": 9.600198014346343e-07
+   },
+   {
+    "date": "2015-08-31",
+    "key": "sector:5",
+    "rel_err_coarse": 2.8074670080346955e-09,
+    "rel_err_fine": 1.7625629449291167e-10
+   },
+   {
+    "date": "2015-08-31",
+    "key": "sector:6",
+    "rel_err_coarse": 9.284522924388838e-06,
+    "rel_err_fine": 2.464446296092762e-06
+   },
+   {
+    "date": "2015-08-31",
+    "key": "sector:9",
+    "rel_err_coarse": 0.0015897894871992095,
+    "rel_err_fine": 2.726960611277182e-06
+   },
+   {
+    "date": "2015-08-31",
+    "key": "sector:10",
+    "rel_err_coarse": 1.0050098936364077e-06,
+    "rel_err_fine": 2.2325236179023554e-06
+   },
+   {
+    "date": "2015-08-31",
+    "key": "liquidity",
+    "rel_err_coarse": 0.00013944785822559956,
+    "rel_err_fine": 9.231865651406436e-06
+   },
+   {
+    "date": "2017-12-29",
+    "key": "style",
+    "rel_err_coarse": 3.464934417911691e-05,
+    "rel_err_fine": 3.640035486238009e-07
+   },
+   {
+    "date": "2017-12-29",
+    "key": "style:Mom",
+    "rel_err_coarse": 3.464934417911691e-05,
+    "rel_err_fine": 3.640035486238009e-07
+   },
+   {
+    "date": "2017-12-29",
+    "key": "sector:1",
+    "rel_err_coarse": 2.0908279674846348e-07,
+    "rel_err_fine": 2.128361405599501e-06
+   },
+   {
+    "date": "2017-12-29",
+    "key": "sector:5",
+    "rel_err_coarse": 1.7235972100360932e-07,
+    "rel_err_fine": 2.220185509175205e-06
+   },
+   {
+    "date": "2017-12-29",
+    "key": "position",
+    "rel_err_coarse": 4.22994805084603e-06,
+    "rel_err_fine": 3.0324197977035194e-07
+   },
+   {
+    "date": "2017-12-29",
+    "key": "liquidity",
+    "rel_err_coarse": 6.379270599984204e-05,
+    "rel_err_fine": 1.6623286425181352e-06
+   },
+   {
+    "date": "2018-12-31",
+    "key": "style",
+    "rel_err_coarse": 4.264630975208517e-05,
+    "rel_err_fine": 4.306796168441401e-07
+   },
+   {
+    "date": "2018-12-31",
+    "key": "style:Mom",
+    "rel_err_coarse": 4.264630975208517e-05,
+    "rel_err_fine": 4.306796168441401e-07
+   },
+   {
+    "date": "2018-12-31",
+    "key": "sector:8",
+    "rel_err_coarse": 1.6355859746975096e-06,
+    "rel_err_fine": 6.436286380385128e-07
+   },
+   {
+    "date": "2018-12-31",
+    "key": "sector:10",
+    "rel_err_coarse": 1.4906143370383122e-07,
+    "rel_err_fine": 2.47378704753094e-08
+   },
+   {
+    "date": "2018-12-31",
+    "key": "liquidity",
+    "rel_err_coarse": 1.8457913387131513e-05,
+    "rel_err_fine": 2.3622955849846804e-07
+   },
+   {
+    "date": "2020-03-31",
+    "key": "sector:6",
+    "rel_err_coarse": 1.3842110214253386e-05,
+    "rel_err_fine": 1.7577168918790094e-09
+   },
+   {
+    "date": "2020-03-31",
+    "key": "sector:7",
+    "rel_err_coarse": 3.169627380124271e-06,
+    "rel_err_fine": 3.6347992110102853e-07
+   },
+   {
+    "date": "2020-03-31",
+    "key": "sector:9",
+    "rel_err_coarse": 1.4156483985935668e-08,
+    "rel_err_fine": 8.950636442774911e-10
+   },
+   {
+    "date": "2020-03-31",
+    "key": "sector:10",
+    "rel_err_coarse": 2.1633343400384367e-08,
+    "rel_err_fine": 9.815500965994792e-09
+   },
+   {
+    "date": "2020-03-31",
+    "key": "liquidity",
+    "rel_err_coarse": 0.00014109236468367803,
+    "rel_err_fine": 5.287672519460425e-07
+   },
+   {
+    "date": "2020-11-30",
+    "key": "dollar",
+    "rel_err_coarse": 3.449182798107233e-06,
+    "rel_err_fine": 2.2776673506758132e-09
+   },
+   {
+    "date": "2020-11-30",
+    "key": "sector",
+    "rel_err_coarse": 2.7497989602587672e-06,
+    "rel_err_fine": 2.1073197493213964e-08
+   },
+   {
+    "date": "2020-11-30",
+    "key": "sector:2",
+    "rel_err_coarse": 3.135737791923114e-06,
+    "rel_err_fine": 1.227821540919782e-08
+   },
+   {
+    "date": "2020-11-30",
+    "key": "sector:3",
+    "rel_err_coarse": 5.799537673303118e-07,
+    "rel_err_fine": 1.086636516704802e-08
+   },
+   {
+    "date": "2020-11-30",
+    "key": "sector:4",
+    "rel_err_coarse": 1.4383531192090005e-07,
+    "rel_err_fine": 1.4156205969720269e-09
+   },
+   {
+    "date": "2020-11-30",
+    "key": "sector:5",
+    "rel_err_coarse": 2.0861226550864397e-07,
+    "rel_err_fine": 1.0812929276298099e-08
+   },
+   {
+    "date": "2020-11-30",
+    "key": "sector:8",
+    "rel_err_coarse": 3.3681814526563447e-07,
+    "rel_err_fine": 2.6142632127000077e-09
+   },
+   {
+    "date": "2020-11-30",
+    "key": "sector:9",
+    "rel_err_coarse": 3.238092101260227e-07,
+    "rel_err_fine": 6.439964437273229e-09
+   },
+   {
+    "date": "2020-11-30",
+    "key": "sector:10",
+    "rel_err_coarse": 0.00035151362409336116,
+    "rel_err_fine": 8.737042866122202e-09
+   },
+   {
+    "date": "2020-11-30",
+    "key": "liquidity",
+    "rel_err_coarse": 0.0004838144696633121,
+    "rel_err_fine": 1.312318451178284e-05
+   },
+   {
+    "date": "2022-06-30",
+    "key": "dollar",
+    "rel_err_coarse": 1.1221253211825383e-05,
+    "rel_err_fine": 7.525213093475288e-08
+   },
+   {
+    "date": "2022-06-30",
+    "key": "sector:4",
+    "rel_err_coarse": 3.94122375298469e-05,
+    "rel_err_fine": 1.1114221514380174e-07
+   },
+   {
+    "date": "2022-06-30",
+    "key": "sector:8",
+    "rel_err_coarse": 1.2753185226091496e-08,
+    "rel_err_fine": 4.894332157632867e-09
+   },
+   {
+    "date": "2022-06-30",
+    "key": "liquidity",
+    "rel_err_coarse": 0.0015252764106376718,
+    "rel_err_fine": 1.0663321553096908e-05
+   },
+   {
+    "date": "2023-03-31",
+    "key": "dollar",
+    "rel_err_coarse": 8.59060083854409e-08,
+    "rel_err_fine": 1.736487374911488e-08
+   },
+   {
+    "date": "2023-03-31",
+    "key": "sector:5",
+    "rel_err_coarse": 1.7851143037967836e-07,
+    "rel_err_fine": 2.479812806241397e-08
+   },
+   {
+    "date": "2023-03-31",
+    "key": "sector:6",
+    "rel_err_coarse": 3.7273783520642423e-07,
+    "rel_err_fine": 4.4480947242168956e-08
+   },
+   {
+    "date": "2023-03-31",
+    "key": "sector:10",
+    "rel_err_coarse": 5.242536698904097e-07,
+    "rel_err_fine": 5.488437030952024e-07
+   },
+   {
+    "date": "2023-03-31",
+    "key": "liquidity",
+    "rel_err_coarse": 0.0008582924965107831,
+    "rel_err_fine": 7.061136068165007e-07
+   },
+   {
+    "date": "2025-04-30",
+    "key": "sector:6",
+    "rel_err_coarse": 1.399537303225803e-07,
+    "rel_err_fine": 9.295290853971968e-09
+   },
+   {
+    "date": "2025-04-30",
+    "key": "liquidity",
+    "rel_err_coarse": 2.6217565261257286e-06,
+    "rel_err_fine": 3.551649661221767e-08
+   }
+  ],
+  "max_rel_err": 0.00030859324471428255,
+  "max_rel_err_coarse": 0.022547588143209698,
+  "n_above_1pct": 0
+ },
+ "idealized": {
+  "max_A_rel_where_cf_nonzero": 1.6209256159527285e-14,
+  "max_A_abs_where_cf_zero": 3.565879372045109e-17,
+  "max_retained_abs": 1.432187701766452e-14,
+  "max_factor_vs_sqrt": 7.52471730303536e-08
+ },
+ "attribution_identity_max_abs": 0.0,
+ "phi_range": {
+  "mom": [
+   0.01122092479643014,
+   0.07011285053668617
+  ],
+  "par": [
+   0.9999999999999943,
+   1.0000000000000016
+  ],
+  "perp": [
+   2.7708519143498243e-34,
+   3.064214997705482e-33
+  ]
+ }
+}

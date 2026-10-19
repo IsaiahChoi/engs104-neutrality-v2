@@ -1,0 +1,7 @@
+{
+ "c1_points.parquet": "ba7d6f940dda93997f6c54782fe83b427dc172ab01e2f6b8e819754dfaf6591b",
+ "c1_weights.parquet": "4ec3db17715e8ca888286a399cb72c16675995851b7f537ea45bc060254afed1",
+ "c1_attribution.parquet": "aaa63ba048ccb5df821c40baf192c5b8b045680e13abef3bc90285827ffc8bce",
+ "c1_idealized.parquet": "a981e91f94f259dc064cff68c6563a47f1129ed28ce716a2289b9e58af67205c",
+ "c1_envelope.parquet": "d1286fc6e97ad1bcc0a29450213050820641897d5d3f6401447d31f8c1dec66e"
+}

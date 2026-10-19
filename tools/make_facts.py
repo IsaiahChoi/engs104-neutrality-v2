@@ -139,10 +139,13 @@ def c1_facts(F: Facts, c1: Path) -> None:
         x = pts[pts["alpha"] == kind]["phi"]
         F.add(f"Alignment share φ for α_{kind} over D12: {g(x.min(), 2)} to {g(x.max(), 2)}", pf)
     fac = ide[ide["mandate"] == "factor"]
+    nz = ide["A_cf"].abs() > 1e-12
     F.add(f"Idealized full factor neutrality: numerical retained fraction matches the closed form "
           f"√(1 − φ) to {g((fac['retained_num'] - fac['sqrt_1_minus_phi']).abs().max(), 2)} (absolute, "
-          f"{len(fac)} solves); A* to {g((ide['A_num'] / ide['A_cf'] - 1).abs().max(), 2)} relative "
-          f"over both idealized mandates ({len(ide)} solves)", idf)
+          f"{len(fac)} solves); A* to {g((ide['A_num'] / ide['A_cf'] - 1)[nz].abs().max(), 2)} relative "
+          f"where the closed form is nonzero ({int(nz.sum())} solves), and A* = 0 to "
+          f"{g((ide['A_num'] - ide['A_cf'])[~nz].abs().max(), 2)} where it is 0 (α∥, {int((~nz).sum())} "
+          "solves)", idf)
     slack = pts[~pts["risk_binding"]]
     F.add(f"Risk budget slack at base in C1: {len(slack)} of {len(pts)} solves ("
           + ", ".join(f"{d[:7]} {a}" for d, a in zip(slack["date"], slack["alpha"])) + ")", pf)
@@ -180,9 +183,10 @@ def software_facts(F: Facts, run: Path) -> None:
     p = json.loads(meta.read_text())["provenance"]
     F.add(f"Python {p['python']}; gurobipy {p['gurobipy']}; Clarabel {p['clarabel']}; CVXPY "
           f"{p['cvxpy']}; NumPy {p['numpy']}; SciPy {p['scipy']}; pandas {p['pandas']}", meta)
-    logs = sorted((ROOT / "logs").glob("make_c123_*.log"))
+    logs = sorted((ROOT / "logs").glob("make_c*.log"), key=lambda f: f.stat().st_mtime)
     m = re.search(r"(\d+) passed(?:, (\d+) xfailed)?", logs[-1].read_text())
-    F.add(f"Test suite before the C runs: {m[1]} passed, {m[2] or 0} strict expected failures", logs[-1])
+    F.add(f"Test suite before the newest C run: {m[1]} passed, {m[2] or 0} strict expected "
+          "failures", logs[-1])
 
 
 def refs(F: Facts) -> None:
