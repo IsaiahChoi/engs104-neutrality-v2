@@ -540,3 +540,29 @@ Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). Thes
     - Clarabel's own objective (diagnostic): 2 points above 1e-9 (R043 1.04e-9, R082 1.41e-9). The value at the cone-exact point fixes R043 (now 1.3e-14).
     - Clarabel: 5,869 Solved, 2,413 AlmostSolved; max r_prim 3.8e-9, max r_dual 1.4e-9; linking-bound cap binding at 0 relaxations.
 - Next: CHECK CORE round 3 (the last) with the result-checker.
+
+## 2026-10-19 — S1 closing entry (Claude Code, Opus 5.5): CHECK CORE round 3 PASS
+- **CHECK CORE round 3 (the last): VERDICT PASS**, results/checks/CORE_20261019T190157Z.md. K1–K13 all PASS, none BLOCKED. The checker worked at HEAD 9c11ecf against results/core/run_20261019T183642Z (made at 1dff151); only PROGRESS, the RUN_LOG and results/core/ changed in between.
+  - K1: 246 passed, 2 strict xfails; tests/ only added since v2-start; reference/ unchanged; 4 kept-core files changed, each listed in PROGRESS.
+  - K9 on the stored run:
+    - value function off the band 1.4e-17;
+    - band either-test 6/6 (Decisions 22, 22a);
+    - big-M and fixed-integer duals ≤ 2.6e-13 (3 band points excluded, Decision 22b);
+    - the checker re-applied the failure rule from the raw fields and got the same failed set (R082, gap; 0.012%);
+    - perspective value ≤ 3.54e-10 on relaxations not failed;
+    - 232 relaxations re-solved bitwise; the value recomputed from Clarabel's point matches to 4.2e-16.
+  - Decision 21 out of sample (the checker's own toys: seeds 4049/4050, 300 toys, 12,600 points): one gap-clause failure; values ≤ 2.05e-10 elsewhere. Without the clause, exactly one point would miss 1e-9, and it is the point the clause fails.
+  - Closest margins: K9 perspective value ×2.8 (×4.9 on the checker's toys); K8 P-RB weights ×5.
+- **Commits this session:** 1dff151 (Decisions 21–22b implementation), 9c11ecf (evidence run), and the commit containing this entry and the checker report.
+
+### Decisions needed (from the CORE round-3 checker; no CORE check affected)
+24. **The polished V's feasibility tolerance (affects S3: K22, K23).**
+    - DESIGN §6 says V (the fixed-integer QP at the incumbent's z) is exactly feasible and hence a valid lower bound. But src/opt/miqp.py's fixed_integer (kept core) sets only Method = 1, so it runs at Gurobi's default FeasibilityTol of 1e-6.
+    - In the checker's probe inside the band, the polish returned w = b with w ≥ ℓ violated by up to 5e-7. V was then f(b) > 0 where the true value is 0: 164 big-M and 162 perspective probe points (e.g. toy G000 at δ = 5e-7, V = 2.35e-5). No flag fires.
+    - In the evidence run every band polish either failed or had w = 0, so nothing reported is affected.
+    - Options:
+      - (a) Polish at FeasibilityTol = OptimalityTol = 1e-9, as the P-RB QP does. This is a kept-core change; logged here per rule 14.
+      - (b) Check V's weights with the independent checker at 1e-9 before V is used, and count failures as excluded.
+      - (c) Both.
+    - Until Isaiah decides, S2 records the independent checker's verdict on every pilot V at 1e-7 and at 1e-9 (recording only; V is unchanged).
+25. **Raw duals of a failed perspective relaxation.** The module drops them on failure: R082 has none recorded, although Clarabel returned them. K9 calls them a diagnostic. Should they be kept for failed relaxations too (diagnostic only, never used)?
