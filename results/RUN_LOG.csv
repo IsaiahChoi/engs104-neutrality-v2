@@ -1,5 +1,6 @@
 timestamp,git_commit,config_path,status,output_path,notes
-2026-10-18T00:00:00Z,v1:05468f26bc293e16ca670bb800351507dca6739b,(import),imported,results/data_report.md,"v2 extraction: data report produced by the v1 offline data build (v1 commit 44ea3ba); regenerate or verify with make data-verify"
-2026-10-18T00:00:00Z,v1:05468f26bc293e16ca670bb800351507dca6739b,(import),imported,results/risk/bias_w252_20261016T062739Z_summary.json,"v2 extraction: risk-model bias statistic from the v1 risk build (v1 commit 44ea3ba)"
+2026-10-18T00:00:00Z,v1:05468f26bc293e16ca670bb800351507dca6739b,(import),imported,results/data_report.md,v2 extraction: data report produced by the v1 offline data build (v1 commit 44ea3ba); regenerate or verify with make data-verify
+2026-10-18T00:00:00Z,v1:05468f26bc293e16ca670bb800351507dca6739b,(import),imported,results/risk/bias_w252_20261016T062739Z_summary.json,v2 extraction: risk-model bias statistic from the v1 risk build (v1 commit 44ea3ba)
 2026-10-18T22:51:34Z,unknown,src/data/build_all.py,ok,data/processed/panel.parquet,offline=True; rows=2391231; sha256=1c331f6590b35997
 2026-10-18T22:51:37Z,unknown,experiments/configs/risk.yaml,ok,results/risk/bias_w252_20261018T225135Z_summary.json,factor_neutral pooled std z=0.970; long_only pooled std z=0.952
+2026-10-19T00:31:08Z,c23289c5048a4db1e82c0168e393ba718260f228,experiments/configs/core.yaml,ok,results/core/run_20261019T003108Z,core run_20261019T003108Z; ok 2026-10-19T00:31:27Z: core verification: k4 n=3; k4_weights n=1348; k4_duals n=69; k5 n=3; k6 n=6; k6_weights n=2696; k7 n=19; k8 n=3; k11 n=14; k12 n=4; k13 n=4
