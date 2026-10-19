@@ -361,3 +361,61 @@ Isaiah asked for this to be recorded as report material. **Every number below co
 - **Runner fix found by the scratch dry run** (results/scratch/dryrun_core_r3*, not evidence). The first dry run crashed with "fixed solve status INFEASIBLE" in the K9 loop. Cause: run_core called fixed_integer_duals unguarded. The fixed-integer QP failure is now recorded (fixed_status, mu_fixed nan), not fatal.
   - The same points have V undefined (polish infeasible). pandas max() would have skipped them silently, so the K9 summary now counts and lists them (n_V_undefined, V_undefined_points, n_fixed_failed) and names the value error over defined points max_abs_value_err_defined.
   - No module code changed for this; src.opt.integer already records polish failures as DESIGN §6 says.
+- **Commit b386e16** (implementation and DESIGN edits). Tree clean; suite 230 passed, 2 xfailed.
+
+## 2026-10-19 — S1: CORE round-3 evidence run; CHECKS K9 vs DESIGN §6 conflict; stopped before the checker
+- **Evidence run:** `make core` → results/core/run_20261019T124115Z at b386e16.
+  - make exit 0 (it ran `make test` first: 230 passed, 2 xfailed); DONE present; RUN_LOG row "ok"; logs/make_core_*.log and logs/core_*.log.
+  - Every output, including the three .npz input files, is hashed in outputs.json.
+  - It reproduces the scratch dry run exactly.
+  - The round-2 run (run_20261019T022653Z) is marked superseded (SUPERSEDED marker, RUN_LOG status).
+- **Runner summary** (the checker recomputes):
+  - K8, gated P-MI (2017-12 and 2020-03, top 30, s_obj = 1e4):
+    - perspective relaxation value scaling 1.1e-11 and 3.3e-11 relative (K8: 1e-9);
+    - dual-scaling ratios (≤ 1 passes) fixed-integer 2.8e-10 and 6.0e-9, big-M 6.8e-8 and 1.2e-9;
+    - z equal; max |Δw| ≤ 5.6e-17.
+    - Clarabel is Solved at s = 1 and AlmostSolved at s_obj on both (accepted).
+    - The perspective raw-dual ratios 0.14 and 0.82 are now diagnostics.
+  - K9, fixed toys T1 and T2 (82 points):
+    - MIQP value error ≤ 6.9e-18 absolute;
+    - perspective relaxation value ≤ 7.0e-12 relative; big-M relaxation value ≤ 2.9e-16;
+    - big-M and fixed-integer duals ≤ 5.6e-15;
+    - raw perspective duals ≤ 5.0e-7 (diagnostic);
+    - Clarabel 50 Solved, 32 AlmostSolved, 0 failed.
+  - K9, seeded random toys (seed 20261019, 200 toys, 8,200 points):
+    - big-M relaxation value ≤ 7.3e-16;
+    - big-M and fixed-integer duals ≤ 2.6e-13;
+    - Clarabel 5,819 Solved, 2,381 AlmostSolved, 0 failed; max r_prim 3.8e-9, max r_dual 1.4e-9;
+    - raw perspective duals: 51 points above 1e-6, max 3.5e-5, all at AlmostSolved; Solved ≤ 3.8e-7 (diagnostic).
+    - **Perspective relaxation value: max 1.41e-9 relative. Two points exceed 1e-9** (finding A below).
+    - **MIQP value function: V undefined at 3 points** (finding B below). Elsewhere ≤ 1.4e-17 absolute.
+  - K10: toy (4 intervals) and two small MIQPs (seeds 51, 52, both formulations): every raw and B_eff interval contains its secant; no H < 0; the H < 0 flag is tested on a constructed case in tests/test_certified.py.
+  - pmi_solves: 16,590 P-MI solves; flags 0 and 0. Signed (B − V)/|V| runs from −1.5e-7 to +4.7; (incumbent − V)/|V| from −3.45 to +3.3e-8 (finding C below).
+  - K4–K7, K11–K13: as in round 2 (K4 AlmostSolved 2 of 3; K7 19 constraints ≤ 1.4e-4; K11 16 solutions, 0 violations; K12 ≤ 3.9e-7; K13 ≤ 1.5e-15).
+- **Finding A (K9, perspective relaxation value; a CHECKS–DESIGN conflict).** Two random-toy points miss K9's 1e-9:
+  - R043, b = 2.81e-3: error 1.04e-9; r_prim 6.4e-11, r_dual 9.6e-11, gap_rel 1.1e-13.
+  - R082, b = 0.2105: error 1.41e-9; r_prim 8.3e-10, r_dual 1.4e-9, gap_rel 2.0e-8.
+  - Both are AlmostSolved, in the flat region b > w°, with residuals well inside DESIGN §6's acceptance rule (failed only if a residual exceeds 1e-8). So DESIGN §6 accepts values that CHECKS K9 rejects.
+  - All 5,869 Solved points are ≤ 1.1e-11. Of the 2,413 AlmostSolved points, 2,411 are ≤ 1e-9.
+  - CLAUDE.md says to record the conflict and stop, so **I did not run the result-checker.** The evidence would fail K9 on its own data, and round 3 is the last one.
+- **Finding B (K9, the jump at ℓ within solver tolerance).** At three random-toy grid points just below ℓ, V is undefined (the exact polish is infeasible; recorded and counted, DESIGN §6):
+  - R103, ℓ − b = 2.6e-8: both formulations;
+  - R139, ℓ − b = 6.7e-8: both formulations;
+  - R196, ℓ − b = 9.6e-7: perspective only.
+  - Gurobi's incumbent there takes z = 1 with w = b < ℓ, within FeasibilityTol 1e-6 (the kept model uses the default). Its raw value is f(b) where the closed form is 0.
+  - R027 at ℓ − b = 1.57e-6 resolves correctly (V = 0). The fixed-integer duals at the 3 points fail likewise (recorded).
+  - The fixed toys have ℓ on a grid point, so they have no such points. This is the round-1 checker's note ("the jump is resolved only to solver tolerance"), now on stored evidence.
+- **Finding C (A9 material; no check affected).** On toy R110 (s_obj = 1e8, weights ≈ 1e-3), Gurobi's perspective MIQP returns raw value and bound 1.07e-7, while the exact polished V = 1.87e-8 matches the closed form. The exact objective at the incumbent's weights is −4.6e-8. So B − V = +4.7·|V|: the cones s ≥ w²/z are violated within the 1e-6 feasibility tolerance, which is as large as s at these weights. B stays above V (a valid but loose bound), V is exact, and no flag fires. 5,539 of the 5,552 solves with |B − V| or |incumbent − V| > 1e-6·|V| are K9 toy solves.
+- **State:** CHECK CORE rounds used: 2 of 3 (round 3 not started). S2 not started.
+
+### Decisions needed (CORE round 3)
+21. **Finding A: K9's 1e-9 vs AlmostSolved values.**
+    - (a) K9's perspective-value tolerance 1e-8 (7× the measured maximum). A CHECKS edit.
+    - (b) Tighten DESIGN §6's failure rule. Excluding R043 would need a residual threshold below 6.4e-11 (its gap is 1.1e-13), chosen after seeing the result.
+    - (c) K9's 1e-9 applies to the fixed toys; random toys become a diagnostic.
+    - Recommendation: (a). Note for S3: K29c's finite-difference slope at δ_r = 1e-3·b magnifies value errors by about R/(2δ_r·|slope|), so value errors of 1e-9 already put 1e-6 slope agreement at risk at some AlmostSolved points. S3 measures this first.
+22. **Finding B: K9's value function within FeasibilityTol of ℓ.**
+    - (a) K9's value clause excludes grid points within Gurobi's feasibility tolerance (1e-6 absolute) below ℓ; they are counted and reported, as DESIGN §6 already records them.
+    - (b) Count them as K9 failures.
+    - Recommendation: (a).
+23. **To resume:** if 21 and 22 change only CHECKS, results/core/run_20261019T124115Z (b386e16) stands, and the next step is CHECK CORE round 3 against it. If they change code or DESIGN, I rerun `make core` first.
