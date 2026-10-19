@@ -12,7 +12,9 @@ checker's verdict (CHECKS K14). Also:
 - φ; the two idealized equality mandates of DESIGN §7 C1 ((i) all six exposures 0, (ii) plus
   dollar neutral; risk budget only, no costs), numerical against the closed form (A2–A4);
 - for α_mom, the envelope check (CHECKS K15): every constraint with e_j ≥ 1e-4, central
-  difference with δ = 1% of the bound against μ_j.
+  difference with δ = 1% of the bound against μ_j; a stencil that crosses an active-set change
+  is flagged as a kink and checked at δ = 0.1% (Isaiah, 2026-10-19; src.opt.sensitivity.
+  envelope_point), both slopes recorded.
 Dates run in a process pool (continuous.yaml `workers`); each date is a chunk.
 """
 from __future__ import annotations
@@ -33,7 +35,7 @@ from src.opt.closed_form import IDEALIZED, equality_case, idealized_mandate
 from src.opt.continuous import load_config
 from src.opt.feasibility import prb_violations
 from src.opt.risk_budget import SIGMA_M, solve_risk_budget
-from src.opt.sensitivity import BINDING_ELASTICITY, elasticities, fd_slope_rb
+from src.opt.sensitivity import BINDING_ELASTICITY, elasticities, envelope_point
 
 CONFIG = "experiments/configs/continuous.yaml"
 KINDS = ("c1_points", "c1_weights", "c1_attribution", "c1_idealized", "c1_envelope")
@@ -90,9 +92,9 @@ def c1_date(ym: str) -> dict[str, pd.DataFrame]:
             sp = shadow_prices(P, rb.sol)
             e = elasticities(P, sp, rb.A)
             for k in [k for k in sp if e[k] >= BINDING_ELASTICITY]:
-                fd = fd_slope_rb(P, a, k, rel_step=cfg["envelope_rel_step"], lam_guess=rb.lam)
-                out["c1_envelope"].append({"date": ds, "key": k, "mu": sp[k], "e": e[k],
-                                           "fd_slope": fd, "rel_err": abs(fd / sp[k] - 1)})
+                r = envelope_point(P, a, k, sp[k], rb.A, rel_step=cfg["envelope_rel_step"],
+                                   fine_step=cfg["envelope_fine_step"], lam_guess=rb.lam)
+                out["c1_envelope"].append({"date": ds, "e": e[k], **r})
     return {k: (pd.concat(v, ignore_index=True) if k == "c1_weights" else pd.DataFrame(v))
             for k, v in out.items()}
 
@@ -110,9 +112,16 @@ def main() -> int:
             "n_with_violations": int((pts["feasibility_violations"] != "{}").sum()),
             "n_not_risk_binding": int((~pts["risk_binding"]).sum()),
             "not_risk_binding": pts.loc[~pts["risk_binding"], ["date", "alpha"]].to_dict("records"),
-            "envelope": {"n": len(env), "max_rel_err": float(env["rel_err"].max()),
-                         "n_above_1pct": int((env["rel_err"] > 0.01).sum())},
-            "idealized": {"max_A_rel": float((ide["A_num"] / ide["A_cf"] - 1).abs().max()),
+            "envelope": {"n": len(env), "n_kink": int(env["kink"].sum()),
+                         "kinks": env.loc[env["kink"], ["date", "key", "rel_err_coarse",
+                                                        "rel_err_fine"]].to_dict("records"),
+                         "max_rel_err": float(env["rel_err"].max()),
+                         "max_rel_err_coarse": float(env["rel_err_coarse"].max()),
+                         "n_above_1pct": int((~env["within"]).sum())},
+            "idealized": {"max_A_rel_where_cf_nonzero": float(
+                              (ide["A_num"] / ide["A_cf"] - 1)[ide["A_cf"].abs() > 1e-12].abs().max()),
+                          "max_A_abs_where_cf_zero": float(
+                              (ide["A_num"] - ide["A_cf"])[ide["A_cf"].abs() <= 1e-12].abs().max()),
                           "max_retained_abs": float((ide["retained_num"] - ide["retained_cf"]).abs().max()),
                           "max_factor_vs_sqrt": float((ide.loc[ide["mandate"] == "factor", "retained_cf"]
                                                        - ide.loc[ide["mandate"] == "factor", "sqrt_1_minus_phi"]).abs().max())},

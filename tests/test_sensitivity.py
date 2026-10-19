@@ -11,7 +11,7 @@ import pytest
 from src.opt.attribution import shadow_prices
 from src.opt.continuous import ContinuousProblem, Mandate
 from src.opt.risk_budget import solve_risk_budget
-from src.opt.sensitivity import (BINDING_ELASTICITY, bound_value, elasticities, fd_slope_rb,
+from src.opt.sensitivity import (BINDING_ELASTICITY, bound_value, elasticities, envelope_point, fd_slope_rb,
                                  restore, set_bound_by_key, snapshot)
 from src.risk.factor_model import FACTORS
 from tests import realdata
@@ -103,3 +103,40 @@ def test_fd_slope_refuses_zero_infinite_or_missing_bounds(rand):
     with pytest.raises(ValueError):
         bound_value(P, "position")
     restore(P, snap)
+
+
+# ---- S2 additions ----
+
+def test_elasticities_undefined_at_zero_value():
+    """e_j = μ_j·b_j/A* is undefined where A* = 0 (e.g. α∥ with every factor exposure
+    neutralized, where w = 0 is optimal): nan, never a ZeroDivisionError; finite otherwise."""
+    B, F, d, S, adv, _ = random_instance(n=20, seed=71)
+    P = ContinuousProblem(B, F, d, S, Mandate(), adv=adv, factor_names=FACTORS)
+    sp = {"dollar": 0.1, "beta": 0.0, "gross": 0.02}
+    e = elasticities(P, sp, 0.0)
+    assert set(e) == set(sp) and all(np.isnan(v) for v in e.values())
+    e = elasticities(P, sp, 2.0)
+    assert e["dollar"] == pytest.approx(0.1 * 0.02 / 2.0) and e["beta"] == 0.0
+
+
+def test_envelope_point_refines_a_stencil_that_crosses_an_active_set_change():
+    """Isaiah's K15 rule (2026-10-19): central difference at δ = 1% of the bound; where the stencil
+    crosses an active-set change (the constraint's dual is 0 at b + δ or b − δ, or the forward and
+    backward differences differ by more than 1% of the central one), the point is a kink and is
+    checked at δ = 0.1%; both slopes are recorded. C1 2011-08, style:CMA (e = 1.02e-4): the
+    CMA bound stops binding inside +1%, the 1% difference misses μ by 2.3%, the 0.1% one matches."""
+    di, alpha, base = realdata.case("2011-08")
+    P = realdata.problem("2011-08")
+    rb = solve_risk_budget(P, alpha)
+    mu = shadow_prices(P, rb.sol)["style:CMA"]
+    r = envelope_point(P, alpha, "style:CMA", mu, rb.A, lam_guess=rb.lam)
+    assert r["kink"] and r["mu_plus"] == 0.0 and r["mu_minus"] > 0
+    assert r["rel_err_coarse"] > 1e-2 and r["rel_err_fine"] <= 1e-2
+    assert r["rel_err"] == r["rel_err_fine"] and r["step_checked"] == pytest.approx(1e-3 * 0.10)
+    assert P.bound("style")[P.style_names.index("CMA")] == 0.10        # bounds restored
+    # a smooth point (dollar, e ≈ 3e-2 here): not refined unless its one-sided slopes differ
+    mu_d = shadow_prices(P, rb.sol)["dollar"]
+    rd = envelope_point(P, alpha, "dollar", mu_d, rb.A, lam_guess=rb.lam)
+    assert rd["rel_err"] <= 1e-2
+    assert rd["kink"] == (rd["mu_plus"] == 0 or rd["mu_minus"] == 0
+                          or abs(rd["fwd"] - rd["bwd"]) > 1e-2 * abs(rd["ctr_coarse"]))

@@ -1,0 +1,49 @@
+{
+ "n_points": 36,
+ "n_not_optimal": 0,
+ "n_with_violations": 0,
+ "n_not_risk_binding": 4,
+ "not_risk_binding": [
+  {
+   "date": "2011-08-31",
+   "alpha": "par"
+  },
+  {
+   "date": "2013-06-28",
+   "alpha": "par"
+  },
+  {
+   "date": "2015-08-31",
+   "alpha": "par"
+  },
+  {
+   "date": "2017-12-29",
+   "alpha": "par"
+  }
+ ],
+ "envelope": {
+  "n": 115,
+  "max_rel_err": 0.022547588143209785,
+  "n_above_1pct": 1
+ },
+ "idealized": {
+  "max_A_rel": 1.0,
+  "max_retained_abs": 1.432187701766452e-14,
+  "max_factor_vs_sqrt": 7.52471730303536e-08
+ },
+ "attribution_identity_max_abs": 0.0,
+ "phi_range": {
+  "mom": [
+   0.01122092479643014,
+   0.07011285053668617
+  ],
+  "par": [
+   0.9999999999999943,
+   1.0000000000000016
+  ],
+  "perp": [
+   2.7708519143498243e-34,
+   3.064214997705482e-33
+  ]
+ }
+}

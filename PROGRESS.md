@@ -623,3 +623,20 @@ Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). Thes
 - **Configs:** continuous.yaml s_obj = 1e4. integer.yaml and numerics.yaml drafted, marked "proposed, pending GATE DESIGN". ECOS is not installed, so N2(b)'s solvers are Gurobi barrier, Clarabel and SCS.
 - **Figures:** src/figures/fig_c.py drafts Figs. 1–3 and the C3 summary ("_preliminary" names), registered in make_all.FIGURES. The palette was validated with the dataviz validator; slots 3–4 have contrast < 3:1, so markers, line styles and hatching carry identity too. Text is 8 pt in these figures, overriding style.py's 7 pt tick and legend sizes, because DESIGN §10 says ≥ 8 pt.
 - Next: commit; `make c1 c2 c3` in the background.
+
+## 2026-10-19 — Isaiah: Decision 26 (in-session answer; recorded by Claude Code): how K15 is measured
+- **The question.** C1 (run_20261019T191553Z at 12c45aa) passed 114 of 115 envelope checks to ≤ 0.19%. One missed: 2011-08 style:CMA, barely binding (e = 1.02e-4), where the central difference at δ = 1% is 2.25% off μ.
+  - The CMA bound stops binding inside the step: μ(b + δ) = 0, μ(b − δ) = 5.6e-6.
+  - Smaller steps converge to μ (scratch probe, results/scratch/s2_draft/probe_k15.py): 0.3% → 7.7e-5, 0.1% → 2.4e-5, 0.01% → 2.6e-6.
+  - I chose δ = 1% (as in K7) before any run; K15 does not fix δ.
+- **Isaiah's answer: 1% plus kink refinement.** Keep δ = 1%. Where the stencil crosses an active-set change (the constraint's dual is 0 at b + δ or b − δ, or the forward and backward differences differ by more than 1% of the central one), the point is flagged as a kink and checked at δ = 0.1%. Both values are recorded; flagged points are counted and listed. C1 is rerun at a new commit.
+
+## 2026-10-19 — S2: C2 failed on A* = 0; K15 rule implemented; C1–C3 to rerun
+- **C2 run_20261019T191622Z failed** (RUN_LOG "failed", FAILED marker), so make stopped and C3 never started.
+  - Cause: src.opt.sensitivity.elasticities divided by A* = 0. Under α∥ with all styles at 0 the optimum is w = 0, with no names held and the risk budget slack. This happens at 3 of the 576 α∥ points: 2009-03, 2015-08 and 2018-12 (scratch check, results/scratch/s2_draft/c2_par_check.py).
+  - Fix, test-first (RED logs/test_s2_k15_red_*.log: the ZeroDivisionError and the missing envelope_point): e_j is nan where A* = 0. sensitivity.py is an S1 file, not kept core. New test test_elasticities_undefined_at_zero_value.
+- **Decision 26 implemented, test-first:** src.opt.sensitivity.envelope_point and KINK_RTOL = 1e-2; run_c1 uses it; continuous.yaml envelope_fine_step = 0.001.
+  - New test test_envelope_point_refines_a_stencil_that_crosses_an_active_set_change, on the 2011-08 CMA case. The flag fires, the 1% difference misses, the 0.1% one matches, and the bounds are restored.
+  - Smoke test, 2011-08: 4 of 15 binding constraints are flagged; all are within 1% after refinement (sector:3: 1.9e-3 coarse → 1.9e-11 fine).
+- **C1 summary:** the idealized A* comparison is now relative only where the closed form is nonzero, absolute where it is 0. The α∥ full-neutrality case has A* = 0 both numerically and in closed form, so the old max_A_rel = 1.0 was a 0/≈0 artifact.
+- C1 run_20261019T191553Z will be marked superseded by the rerun. Order: commit; `make c1`; the preliminary proposal/FACTS.md (tools/make_facts.py; generated, with sha256 per fact) and a commit; then `make c2 c3`, so that every runner starts from a clean tree.

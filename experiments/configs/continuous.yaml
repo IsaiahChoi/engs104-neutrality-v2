@@ -11,6 +11,7 @@ s_obj: 10000.0                  # P-MI objective scale (DESIGN §6), pilot P1: r
 d12: ["2008-10", "2009-03", "2011-08", "2013-06", "2015-08", "2017-12", "2018-12", "2020-03",
       "2020-11", "2022-06", "2023-03", "2025-04"]
 envelope_rel_step: 0.01         # CHECKS K15: δ = 1% of the bound
+envelope_fine_step: 0.001       # K15 kinks (Isaiah, 2026-10-19): rechecked at δ = 0.1%
 c3_chunk: 12                    # month-ends per C3 chunk (λ warm-started within a chunk)
 k16_n: 30                       # CHECKS K16: random C1/C2 solves, QP vs Clarabel QCQP
 k16_seed: 16
