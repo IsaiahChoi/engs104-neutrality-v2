@@ -11,10 +11,14 @@ mandate:
   aum_usd: 1000000000.0
   borrow_annual: 0.0030   # 30 bp/yr on shorts (2.5 bp/month)
   trade_cost: 0.0005      # 5 bp one-way
-risk_aversion:                    # brief §3.3 λ policy (src/opt/lambda_policy.py)
-  target_annual_vol: 0.03         # ex-ante, on capital, under the full base mandate
-  fallback_fraction: 0.9          # if 3% is unattainable: 90% of the maximum attainable vol
-  lambda_bracket: [0.001, 100000.0]
+risk_aversion:                    # v1 fixed-λ policy; UNUSED in v2 (P-RB root-finds λ: risk_budget)
+  target_annual_vol: 0.03         # v1 only
+  fallback_fraction: 0.9          # v1 only (unused in v2): 90% of the maximum attainable vol
+  lambda_bracket: [0.001, 100000.0]   # v1 only (unused in v2)
+risk_budget:                      # v2 P-RB (DESIGN §3.2, §6): λ root-found so ex-ante vol = target
+  target_annual_vol: 0.03         # 3%/yr ex-ante on capital; σ_m = 0.03/√12 monthly
+  lambda_min: 0.000001            # if vol(λ_min) < target, the budget is slack: solve at λ_min
+  root_rtol: 0.0000000001         # |vol/target − 1| at the root (1e-10)
 solver:
   primary: GUROBI
   cross_check: CLARABEL

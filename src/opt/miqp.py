@@ -51,6 +51,8 @@ class MIQPResult:
     duals: dict = field(default_factory=dict)   # (family, side) -> Pi array (continuous solves)
     U_polished: float = np.nan   # U at the incumbent's z, continuous part re-solved exactly
     w_polished: np.ndarray | None = None
+    work: float = np.nan         # v2: Gurobi Work (deterministic work units) of this solve
+    root_bound: float = np.nan   # v2: upper bound on U* at the end of the root node
 
 
 class MIQPModel:
@@ -173,13 +175,17 @@ class MIQPModel:
 
     # ----- solves -----
     def solve(self, time_limit: float = 300.0, mip_gap: float = 1e-4, presolve: int = -1,
-              polish: bool = True) -> MIQPResult:
+              polish: bool = True, work_limit: float | None = None) -> MIQPResult:
         """Solve the MIQP with default Gurobi tolerances (H4 times use these). With polish,
         also re-solve the continuous part at the incumbent's z as an exact QP: U_polished is
         the incumbent support's true optimal value, free of the cone tolerance in the
-        perspective form (~1e-6 relative at default settings); H3 slopes use it."""
+        perspective form (~1e-6 relative at default settings); H3 slopes use it.
+        v2: work_limit sets Gurobi's WorkLimit (deterministic); Work and the root bound are
+        recorded."""
         mdl, wp, wm, zp, zm, _ = self._build("mip")
         mdl.Params.TimeLimit, mdl.Params.MIPGap, mdl.Params.Presolve = time_limit, mip_gap, presolve
+        if work_limit is not None:
+            mdl.Params.WorkLimit = work_limit
         root = {}
 
         def cb(model, where):
@@ -202,7 +208,8 @@ class MIQPModel:
                          zm=np.round(zm.X) if has else np.zeros(self.N),
                          status=mdl.Status, status_name=_status_name(mdl.Status),
                          runtime=mdl.Runtime, nodes=mdl.NodeCount, final_gap=gap, root_gap=rg,
-                         reached_gap=mdl.Status == GRB.OPTIMAL)
+                         reached_gap=mdl.Status == GRB.OPTIMAL, work=mdl.Work,
+                         root_bound=-root["bnd"] if "bnd" in root else np.nan)
         mdl.dispose()
         if polish and has:
             fx = self.fixed_integer(res.zp, res.zm)
@@ -226,7 +233,7 @@ class MIQPModel:
                          zm=zm.X if zm is not None else np.asarray(zm_fix, float),
                          status=mdl.Status, status_name="OPTIMAL",
                          runtime=time.perf_counter() - t0, nodes=0.0, final_gap=0.0,
-                         root_gap=0.0, reached_gap=True, duals=duals)
+                         root_gap=0.0, reached_gap=True, duals=duals, work=mdl.Work)
         mdl.dispose()
         return res
 
@@ -251,5 +258,6 @@ def shadow_price(res: MIQPResult, family: str, index: int | None = None) -> floa
 def _status_name(code: int) -> str:
     names = {GRB.OPTIMAL: "OPTIMAL", GRB.TIME_LIMIT: "TIME_LIMIT", GRB.INFEASIBLE: "INFEASIBLE",
              GRB.SUBOPTIMAL: "SUBOPTIMAL", GRB.INTERRUPTED: "INTERRUPTED",
-             GRB.NUMERIC: "NUMERIC", GRB.INF_OR_UNBD: "INF_OR_UNBD"}
+             GRB.NUMERIC: "NUMERIC", GRB.INF_OR_UNBD: "INF_OR_UNBD",
+             GRB.WORK_LIMIT: "WORK_LIMIT"}
     return names.get(code, str(code))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print a PDF's page count and warn if it is outside the allowed range."""
+"""Print a PDF's page count; exit 1 if it is outside the allowed range (v2 S1: was exit 0)."""
 import argparse
 import sys
 
@@ -15,4 +15,5 @@ n = len(PdfReader(a.pdf).pages)
 if a.min <= n <= a.max:
     print(f"{a.pdf}: {n} pages (OK, limit {a.min}-{a.max})")
 else:
-    print(f"WARNING {a.pdf}: {n} pages, outside the {a.min}-{a.max} page limit", file=sys.stderr)
+    print(f"ERROR {a.pdf}: {n} pages, outside the {a.min}-{a.max} page limit", file=sys.stderr)
+    sys.exit(1)
