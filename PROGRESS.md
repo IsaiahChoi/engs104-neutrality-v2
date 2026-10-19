@@ -102,3 +102,35 @@ Tests cover K4–K13.
 7. **MIQP duals for u and θ.** The position and liquidity caps enter P-MI as variable bounds and big-M coefficients, not constraint rows, so relaxation and fixed-integer duals for u or θ are not exposed. If pilot P6 selects a position or liquidity family for I1 (it binds strongly at 2020-03: e_liquidity ≈ 0.12), estimators (a) and (b) need extra rows. Decide at GATE DESIGN; the certified re-solve works regardless.
 8. **ECOS is not installed** (CVXPY lists CLARABEL, SCS, GUROBI, SCIPY, HIGHS, OSQP). N2(b)'s "every installed conic solver among Clarabel, SCS, ECOS" is therefore Clarabel and SCS. Installing ECOS needs Isaiah's OK.
 9. **Repo location.** The repo is at ~/Desktop/…, not ~/code as RUNBOOK §3 step 2 suggests; Desktop may be iCloud-synced.
+
+## 2026-10-19 — S1: CHECK CORE round 1 FAIL (K8, K9); stopped on a CHECKS–DESIGN conflict
+- **Verdict:** results/checks/CORE_20261019T010452Z.md, `VERDICT: FAIL` (result-checker; scripts in results/checks/scratch/, gitignored).
+  - PASS: K1 (201 tests), K2 (note), K3, K4, K5 (note), K6, K7, K10, K11, K12, K13 (note).
+  - **FAIL: K8, K9.**
+- **Root cause: the perspective-relaxation dual.** DESIGN §6 prescribes Gurobi barrier with QCPDual and BarQCPConvTol 1e-9 (kept code). Those duals are inaccurate and depend on s_obj:
+  - The checker measured, on a valid one-asset toy at project magnitudes (a = 0.004, λ = 10, d = 0.02, ℓ = 0.25%, u = 1.5%, s_obj = 1e5 by the DESIGN rule), errors of 4.9% (b = 0.0005) and 0.28% (b = 0.001) against a − λdℓ, plus one SUBOPTIMAL. On the K8 instance the duals drift 6e-4 to 1.3e-3 between s_obj = 1 and 1000, and by up to 1.4% at 100.
+  - The checker's own Clarabel solve of the same relaxation SOCP scales to ~1e-8 and matches an FD of the relaxation value to ~1e-6.
+  - After the check I probed Gurobi settings that stay within DESIGN §6. On that toy at b = 0.0005 and 0.001: default 4.9e-2 and 2.8e-3; NumericFocus 3: 1.2e-1 and 1.2e-1; BarHomogeneous 1: 1.1e-1 and 5.7e-2; both: 1.2e-1 and 1.2e-1, with SUBOPTIMAL at larger b. On the K8 instance's dollar dual against the FD reference 3.5909e-3: 1e-4 to 9e-3 for every setting and scale. Earlier, BarQCPConvTol 1e-11 to 1e-14 returned SUBOPTIMAL.
+  - No barrier setting fixes it.
+- **Conflict.** DESIGN §6 fixes the method, and CHECKS K8 ("duals scale exactly") and K9 ("the three estimators match their closed forms") cannot be met with it. CLAUDE.md precedence is CHECKS > DESIGN, with the rule to record the conflict and stop. **S1 stops here. S2 was not started.** No further fix round was run: the remaining fix is a design choice (Decisions item 2), and I did not change DESIGN, CHECKS, or the kept relaxation code.
+- **K8 second part, P-RB weights under Clarabel.** Scaled vs unscaled gives ‖Δw‖₁/‖w‖₁ = 1.41e-7 (2017-12) and 1.93e-7 (2020-03), against a relative 1e-7. My absolute reading (max |Δw| = 5.3e-8 and 5.7e-8) was not accepted; the CHECKS header says tolerances are relative. The checker attributes this to Clarabel's accuracy floor here (its error against the exact QP is 2.3e-8 to 1.6e-6 depending on scaling). It also notes that its dense-Σ Clarabel formulation reached OPTIMAL on all K4 dates, while mine ends optimal_inaccurate on 2 of 3 K4 dates and on all K8 solves. Clarabel's P-RB shadow prices scale to 2.2e-6, not exactly. Within my remit, once resumed: improve the cross-check's accuracy (e.g. the dense-Σ Cholesky SOC form the checker used, or Clarabel refinement settings), measure, and report; if 1e-7 relative is below what Clarabel attains, that needs Isaiah's tolerance decision.
+- **Corrections to my own earlier PROGRESS claims**, both found by the checker:
+  - The non-bitwise components of α⊥ + α∥ number 57, 74 and 92 per date (2008-10, 2017-12, 2020-03), not "40–64". My count came from an earlier version of `decompose`.
+  - "On the one-asset toy, s_obj = 100 makes the dual exact to 1e-10" is wrong. The 9.3e-11 was a single grid point (b = 0.0025) at s_obj = 1000. At s_obj = 100 the max error over the 37 non-kink grid points is 1.3e-6, as the test's own comment says.
+- **Checker interpretations for Isaiah to confirm:**
+  - K2: `git_commit` is counted as provenance, like a timestamp.
+  - K5: "exactly" read as exact up to one floating-point rounding. If bitwise is meant, that sub-item fails.
+  - K9: the estimator claim must hold on any valid toy, not only the test's.
+- **Other checker observations:**
+  - Raw perspective incumbents are 1.2e-4 to 7.1e-4 relative below the true value (K13 instances), so S3 (K22, K26) must keep using polished values.
+  - At b = ℓ − 1e-9 the toy returns V = f(b) instead of 0: the minimum position is violated within FeasibilityTol, so the jump is resolved only to solver tolerance.
+  - The core run stored no K9/K10 artifacts; the checker computed those itself.
+
+### Decisions needed (CHECK CORE round 1)
+10. **How the perspective-relaxation dual is computed (resolves K8 and K9; refines item 2).** Options:
+    - (a) Clarabel on the perspective-relaxation SOCP for the relaxation value and duals. Gurobi's barrier stays inside branch-and-bound, where it only produces bounds. DESIGN §6 edit: "the perspective relaxation's duals come from Clarabel (SOC), tolerance 1e-10".
+    - (b) Keep the Gurobi barrier and amend K8/K9 (Isaiah's file) to exempt that estimator, reporting its inaccuracy as a finding.
+    - (c) Replace the perspective-relaxation dual by an FD slope of the relaxation value.
+    - **Recommendation: (a).** It is an accurate, independent conic solver; it keeps "both relaxation duals" (D7) meaningful; and the checker already showed it scales to ~1e-8 and matches the FD to ~1e-6. I would implement it test-first against the toy closed form (both parameter sets) and the K8 instance, rerun the core verification, and run CHECK CORE round 2, about 1–2 hours.
+11. **K8 P-RB weights at 1e-7 relative.** If, after the accuracy improvement above, Clarabel still cannot meet 1e-7 relative between its scaled and unscaled solves, decide whether K8's "same w to 1e-7" is relative ‖Δw‖₁/‖w‖₁ (the checker's reading) or absolute max |Δw| (fractions of AUM).
+12. **To resume:** answer items 10 and 11 (and preferably 1–9) in a note. The next session implements, reruns `experiments.run_core`, and runs CHECK CORE round 2 (rounds left: 2 of 3). S2 follows only after a PASS.
