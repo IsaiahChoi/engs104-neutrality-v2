@@ -519,3 +519,24 @@ Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). Thes
   - test_relaxation_failure_rule: docstring only ("failed if", pointing to test_gap_clause).
   - tests/test_toy_miqp.py and tests/test_integer.py are unchanged; they pass with V_ref omitted.
 - **Scratch dry run** of run_core with open_run/finish stubbed (results/scratch/dryrun_core_d21*; not evidence): 338 s, no errors. The evidence run follows at the commit after this entry.
+
+## 2026-10-19 — S1: CORE round-3 evidence run at 1dff151; gated K8/K9 read before the checker
+- **Evidence run:** `make core` → results/core/run_20261019T183642Z at 1dff151.
+  - Completion agrees three ways: make exit 0 (it ran `make test` first: 246 passed, 2 xfailed), DONE present, RUN_LOG row "ok". Logs: logs/make_core_20261019T183532Z.log and logs/core_20261019T183640Z.log.
+  - It reproduces the scratch dry run's summary.
+  - The b386e16 run (run_20261019T124115Z) is marked superseded (SUPERSEDED marker, RUN_LOG status).
+- **Step 4: gated numbers read against their tolerances. None misses, and none is within a factor of 2.**
+  - K8, P-RB (Clarabel scaled vs unscaled): w relative L1 1.4e-7 and 1.9e-7 (tol 1e-6; the closest K8 margin, ×5).
+  - K8, P-MI 2017-12 and 2020-03 top 30, s_obj = 1e4:
+    - z equal; max |Δw| ≤ 5.6e-17 (tol 1e-7);
+    - dual-scaling ratios (≤ 1 passes): fixed-integer 2.8e-10 and 6.0e-9, big-M 6.8e-8 and 1.2e-9;
+    - perspective value scaling 1.0e-11 and 3.0e-11 (tol 1e-9); no perspective relaxation failed at either scale.
+  - K9 (T1, T2 and 200 seeded random toys; 8,282 points):
+    - Value function off the band: max 1.4e-17 absolute (tol 1e-8), V undefined at 0 points, both formulations.
+    - Band (Decisions 22/22a; FeasibilityTol 1e-6): 3 points (R103, R139, R196). Big-M: 2 incumbents hold the name, with exact objective = f(b) (relative 0), and 1 is w = 0 with V = closed form exactly. Perspective: 3 hold the name, ≤ 2.4e-16 (tol 1e-12). All 6 pass.
+    - Big-M relaxation dual and fixed-integer dual: ≤ 2.6e-13 (tol 1e-6). For the fixed dual, 7,871 points are compared and 3 band points excluded (Decision 22b, each listed with INFEASIBLE); no failure off the band.
+    - Perspective relaxation value, on relaxations not failed: max 3.5e-10 relative (tol 1e-9; ×2.8 margin, the closest K9 margin). Fixed toys ≤ 5.3e-13.
+    - Failed relaxations: 1 of 8,282 (0.012%; cap 1%), R082 by the gap clause (gap 6.6e-8 > threshold 3.3e-9). Its value would be 2.4e-9 off.
+    - Clarabel's own objective (diagnostic): 2 points above 1e-9 (R043 1.04e-9, R082 1.41e-9). The value at the cone-exact point fixes R043 (now 1.3e-14).
+    - Clarabel: 5,869 Solved, 2,413 AlmostSolved; max r_prim 3.8e-9, max r_dual 1.4e-9; linking-bound cap binding at 0 relaxations.
+- Next: CHECK CORE round 3 (the last) with the result-checker.
