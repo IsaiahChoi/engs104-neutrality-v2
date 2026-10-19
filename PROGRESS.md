@@ -419,3 +419,55 @@ Isaiah asked for this to be recorded as report material. **Every number below co
     - (b) Count them as K9 failures.
     - Recommendation: (a).
 23. **To resume:** if 21 and 22 change only CHECKS, results/core/run_20261019T124115Z (b386e16) stands, and the next step is CHECK CORE round 3 against it. If they change code or DESIGN, I rerun `make core` first.
+
+### Diagnosis for Decisions 21–22 (Isaiah's request, 2026-10-19; scratch probes only, nothing reportable)
+Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). These are read-only on src/ and tests/. The stored run is results/core/run_20261019T124115Z. Every re-solve used identical inputs (random_toys(20261019, 200), the same 41-point grids) and reproduced the stored values bitwise.
+
+**1. R043 and R082** (both AlmostSolved; p and d are Clarabel's primal and dual objectives, in its scaled minimization form, p* = −s_obj·R_cf):
+
+| | R043 | R082 |
+|---|---|---|
+| status, iterations | AlmostSolved, 11 | AlmostSolved, 10 |
+| r_prim, r_dual | 6.4e-11, 9.6e-11 | 8.3e-10, 1.4e-9 |
+| gap_abs \|p − d\| | 1.07e-12 | 6.59e-8 |
+| Clarabel's gap_rel = gap_abs/max(1, min(\|p\|, \|d\|)) | 1.15e-13 | 2.02e-8 |
+| pure relative gap \|p − d\|/max(\|p\|, \|d\|) | 1.15e-13 | 2.02e-8 |
+| s_obj | 1e6 | 1e2 |
+| \|V\| scaled (= s_obj·R; V = R above ℓ) | 9.3177 | 3.2684 |
+| \|V\| original | 9.32e-6 | 3.27e-2 |
+| b/ℓ, b/w°, b/u | 4.96, 1.73, 0.594 (w° < b < u) | 4.82, 2.21, 1.156 (b > u) |
+| p − p*, d − p* (scaled units) | +9.68e-9, +9.68e-9 | +4.59e-9, −6.13e-8 |
+| value error: reported | 1.0388e-9 | 1.4058e-9 |
+| value error: Clarabel primal objective | 1.0388e-9 | 1.4058e-9 |
+| value error: Clarabel dual objective | 1.0387e-9 | 1.88e-8 |
+| value error: objective at the mapped-back (w, ζ) with s = w²/ζ | 1.3e-14 | 2.4e-9 |
+| returned w/w° − 1; 1 − ζ | +2.4e-9; 1.3e-14 | −7.4e-6; 2.4e-9 |
+
+- **How the module computes the reported value.** relaxation.py sets U = prob.value. CVXPY 1.9.3's Problem.unpack sets `self._value = self.objective.value`, i.e. the objective re-evaluated at Clarabel's returned primal point, including Clarabel's own cone variable s. The module then divides by s_obj. This equals Clarabel's primal objective up to rounding: −prob.value ≠ p bitwise, but both give a value error of 1.0388e-9 for R043. It is neither the dual objective nor the objective at s = w²/ζ.
+- **R043.** Primal and dual objectives agree to 1.1e-13, but both lie 9.68e-9 (scaled) above p*. For a minimization, that means the dual objective violates weak duality, so the dual point is not exactly feasible (r_dual 9.6e-11). The returned w and ζ are essentially exact; the excess sits in Clarabel's s above w²/ζ.
+- **R082.** The returned w is 7.4e-6 relative below w°, and ζ is 2.4e-9 below 1. Here the gap (2.0e-8) does show the inaccuracy.
+
+**2. AlmostSolved random-toy points** (stored run). The count is **2,381**, not the expected 2,331: 2,381 AlmostSolved + 5,819 Solved = 8,200. Relative value error (against |R_cf|, or the toy's value scale where R_cf = 0):
+- percentiles: p50 2.8e-14, p90 1.0e-11, p99 1.3e-10, max 1.41e-9;
+- counts: 34 above 1e-10, 7 above 2.5e-10, 2 above 1e-9.
+- For comparison, Solved: p50 4.3e-14, p99 6.7e-12, max 1.07e-11, none above 1e-10.
+
+**3. A pure-relative-gap clause at 1e-9** (|p − d|/max(|p|, |d|) > 1e-9 ⇒ failed):
+- **Random toys (8,200):**
+  - 202 fail. 200 are the b = 0 points: all Solved, with true value 0 and |R̂| ≤ 3.2e-15, where a pure relative gap is meaningless.
+  - The other 2 are R082 (2.0e-8; value error 1.41e-9) and R047 at b = 0.0479 (AlmostSolved, 1.25e-9; value error 1.7e-10, within 1e-9).
+  - So the clause catches R082, misses R043 (1.1e-13), and fails R047 although its value is within 1e-9.
+- **Stored toys T1 and T2 (82):** 2 fail, both at b = 0 (Solved); none at b > 0.
+- **K8 instances** (2017-12, 2020-03 and the synthetic, each at s = 1 and s_obj): 0 of 6 fail. The maximum is 5.8e-11 (at s = 1); at s_obj all are ≤ 7.5e-13.
+
+**4. The three Decision 22 points.** f(b) = a·b − λ·d·b²; the closed form is U = 0 (b < ℓ). Every raw incumbent with z⁺ = 1 has w = b, so ℓ·z − w = ℓ − b.
+
+| toy | ℓ − b | big-M raw incumbent | perspective raw incumbent | nearest grid point below the band (b ≤ ℓ − 1e-6) |
+|---|---|---|---|---|
+| R103 | 2.55e-8 | w = b, z⁺ = 1, z⁻ = 0. U_raw = f(b) = 5.6947e-5 (rel. diff 0); exact = f(b). Polish infeasible | w = b, z⁺ = 1. Exact = f(b) (1.2e-16); U_raw = B = 7.056e-5 = f(b)·(1 + 0.239). Polish infeasible | ℓ − b′ = 1.70e-5 (one step, 1.70e-5): V = 0 both, closed form 0, polished |
+| R139 | 6.69e-8 | w = b, z⁺ = 1. U_raw = f(b) = 1.2295e-4 (−4.4e-16); exact = f(b). Polish infeasible | w = b, z⁺ = 1. Exact = f(b); U_raw = B = 2.204e-4 = f(b)·(1 + 0.793). Polish infeasible | ℓ − b′ = 2.03e-5 (one step): V = 0 both, closed form 0 |
+| R196 | 9.60e-7 | w = 0, z = 0: V = 0, polished, correct | w = b, z⁺ = 1. Exact = f(b) = 2.715e-8 (−2.4e-16); U_raw = B = 2.981e-8 = f(b)·(1 + 0.098). Polish infeasible | ℓ − b′ = 2.41e-5 (one step): V = 0 both, closed form 0 |
+
+- In all five failed solves, Gurobi's incumbent satisfies everything except w ≥ ℓz, which it violates by ℓ − b ≤ 9.6e-7, inside its default FeasibilityTol 1e-6.
+- The exact objective at the raw incumbent is f(b) to ≤ 2.4e-16, but the true value there is 0. The perspective raw value and bound exceed even f(b), by 10–79% (cone tolerance, Finding C).
+- At the next grid point below on each toy (1.7–2.4e-5 below ℓ, outside the band), V = 0 = the closed form for both formulations.
