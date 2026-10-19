@@ -38,7 +38,7 @@ ALPHAS = [("mom", r"$\alpha_{\mathrm{mom}}$", "-", "o"), ("perp", r"$\alpha_\per
           ("par", r"$\alpha_\parallel$", "-.", "^")]
 ATT_GROUPS = [("Factor (beta, style)", ("beta", "style"), "///"),
               ("Dollar and sector", ("dollar", "sector"), "\\\\\\"),
-              ("Gross and position", ("gross", "position"), "xx"),
+              ("Gross and position caps (u, θ)", ("gross", "position"), "xx"),
               ("Costs (borrow, trading)", ("borrow", "trading"), ".."),
               ("Zero names and residual", ("inactive", "residual"), "")]
 GRAY = "#8c8b87"
@@ -93,7 +93,7 @@ def fig2_alignment() -> Path:
     ide = _read("c1", "c1_idealized")
     ide = ide[ide["mandate"] == "factor"]
     pts = _read("c1", "c1_points")
-    fig, ax = plt.subplots(figsize=(style.COLUMN_WIDTH_IN, 2.6))
+    fig, ax = plt.subplots(figsize=(style.COLUMN_WIDTH_IN, 3.4))
     phi = np.linspace(0, 1, 201)
     ax.plot(phi, np.sqrt(1 - phi), color=style.INK, lw=1.0, label=r"closed form $\sqrt{1-\varphi}$")
     for i, (kind, label, _, mk) in enumerate(ALPHAS):
@@ -107,7 +107,8 @@ def fig2_alignment() -> Path:
     ax.set_ylabel(r"retained fraction $A^*/A^*_{\mathrm{unc}}$")
     ax.set_xlim(-0.02, 1.02)
     ax.set_ylim(-0.02, 1.05)
-    ax.legend(loc="lower left", ncol=1)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.45, -0.2), ncol=2, columnspacing=0.8,
+              handletextpad=0.3)
     fig.tight_layout()
     return _save(fig, f"fig2_alignment{TAG}")
 
@@ -119,7 +120,7 @@ def fig3_attribution() -> Path:
     att, pts = att[att["alpha"] == "mom"], pts[pts["alpha"] == "mom"].set_index("date")
     slack = sorted(pts.index[~pts["risk_binding"]])
     dates = [d for d in sorted(pts.index) if d not in slack]
-    fig, ax = plt.subplots(figsize=(style.COLUMN_WIDTH_IN, 2.8))
+    fig, ax = plt.subplots(figsize=(style.COLUMN_WIDTH_IN, 3.9))
     x = np.arange(len(dates))
     pos, neg = np.zeros(len(dates)), np.zeros(len(dates))
     for i, (label, fams, hatch) in enumerate(ATT_GROUPS):
@@ -137,7 +138,8 @@ def fig3_attribution() -> Path:
     ax.set_ylabel("alpha lost (bp/month)")
     if slack:
         ax.set_xlabel("risk budget slack, omitted: " + ", ".join(d[:7] for d in slack))
-    ax.legend(loc="upper left", fontsize=7, ncol=1)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.45, -0.32), ncol=2, columnspacing=0.8,
+              handletextpad=0.4)
     fig.tight_layout()
     return _save(fig, f"fig3_attribution{TAG}")
 
@@ -156,7 +158,7 @@ def fig_c3_summary() -> Path:
     for i, (c, ls) in enumerate(zip(top, ["-", "--", "-.", ":"])):
         axes[2].plot(t, pts[c], ls=ls, color=style.SERIES[i], label=c[2:])
     axes[2].set_ylabel("elasticity $e_j$")
-    axes[2].legend(loc="upper left", ncol=2)
+    axes[2].legend(loc="upper right", ncol=2)
     fig.tight_layout()
     return _save(fig, f"fig_c3_summary{TAG}")
 
