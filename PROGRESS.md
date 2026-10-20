@@ -1387,3 +1387,18 @@ index 4561d89..e8e5367 100644
   - N2(a): 24 solves; worst ≈ 0.5 h. N2(b): convex, seconds.
   - Worst case total ≈ 22 h; expected well under 1 h. P5 confirmed Work and WorkLimit in Gurobi 13, so the TimeLimit fallback (run N1 alone, power checks) does not apply. Runs go one at a time, each with 4 workers.
 - **Next:** `make i1` in the background. Then the I2 constraint by DESIGN §7's rule from I1's output, recorded here before I2 runs. Then `make i2`, `make n1`, `make n2`.
+
+## 2026-10-20 — S3: I1 done; the I2 constraint chosen by DESIGN §7's rule (Decision 40), before I2 runs
+- **I1 run:** results/i1/run_20261020T231007Z at 2d45cee (`make i1`; suite, then the runner, 65 s). make exit 0, DONE, RUN_LOG "ok": all agree. summary.json: 48 cases, 288 solves all OPTIMAL, 0 checker violations at 1e-9, 0 undefined V, 144 points with 0 combined V > B flags, 0 failed perspective stencils, 0 baseline checker violations. Work total 218.2 (median 0.734 per solve).
+- **I2 constraint.** Rule (DESIGN §7): "the I1 constraint with the largest median slope". I read "slope" as the certified point slope s = (V₊ − V₋)/(2δ), estimator (c), the ground truth. The median is over the 9 I1 instances at δ = 10% (n = 9 each):
+
+| key@b | median s | median L | median perspective slope | median big-M relaxation dual | median fixed-integer dual |
+|---|---|---|---|---|---|
+| sector@0.02 | 1.364e-3 | 1.363e-3 | 1.222e-3 | 1.709e-3 | 1.597e-3 |
+| style:Mom@0.025 | 1.316e-3 | 1.316e-3 | 1.306e-3 | 1.451e-3 | 1.235e-3 |
+| dollar@0.02 | 3.45e-5 | 3.45e-5 | 3.30e-5 | 1.8e-5 | 3.5e-5 |
+| style@0.10 | 0 | −5.5e-8 | −2.0e-13 | 0 | 0 |
+
+  - **Chosen: sector@0.02**; integer.yaml i2.constraint = {key: sector, b: 0.02}. It is close: Mom@0.025 is 3.5% lower. Ranked by the perspective estimator instead, Mom would come first. The rule names the slope, so I applied it to s. Isaiah may override before S4; I2 would then rerun.
+  - Source: results/i1/run_20261020T231007Z/i1_estimators.parquet (rel_delta = 0.10).
+- **Next:** `make i2`, then `make n1`, then `make n2`, one at a time, in the background.

@@ -1,0 +1,21 @@
+{
+ "n_cases": 48,
+ "solves": {
+  "n": 288,
+  "statuses": {
+   "OPTIMAL": 288
+  },
+  "n_checker_violations": 0,
+  "n_v_undefined": 0,
+  "work_total": 218.2402596116089,
+  "work_median": 0.7340424023006602,
+  "runtime_total": 192.55495643615723
+ },
+ "baseline_checker_violations": 0,
+ "perspective_slope_failed": 0,
+ "points": {
+  "n_points": 144,
+  "n_flag_V_exceeds_B": 0,
+  "n_V_undefined": 0
+ }
+}

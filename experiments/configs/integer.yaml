@@ -36,7 +36,8 @@ i1:
   settings: {mip_gap: 1.0e-6, threads: 1, seed: 0, work_limit_factor: 2.0}   # WorkLimit 2·W* per formulation solve (2 solves per point)
 i2:
   instances: [{date: "2017-12", N: 250, K: 67}, {date: "2020-03", N: 250, K: 79}]   # K = round(0.5·S)
-  constraint: "the I1 constraint with the largest median slope (chosen after I1)"   # Decision 40: recorded in PROGRESS before I2 runs
+  constraint: {key: sector, b: 0.02}   # DESIGN §7 rule, from results/i1/run_20261020T231007Z (Decision 40; PROGRESS):
+                                        # largest median certified point slope s over the 9 I1 instances at δ = 10%
   certification: combined           # as I1
   formulations: [bigm, perspective_rescaled]
   baseline_kinds: [fixed_lambda]
