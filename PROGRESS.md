@@ -729,3 +729,141 @@ Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). Thes
   - One P6 candidate, combined.
 - **Suite:** 282 passed, 2 xfailed (logs/test_s2b_pre_commit_*).
 - Next: commit; `make pilot_s2b` in the background.
+
+## 2026-10-19/20 — S2b closing entry (Claude Code, Opus 5.5): pilot reruns done; proposals; stopped before GATE DESIGN
+- **Run:** results/pilot_s2b/run_20261020T024318Z at 99025d2 (R below), RUN_LOG status "pilot".
+  - Completion agrees: make exit 0 (suite 282 passed, 2 xfailed, then the runner), DONE present, RUN_LOG row closed "pilot". The runner took 48 s.
+  - Provenance: s_obj = 1e4 and W* = 340 match the S2 pilot's summary.json. P2 elasticities at the I1 dates equal the S2 pilot's (max abs diff 0). The C1 values A(b), A(b ± δ) recompute exactly (diff 0).
+- **Numbers** (every one from R unless the source says otherwise; R = results/pilot_s2b/run_20261020T024318Z):
+
+| Item | Quantity | Value | Source |
+|---|---|---|---|
+| 1 Decision 24 | RED before the 1e-9 parameters: stored-toy band point R025, b = ℓ − 5e-7, polished w = b, min-position row broken by | 5e-7 | logs/test_s2b_red2_20261020T023205Z.log |
+| 1 Decision 24 | polished weights at 1e-9: K8 instances (2 dates × 2 formulations) and stored toys (T1/T2 grids; band points on all 202 toys) | all pass (79 passed in the integer/toy/relaxation/MIQP files) | logs/test_s2b_green1_20261020T023224Z.log; tests/test_integer_s2b.py |
+| 1–2 | suite after S2b code | 282 passed, 2 xfailed | logs/test_s2b_pre_commit_20261020T024007Z.log |
+| 3 P4 | bigm: statuses; polished V defined; checker violations at 1e-9; flags (incumbent, bound) | OPTIMAL 8; 8/8; 0; 0, 0 | R/summary.json |
+| 3 P4 | bigm: (B − V)/\|V\| against its own exact V: min / median / max | -1.48e-07 / 8.37e-05 / 9.73e-05 | R/p4_solves.parquet |
+| 3 P4 | bigm: Gurobi's gap (B − U_raw)/\|U_raw\|: min / median / max | -1.51e-07 / 8.37e-05 / 9.76e-05 | R/p4_solves.parquet |
+| 3 P4 | bigm: shortfall (V_best − V)/\|V_best\|: min / median / max | 0 / 0 / 8.52e-06 | R/p4_solves.parquet |
+| 3 P4 | bigm: (B − V_best)/\|V_best\|: min / median / max | -1.48e-07 / 8.37e-05 / 9.71e-05 | R/p4_solves.parquet |
+| 3 P4 | bigm: cone effect / \|V\|: min / median / max | n/a (no cones) | R/p4_solves.parquet |
+| 3 P4 | bigm: Work: min / median / max | 0.584 / 1.09 / 1.61 | R/p4_solves.parquet |
+| 3 P4 | bigm: nodes: min / median / max | 9 / 72.5 / 262 | R/p4_solves.parquet |
+| 3 P4 | perspective: statuses; polished V defined; checker violations at 1e-9; flags (incumbent, bound) | OPTIMAL 8; 8/8; 0; 0, 0 | R/summary.json |
+| 3 P4 | perspective: (B − V)/\|V\| against its own exact V: min / median / max | 7.17e-05 / 0.00112 / 0.0034 | R/p4_solves.parquet |
+| 3 P4 | perspective: Gurobi's gap (B − U_raw)/\|U_raw\|: min / median / max | -1.63e-16 / 1.68e-05 / 8.06e-05 | R/p4_solves.parquet |
+| 3 P4 | perspective: shortfall (V_best − V)/\|V_best\|: min / median / max | 0 / 0 / 0.00302 | R/p4_solves.parquet |
+| 3 P4 | perspective: (B − V_best)/\|V_best\|: min / median / max | 7.17e-05 / 0.000376 / 0.00315 | R/p4_solves.parquet |
+| 3 P4 | perspective: cone effect / \|V\|: min / median / max | 0 / 0.00174 / 0.00479 | R/p4_solves.parquet |
+| 3 P4 | perspective: Work: min / median / max | 0.617 / 2.05 / 2.37 | R/p4_solves.parquet |
+| 3 P4 | perspective: nodes: min / median / max | 130 / 296 / 383 | R/p4_solves.parquet |
+| 3 P4 | perspective_rescaled: statuses; polished V defined; checker violations at 1e-9; flags (incumbent, bound) | OPTIMAL 8; 8/8; 0; 0, 0 | R/summary.json |
+| 3 P4 | perspective_rescaled: (B − V)/\|V\| against its own exact V: min / median / max | 3.61e-05 / 6.97e-05 / 9.39e-05 | R/p4_solves.parquet |
+| 3 P4 | perspective_rescaled: Gurobi's gap (B − U_raw)/\|U_raw\|: min / median / max | 3.66e-05 / 6.98e-05 / 9.39e-05 | R/p4_solves.parquet |
+| 3 P4 | perspective_rescaled: shortfall (V_best − V)/\|V_best\|: min / median / max | 0 / 0 / 0 | R/p4_solves.parquet |
+| 3 P4 | perspective_rescaled: (B − V_best)/\|V_best\|: min / median / max | 3.61e-05 / 6.97e-05 / 9.39e-05 | R/p4_solves.parquet |
+| 3 P4 | perspective_rescaled: cone effect / \|V\|: min / median / max | 0 / 0 / 1.89e-11 | R/p4_solves.parquet |
+| 3 P4 | perspective_rescaled: Work: min / median / max | 0.357 / 0.766 / 1.34 | R/p4_solves.parquet |
+| 3 P4 | perspective_rescaled: nodes: min / median / max | 1 / 37 / 199 | R/p4_solves.parquet |
+| 3 P4 | agreement perspective vs big-M: pass; worst \|ΔV\|/allowed | 8/8; 0.892 | R/p4_agreement.parquet |
+| 3 P4 | agreement perspective_rescaled vs big-M: pass; worst \|ΔV\|/allowed | 8/8; 0.0867 | R/p4_agreement.parquet |
+| 3 P6 | candidates (ties included); of which tied at the cutoff | 11; 8 | R/p6_candidates.parquet |
+| 3 P6 | sector@0.02: combined L / H / s; binding; perspective-only L; big-M-only L | 0.00136 / 0.00136 / 0.00136; True; 0.00123; 0.00136 | R/p6_intervals.parquet |
+| 3 P6 | dollar@0.02: combined L / H / s; binding; perspective-only L; big-M-only L | 5.9e-05 / 5.97e-05 / 5.93e-05; True; -2.08e-05; 5.9e-05 | R/p6_intervals.parquet |
+| 3 P6 | beta@0.05: combined L / H / s; binding; perspective-only L; big-M-only L | -2.03e-07 / 1.36e-07 / 0; False; -2.99e-05; -2.03e-07 | R/p6_intervals.parquet |
+| 3 P6 | gross@2: combined L / H / s; binding; perspective-only L; big-M-only L | -3.41e-09 / 3.41e-09 / 0; False; -1.07e-06; -3.41e-09 | R/p6_intervals.parquet |
+| 3 P6 | style@0.1: combined L / H / s; binding; perspective-only L; big-M-only L | 0.000526 / 0.000526 / 0.000526; True; 0.000511; 0.000526 | R/p6_intervals.parquet |
+| 3 P6 | style:CMA@0.1: combined L / H / s; binding; perspective-only L; big-M-only L | -6.82e-08 / 1.05e-07 / 0; False; -1.42e-05; -6.82e-08 | R/p6_intervals.parquet |
+| 3 P6 | style:HML@0.1: combined L / H / s; binding; perspective-only L; big-M-only L | -6.82e-08 / 6.82e-08 / 0; False; -2.01e-05; -6.82e-08 | R/p6_intervals.parquet |
+| 3 P6 | style:Mom@0.1: combined L / H / s; binding; perspective-only L; big-M-only L | 0.000526 / 0.000526 / 0.000526; True; 0.000513; 0.000526 | R/p6_intervals.parquet |
+| 3 P6 | style:RMW@0.1: combined L / H / s; binding; perspective-only L; big-M-only L | -6.82e-08 / 6.82e-08 / 0; False; -1.7e-05; -6.82e-08 | R/p6_intervals.parquet |
+| 3 P6 | style:SMB@0.1: combined L / H / s; binding; perspective-only L; big-M-only L | -6.82e-08 / 7.57e-08 / 0; False; -1.59e-05; -6.82e-08 | R/p6_intervals.parquet |
+| 3 P6 | style:Mom@0.025: combined L / H / s; binding; perspective-only L; big-M-only L | 0.00183 / 0.00183 / 0.00183; True; 0.00177; 0.00183 | R/p6_intervals.parquet |
+| 3 P6 | selected (rule: L > 0 in candidate order, at most 4) | sector@0.02, dollar@0.02, style@0.1, style:Mom@0.1 | R/summary.json |
+| 3 P6 | V supplied by; B supplied by; exact V ties (22 points) | {'bigm': 22}; {'bigm': 22}; 9 | R/p6_points.parquet |
+| 3 P6 | statuses (44 solves); checker violations at 1e-9 | {'OPTIMAL': 44}; 0 | R/summary.json |
+| 2 cone effect | P6 perspective solves: cone effect / \|V\| min / median / max | 0.000313 / 0.00036 / 0.000517 | R/p6_solves.parquet |
+| 4 Decision 26 | C1 envelope points; flagged | 115; 64 | R/c1_kinks.parquet |
+| 4 Decision 26 | flagged with an active-set change (kinks); without (curvature flags) | 35; 29 | R/c1_kinks.parquet |
+| 4 Decision 26 | kinks by what changes (overlapping): a mandate row; a name in or out of the support; a position-cap row | 2; 15; 29 | R/c1_kinks.parquet |
+| 4 Decision 26 | unflagged points with an active-set change (of 51) | 21 | R/c1_kinks.parquet |
+| 4 Decision 26 | worst coarse (1%) error: curvature flags; kinks | 1.91e-05; 0.0225 | R/c1_kinks.parquet |
+| 4 Decision 26 | recomputed A(b), A(b ± δ) vs the stored C1 values (max abs diff) | 0 | R/summary.json |
+| provenance | P2 elasticities at the I1 dates vs the S2 pilot (max abs diff) | 0 | R/summary.json |
+
+- **Findings for GATE DESIGN:**
+  - **Decision 24.** At 1e-9 the band defect is gone: a support infeasible at 1e-9 now fails the polish (V undefined, counted as excluded) instead of returning f(b) > 0. On the pilot instances nothing changes: 0 of 68 polished V violate a row at 1e-9 (24 P4 + 44 P6).
+  - **Decision 27(a), rescaled perspective.** It removes the cone effect: at most 1.9e-11·|V|, against 4.8e-3·|V| at default scaling.
+    - Its exact gap meets MIPGap 1e-4 at all 8 instances (at most 9.4e-5) and it never stops short of the best known V.
+    - It uses the least Work of the three arms (median 0.77, against 1.09 for big-M and 2.05 for the default perspective).
+    - Against big-M its worst agreement ratio is 0.087 (default perspective: 0.892, the same as S2).
+    - At the 2017-12 K67 base instance it found a support whose V is 8.5e-6·|V| above big-M's, within big-M's certified gap.
+  - **Decision 27(b), combined certification.** In P6 every V and every B came from big-M (22 of 22 points; 9 are exact ties in V). The perspective at default scaling never supplied either.
+    - Its effect on certification: the dollar bound is now certified binding (L = 5.90e-5; perspective-only L = −2.08e-5), and sector's L rises from 1.23e-3 to 1.36e-3.
+  - **P6 selection changes (Decision 31 below).** Ties bring in 8 candidates at median elasticity 0. The mechanical rule then keeps sector@0.02, dollar@0.02, style@0.10 and style:Mom@0.10.
+    - style@0.10 and style:Mom@0.10 have identical intervals (only the Mom bound binds at 2017-12).
+    - Mom@0.025 (L = 1.83e-3, binding) is fifth in candidate order and is cut by "at most 4". The GATE C note expected the selection to be unchanged; that was under perspective-only certification.
+  - **Decision 26 reporting.** Of the 64 flagged C1 points, 35 change the exact active set (kinks) and 29 do not (curvature flags; worst coarse error 1.9e-5).
+    - Most of the changes are position-cap rows (29) or names entering or leaving the support (15). Only 2 change a mandate row: 2011-08 style and style:CMA, both style:lower:3.
+    - 21 of the 51 unflagged points also change the active set, which the K15 flag rule does not look for.
+    - With about 470 names, a 1% bound step often moves some name onto or off a cap or the support. If "kink" should mean a mandate-row change only, the counts are 2 kinks and 62 curvature flags.
+
+### Attribution identity (item 5; for K18, Decision 29), quoted verbatim from src/opt/attribution.py (module docstring, lines 9–23)
+```
+Constraint attribution (Stubbs & Vandenbussche). Write G(w) = α − 2λΣw for the gradient of the
+smooth part. KKT stationarity of the problem, taken in w⁺ for held-long names and in w⁻ for
+held-short names, gives name by name
+    G(w*) = Σ_c a_c,
+where each family's implied-alpha adjustment a_c (an N-vector) is
+    dollar    (μ_up − μ_lo) 1          beta     (μ_up − μ_lo) B_mkt
+    style     B_style (μ_up − μ_lo)     sector   S (μ_up − μ_lo)
+    trading   τ_up − τ_down (|·| ≤ κ)
+    gross     +μ_G on longs, −μ_G on shorts
+    position  +μ_pos⁺ on longs, −μ_pos⁻ on shorts
+    borrow    −c on shorts
+For names held at zero, the L1 kink (gross, borrow, trading) is not unique by name; the whole
+remaining adjustment is reported as `inactive`. On held names the remainder must vanish
+(`residual`, a KKT check). Then w* = w_α + Σ_c w_c with w_α = (2λ)⁻¹Σ⁻¹α and
+w_c = −(2λ)⁻¹Σ⁻¹a_c, and expected alpha splits as α'w* = α'w_α + Σ_c α'w_c.
+```
+- So the identity K18 tests is Σ_c (−α'w_c) = α'w_α − α'w*, summed over FAMILY_ORDER including `inactive`; the stated residual is `residual`, which vanishes on held names. Here w_α is the costless, unconstrained mean-variance optimum at λ = μ_risk, not the fixed-risk optimum, which is why the total exceeds A*_unc(σ) − A* (DESIGN §10, Fig. 3).
+
+### Proposed DESIGN text (item 6; not applied; Isaiah edits DESIGN at GATE DESIGN)
+- **Decision 24, §6 (P-MI, the V bullet).** Replace the first two sentences ("V is the polished value alone: … so V is a valid lower bound.") with:
+  > V is the polished value alone: the fixed-integer QP at the incumbent's z, re-solved by dual simplex at FeasibilityTol = OptimalityTol = 1e-9 (the P-RB QP's settings); the fixed-integer dual (I1 estimator (b)) comes from the same QP at the same settings. V's weights satisfy every row to 1e-9, so V is a valid lower bound to that tolerance; the independent checker's verdict on them at 1e-9, at the solve's bounds, is recorded for every solve and counted. If the incumbent's support is infeasible at 1e-9 (for example a name held at b < ℓ inside Gurobi's 1e-6 band), the polish fails and V is undefined.
+  The rest of the bullet is unchanged; it already says a failed polish is recorded and counted as excluded.
+- **Decision 27.**
+  - §3.4, after the Perspective bullet, add:
+    > **Perspective, rescaled** (N1, N2): the same model with the weights in units of the largest position bound c = maxᵢ uᵢ: w' = w/c, every row and bound divided by c, and each cone written in its name's bound (tᵢ = wᵢ/uᵢ, sᵢ = uᵢ²s'ᵢ, tᵢ² ≤ s'ᵢζᵢ), as the Clarabel relaxation does (§6). Solutions and bounds are mapped back to original units and c is recorded. The feasible set and objective are unchanged; only the quantities Gurobi's absolute tolerances act on differ (A9).
+  - §6 (P-MI), add two bullets:
+    > **Cone tolerance (A9).** Gurobi's FeasibilityTol (1e-6, absolute) acts on the cones wᵢ² ≤ sᵢζᵢ, where sᵢ lies between ℓ² and uᵢ² (about 6e-6 to 4e-3 here), so a perspective incumbent can violate its cones within tolerance and its raw value and bound then overstate U*. Every perspective solve records the objective effect λ*·Σᵢ dᵢ·max(0, wᵢ²/ζᵢ − sᵢ) at the raw incumbent, relative to |V|, and B − V against the polished V.
+    > **Combined certification (I1, I2).** Both formulations, at default scaling, are solved at every point. V = the larger of the two polished values; B = the smaller of the two final bounds; B_eff = max(B, V) + 1e-6·|V|. Estimator (b) is the fixed-integer dual at the incumbent that supplied V. The formulation that supplied V and the one that supplied B are recorded and counted; an exact tie in V goes to big-M and is flagged. Each formulation solve has WorkLimit 2·W*.
+  - §6 "Certified slope interval": after "with B_eff = max(B, V) + 1e-6·|V| at each point", add "(in I1 and I2, V and B are the combined values)".
+  - §7 I1 Instances: replace "perspective formulation" with "both formulations, combined (§6)". Estimators (c): "the certified central difference, with B_eff from the combined V and B (§6)".
+  - §7 I2: after "for both P-MI and the continuous baseline", add "(P-MI combined, §6)".
+  - §7 N1:
+    - Replace "Both formulations: 72 solves, plus 24 presolve-off solves at N = 250." with "Three arms (big-M, perspective at default scaling, perspective rescaled, §3.4): 108 solves, plus 36 presolve-off solves at N = 250."
+    - Report: replace the agreement item with "agreement between each perspective arm and big-M: |V_bigM − V_arm| against the larger certified gap B_eff − V (K22)", and add "the cone-violation effect of both perspective arms (A9)".
+  - §7 N2(a): replace "Both formulations at MIPGap 1e-4" with "The three arms at MIPGap 1e-4" (24 solves).
+  - §8 P6: after "Compute certified central differences at f = 0.5 on 2017-12", add "under combined certification (§6); every candidate tied at the cutoff is included (Decision 28)". The wording on duplicate candidates depends on Decision 31.
+  - §9 A9 row, add: "Rescaling the weights by the largest position bound turns the perspective cones' absolute tolerance into a relative one (§3.4); the cone-violation effect is reported (P4, N1, N2)."
+- **Decision 30, §7 C3.** Replace "all 241 month-ends" with:
+  > every month-end from 2006-01 to 2025-12 (240): α_mom needs 252 trading days of returns before the date, so the risk model's first month-end, 2005-12, has no momentum alpha and is recorded as skipped.
+
+### Configs (item 6)
+- experiments/configs/integer.yaml and numerics.yaml were updated in place and are still marked "proposed, pending GATE DESIGN". No runner reads them yet.
+  - Both: `polish` (1e-9).
+  - integer.yaml: I1/I2 `certification: combined` with `formulations: [bigm, perspective]`; I1 constraints = the mechanical S2b P6 selection, with the alternative and the S2 selection in comments.
+  - numerics.yaml: N1/N2(a) `formulations: [bigm, perspective, perspective_rescaled]` and `cone_diagnostic: true`.
+- Solve counts: combined certification doubles the I1/I2 MIQP solves (2 per point). In S2b P6 a combined point took median Work 2.09 (max 2.35), against W* = 340.
+
+### Decisions needed (S2b → GATE DESIGN)
+31. **P6 selection under combined certification with ties.** The mechanical rule keeps sector@0.02, dollar@0.02, style@0.10 and style:Mom@0.10. The last two are the same constraint at 2017-12 (identical intervals), and Mom@0.025 (binding) is cut by "at most 4". Options:
+    - (a) keep the mechanical selection;
+    - (b) merge candidates whose P6 intervals are identical, keeping the family key (style), and take the next binding one: sector, dollar, style@0.10, style:Mom@0.025 (my recommendation: no duplicated work, and it keeps DESIGN's designated factor-bound candidate);
+    - (c) make Mom@0.025 a fixed inclusion, with the remaining slots by the rule.
+32. **The S2 pilot's P4 and P6** (results/pilot/run_20261019T191206Z) used the 1e-6 polish. For the GATE DESIGN parameters they are superseded by S2b's; its P1–P3, P5 and P7 stand. I have not marked the run superseded, because most of it stands. Confirm, or ask me to mark it.
+33. **K22 (CHECKS, yours)** names |V_bigM − V_persp|. If N1 gets the rescaled arm, decide whether K22 covers each perspective arm against big-M.
+34. **The kink definition (Decision 26).** By the exact active set, including caps and support, it is 35 kinks / 29 curvature flags. By mandate rows only, it is 2 / 62. Which one does the report use?
+- **Decision 25** (keep raw duals of failed relaxations) was decided at GATE C but is not in the S2b prompt. It is not implemented yet; I propose doing it at the start of S3, test-first.
+- **Commits this session (S2b):** 99025d2 (code, tests, runner) and the commit containing this entry, the run directory, the RUN_LOG row and the proposed configs.

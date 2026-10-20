@@ -1,8 +1,11 @@
 # PROPOSED, PENDING GATE DESIGN (Isaiah confirms or edits after the instructor discussion).
 # Drafted by S2 from DESIGN §7 (N1, N2) and the pilot: results/pilot/run_20261019T191206Z (00eff1c).
+# Updated by S2b from results/pilot_s2b/run_20261020T024318Z (99025d2): Decisions 24, 27(a) (PROGRESS, S2b).
 status: "proposed, pending GATE DESIGN"
 s_obj: 10000.0
 W_star: 340.0
+polish: {method: dual_simplex, feasibility_tol: 1.0e-9, optimality_tol: 1.0e-9}   # Decision 24 (implemented); 1e-9 checker verdict recorded on every V
+cone_diagnostic: true             # every perspective solve records λ*·Σ d_i·max(0, w_i²/ζ_i − s_i) at the raw incumbent, and its ratio to |V|
 n1:
   dates: ["2017-12", "2020-03"]
   N: [100, 250, "full"]
@@ -14,11 +17,13 @@ n1:
     loose: {style: 0.40, beta: 0.20}
     base: {style: 0.10, beta: 0.05}
     tight: {style: 0.025, beta: 0.0125}
-  formulations: [bigm, perspective]
+  formulations: [bigm, perspective, perspective_rescaled]   # Decision 27(a), proposed: + perspective with weights rescaled by the
+                                                            # largest position bound (PMI(rescale=True)); 36 instances × 3 = 108 solves
   settings: {mip_gap: 1.0e-4, threads: 1, seed: 0, work_limit_factor: 1.0, presolve: -1}   # WorkLimit W*
-  presolve_off: {N: 250, presolve: 0}
+  presolve_off: {N: 250, presolve: 0}   # 12 instances × 3 arms = 36 solves
 n2:
-  miqp: {N: 250, tightness: base, s_obj: [1.0, 10000.0], mip_gap: 1.0e-4, work_limit_factor: 1.0}
+  miqp: {N: 250, tightness: base, s_obj: [1.0, 10000.0], mip_gap: 1.0e-4, work_limit_factor: 1.0,
+         formulations: [bigm, perspective, perspective_rescaled]}   # Decision 27(a), proposed: 4 instances × 3 arms × 2 scales = 24 solves
   convex:
     dates: ["2008-10", "2013-06", "2017-12", "2020-03", "2025-04"]
     solvers: [GUROBI_BARRIER, CLARABEL, SCS]   # installed conic solvers among Clarabel, SCS, ECOS (ECOS not installed)

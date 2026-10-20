@@ -1,0 +1,13 @@
+{
+ "c1_kinks.parquet": "1c6cca063c3fed6a325dbb0136376107406d39170b9557d662a6ab49ab57ce14",
+ "p4_solves.parquet": "f468d58006f231d457ca69f6c902bbaecef036ef0e452c7c74ee9b3c477f1d06",
+ "p4_agreement.parquet": "73c5617904aa801f2af1421b8607c24ca57bd4e18554c7813260cbe3bbf38719",
+ "p4_weights.parquet": "86dccde6b4558793520475e60fbe725a3a1e50f797374fedb414436268d66031",
+ "p2_i1.parquet": "27206e993212cd5d4ed6d07f63cf1f0bae0c99ac68859a019aa748d17dfe584c",
+ "p6_candidates.parquet": "eb3119bd31509560e4fa7703e3d10f433bbb4d8df25edfb4f2f27c15555dbd7d",
+ "p6_points.parquet": "cee6f9c334876f0363619bd3d01dd019786d00df705897070df6394682e5c0a5",
+ "p6_solves.parquet": "5e3a2fc647b8a6fbf9fa3bdeaf721ae7d5d3e090f0ccaf1702533488fb557353",
+ "p6_intervals.parquet": "ca7d43fd83e9803ba928056254924e5af9ddaf5fa605dfdb3a16f01f328a0c34",
+ "p6_weights.parquet": "74ca5ba05bb4afef7cbb862c7d720b0f2c05907b80c5a1910ec838cb10559185",
+ "summary.json": "35b6b83e4cba7c30d58765242213553155e3e3bf4afda68addbdb68ae64c3d02"
+}
