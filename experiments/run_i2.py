@@ -7,12 +7,12 @@ the S2d crash test (RUN_LOG "pilot").
 For each instance (date, N, K = round(f·S)) the constraint's bound is swept over `points` equally
 spaced values on [0, 2·b], plus e(1 ± rel_delta) for each estimator point e ∈ {0.5b, b, 1.5b}
 (on DESIGN's 41-point grid these are grid points already). One chunk per (instance, bound):
-- P-MI under the config's certification (combined: both formulations, V and B combined), with the
-  fixed-integer dual at V's incumbent and the big-M relaxation dual;
-- the continuous baseline's value, dual and weights, both candidates (src.opt.baseline;
-  Decision 35 open);
-- at an estimator point, the perspective relaxation slope (src.opt.slopes, DESIGN §6's method
-  unless the config says otherwise).
+- P-MI under the config's certification (combined: big-M and the rescaled perspective, V and B
+  combined, DESIGN §6), with the fixed-integer dual at V's incumbent and the big-M relaxation dual;
+- the continuous baseline's value, dual and weights (the config's baseline_kinds; Decision 35:
+  fixed_lambda), and at b > 0 its K15-rule slope (δ = 1%, 0.1% at flagged stencils; CHECKS K27);
+- at an estimator point, the perspective relaxation slope (src.opt.slopes; "central" runs DESIGN
+  §6's edited rule, s3.slope_rule).
 The certified intervals at the estimator points are assembled from the sweep (i2_intervals). The
 checker's verdict is recorded on every solution; the summary holds statuses, counts, Work and
 Runtime only.
@@ -28,14 +28,17 @@ import pandas as pd
 from experiments import s3
 from experiments.common import finish, fail, open_run
 from experiments.cont import pool_chunks
-from experiments.run_i1 import _set, solve_point
+from experiments.run_i1 import _set, slope_columns, solve_point
 from src.opt.baseline import KINDS as BASELINE_KINDS
-from src.opt.baseline import baseline_value
+from src.opt.baseline import baseline_point, baseline_value
 from src.opt.certified import certified_interval_eff
 from src.opt.integer import PMI, polished_exceeds_bound
 from src.opt.sensitivity import set_bound_by_key
 from src.opt.slopes import relaxation_slope
 
+ENVELOPE_FIELDS = ("slope", "rel_err", "within", "kink", "step_checked", "step", "fwd", "bwd",
+                   "ctr_coarse", "rel_err_coarse", "fine_step", "ctr_fine", "rel_err_fine",
+                   "err_scale", "mu_plus", "mu_minus")
 FRAMES = ("i2_points", "i2_solves", "i2_baseline", "i2_slope_points", "i2_weights")
 
 
@@ -70,7 +73,7 @@ def make_task(cfg: dict, inst, con: dict, b: float, estimator: bool) -> dict:
             "work_limit": float(st["work_limit_factor"]) * float(cfg["W_star"]),
             "certification": c.get("certification", "single"),
             "formulations": list(c.get("formulations", ["perspective"])),
-            "slope_method": c.get("perspective_slope_method", "central"),
+            "slope_method": s3.slope_rule(c.get("perspective_slope_method", "central")),
             "fd_rel_step": float(c.get("perspective_fd_rel_step", 1e-3)),
             "baseline_kinds": list(c.get("baseline_kinds", BASELINE_KINDS))}
 
@@ -80,21 +83,22 @@ def i2_task(t: dict) -> dict[str, pd.DataFrame]:
     ids = {k: t[k] for k in ("id", "instance", "date", "N", "K", "key", "b_base", "bound", "estimator")}
     P = PMI(**t["kwargs"], formulation="bigm", s_obj=t["s_obj"])
     _set(P, key, b)
-    V, B, vf, bf, parts, fixed, w = solve_point(P, t, duals=True)
+    sp = solve_point(P, t, duals=True)
+    V, B, parts, fixed, w = sp["V"], sp["B"], sp["parts"], sp["fixed"], sp["w"]
     rel = P.relaxation_duals(v_ref=V if np.isfinite(V) else None)
-    pt = {**ids, "V": V, "B": B, "v_from": vf, "b_from": bf,
+    pt = {**ids, "V": V, "B": B, "v_from": sp["v_from"], "b_from": sp["b_from"],
+          "v_tie": sp["v_tie"], "b_tie": sp["b_tie"],
           "flag_V_exceeds_B": polished_exceeds_bound(V, B),
           "mu_fixed": (fixed or {}).get("shadow", {}).get(key, np.nan),
           "fixed_status": (fixed or {}).get("status", "not run"),
           "mu_bigm_relax": rel["bigm"]["shadow"].get(key, np.nan),
+          "U_bigm_relax": rel["bigm"].get("U", np.nan),
           **s3.persp_raw_columns(rel["perspective"], key),
           "work_total": sum(p.work for p in parts.values())}
     slope_pts = pd.DataFrame()
     if t["estimator"]:
         sl = relaxation_slope(P, key, rel_delta=t["fd_rel_step"], method=t["slope_method"])
-        pt.update(persp_slope=sl["slope"], persp_forward=sl["forward"], persp_backward=sl["backward"],
-                  persp_kink=sl["kink"], persp_ok=sl["ok"], persp_fail_reason=sl["fail_reason"],
-                  persp_method=sl["method"])
+        pt.update(slope_columns(sl))
         slope_pts = pd.DataFrame([{**ids, **q} for q in sl["points"]])
     solves = [s3.pmi_record(r, {**ids, "arm": f}) for f, r in parts.items()]
     CP, alpha = s3.baseline_problem(t["kwargs"])
@@ -104,9 +108,15 @@ def i2_task(t: dict) -> dict[str, pd.DataFrame]:
         bv = baseline_value(CP, alpha, key, b, kind=kind, **kw)
         set_bound_by_key(CP, key, b)
         chk = s3.continuous_verdict(CP, bv["w"])
+        env = {k: np.nan for k in ENVELOPE_FIELDS}
+        env["envelope_note"] = "b = 0: no relative step"
+        if b > 0:
+            bp = baseline_point(CP, alpha, key, kind=kind, secant_rels=(), **kw)
+            env = {k: bp[k] for k in ENVELOPE_FIELDS}
+            env["envelope_note"] = ""
         set_bound_by_key(CP, key, t["b_base"])
         base.append({**ids, **{k: v for k, v in bv.items() if k not in ("w", "key", "b")},
-                     "checker": chk})
+                     **env, "checker": chk})
     return {"i2_points": pd.DataFrame([pt]), "i2_solves": pd.DataFrame(solves),
             "i2_baseline": pd.DataFrame(base), "i2_slope_points": slope_pts,
             "i2_weights": pd.DataFrame({"id": t["id"], "i": np.arange(len(w)), "w": w})}

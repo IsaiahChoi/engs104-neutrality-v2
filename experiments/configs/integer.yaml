@@ -1,8 +1,11 @@
-# PROPOSED, PENDING GATE DESIGN (Isaiah confirms or edits after the instructor discussion).
+# APPROVED AT GATE DESIGN (PROGRESS, "2026-10-20 — Isaiah: GATE DESIGN"), finalized in S3 step 1.
 # Drafted by S2 from the pilot rules (DESIGN §7, §8): results/pilot/run_20261019T191206Z (00eff1c).
 # Updated by S2b from results/pilot_s2b/run_20261020T024318Z (99025d2): Decisions 24, 27(b), 28 (PROGRESS, S2b).
+# GATE DESIGN changes: certification combined with [bigm, perspective_rescaled]; I1 constraints as Decision 31;
+# baseline_kinds [fixed_lambda] (Decision 35); perspective_slope_method central (Decision 38); polish 1e-9.
 # Plain decimals with a dot (PyYAML reads 1e-6 as text).
-status: "proposed, pending GATE DESIGN"
+status: "approved at GATE DESIGN (2026-10-20)"
+workers: 4                        # DESIGN §6: up to 4 workers
 s_obj: 10000.0                    # P1: geometric mean of the P3 |U_mv| proxies nearest 10 (P4 |V|·s_obj in [10.1, 13.6])
 W_star: 340.0                     # P5: Work of 300 s at the median rate (1.124 Work/s, 4 concurrent solves)
 mandate: {position: 0.06, min_position: 0.0025}   # u = 6%, ℓ = 0.25%, otherwise base
@@ -15,24 +18,28 @@ i1:
     "2009-03": {S: 188, K: [47, 94, 141]}
     "2017-12": {S: 133, K: [33, 67, 100]}
     "2020-03": {S: 158, K: [40, 79, 119]}
-  certification: combined           # Decision 27(b), proposed: both formulations at every point; V = the larger polished V,
-                                    # B = the smaller final bound, B_eff = max(B, V) + 1e-6·|V|; estimator (b) at V's incumbent
-  formulations: [bigm, perspective]   # perspective at default scaling (DESIGN §7's I1 formulation); no rescaling
-  constraints:                      # S2b P6: combined certification, ties included (Decision 28); L > 0 in candidate order, at most 4
-    - {key: sector, b: 0.02}        # L = 1.36e-3 (S2 perspective-only: 1.23e-3)
-    - {key: dollar, b: 0.02}        # L = 5.90e-5; perspective-only L = -2.08e-5 (not certifiable in S2)
-    - {key: style, b: 0.10}         # L = 5.26e-4; tied candidate; only the Mom bound binds at 2017-12, so its interval equals style:Mom@0.10's
-    - {key: "style:Mom", b: 0.10}   # L = 5.26e-4; tied candidate (same interval as style)
-    # Mom@0.025 (DESIGN §8 P6's added candidate): L = 1.83e-3, binding, but fifth in candidate order, so cut by "at most 4".
-    # Decision 31 (PROGRESS, S2b): keep this mechanical selection, or merge the duplicate (style ≡ style:Mom@0.10 here) and keep Mom@0.025.
-    # S2 (perspective-only, 1e-6 polish): sector, style:Mom@0.025.
+  certification: combined           # DESIGN §6 (GATE DESIGN): big-M and the rescaled perspective at every point; V = the larger
+                                    # polished V, B = the smaller final bound, B_eff = max(B, V) + 1e-6·|V|; estimator (b) at V's incumbent
+  formulations: [bigm, perspective_rescaled]
+  constraints:                      # Decision 31 (GATE DESIGN): DESIGN §8 P6 as written (families, plus the Mom bound at 0.025)
+    - {key: sector, b: 0.02}        # S2b P6 combined L = 1.36e-3
+    - {key: dollar, b: 0.02}        # L = 5.90e-5
+    - {key: style, b: 0.10}         # all styles jointly; L = 5.26e-4 (only the Mom bound binds at 2017-12)
+    - {key: "style:Mom", b: 0.025}  # L = 1.83e-3
+  baseline_kinds: [fixed_lambda]    # Decision 35: P-MI with ℓ = 0 and no cardinality row (mean-variance at λ*)
+  perspective_slope_method: central # Decision 38: the central slope is the estimate, with DESIGN §6's (edited) three-point
+                                    # one-sided slopes, 8N kink floor and two-point concavity check (src.opt.slopes "design")
+  k29b: {n_instances: 3, scale_factor: 10.0}   # CHECKS K29b: the first 3 I1 instances by sorted id, slopes also at 10·s_obj
   rel_delta: 0.10
   robustness: {date: "2017-12", rel_delta: 0.05}
   perspective_fd_rel_step: 0.001    # δ_r = 1e-3·b (DESIGN §6; gated by CHECKS K29c)
   settings: {mip_gap: 1.0e-6, threads: 1, seed: 0, work_limit_factor: 2.0}   # WorkLimit 2·W* per formulation solve (2 solves per point)
 i2:
   instances: [{date: "2017-12", N: 250, K: 67}, {date: "2020-03", N: 250, K: 79}]   # K = round(0.5·S)
-  constraint: "the I1 constraint with the largest median slope (chosen after I1)"
-  certification: combined           # Decision 27(b), proposed (as I1)
+  constraint: "the I1 constraint with the largest median slope (chosen after I1)"   # Decision 40: recorded in PROGRESS before I2 runs
+  certification: combined           # as I1
+  formulations: [bigm, perspective_rescaled]
+  baseline_kinds: [fixed_lambda]
+  perspective_slope_method: central
   points: 41                        # equally spaced on [0, 2·b_base]
   settings: {mip_gap: 1.0e-6, threads: 1, seed: 0, work_limit_factor: 2.0}

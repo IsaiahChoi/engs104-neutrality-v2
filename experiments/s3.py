@@ -80,8 +80,25 @@ def tightened(mandate, tight: dict | None):
 
 def pmi_record(r, extra: dict) -> dict:
     """One P-MI solve's record (the S2b runner's fields: status, V, B, B_eff, gaps, cone effect,
-    checker verdicts, Work, Runtime, nodes, settings)."""
-    return _rec(r, extra)
+    checker verdicts, Work, Runtime, nodes, settings), plus the raw incumbent's verdict at
+    Gurobi's tolerances (CHECKS K26)."""
+    return {**_rec(r, extra), "incumbent_verdict": r.incumbent_verdict}
+
+
+SLOPE_RULES = {"central": "design", "three_point": "three_point"}
+
+
+def slope_rule(config_method: str) -> str:
+    """src.opt.slopes method for a config's perspective_slope_method. "central" (the estimate is
+    the central slope, Decision 38) runs DESIGN §6 as edited at GATE DESIGN: slopes.py's "design"
+    rule (5-point stencil, three-point one-sided slopes, 8N kink floor, two-point concavity)."""
+    if config_method not in SLOPE_RULES:
+        raise ValueError(f"perspective_slope_method {config_method!r} not in {sorted(SLOPE_RULES)}")
+    return SLOPE_RULES[config_method]
+
+
+ARMS = {"bigm": ("bigm", False), "perspective": ("perspective", False),
+        "perspective_rescaled": ("perspective", True)}
 
 
 def persp_raw_columns(rec: dict, key: str) -> dict:

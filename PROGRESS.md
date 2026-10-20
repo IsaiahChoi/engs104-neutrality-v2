@@ -1355,3 +1355,35 @@ index 4561d89..e8e5367 100644
 - **Verdict: no miss; K29c PASS.** I1 may run.
 - **About the failed style:Mom stencil:** its elasticity at s_obj is undefined, so its (1e5, 1e6) pair was not gated. At the other scales the elasticity is 0.52, and that pair agrees to diff/tol 3.0e-7. The failing point, b − 2δ_r, is needed only by the edited rule's backward three-point slope. The family key "style" at 2017-12 moves the same binding row and is gated and passes. K29c says failed stencils are "counted … and excluded; failed K8 stencils are listed", so this is compliant.
 - **Observation on the edited kink rule (supports Decision 38):** the 224 toy kink flags are exactly the points within 2δ_r of ℓ or w°, apart from the b = w° points, where both one-sided slopes are 0 and nothing is flagged. Interior points: 0 flags of 7975. S2d's two-point rule flagged 1551 nonflat interior points and almost every flat one. Concavity failures (two-point): 0.
+
+## 2026-10-20 — S3 step 1: integer.yaml and numerics.yaml finalized; production runner changes (tests first); 0f projection
+- **Configs, as the GATE DESIGN note says.** Status "approved at GATE DESIGN (2026-10-20)"; "proposed" removed.
+  - integer.yaml: certification combined, formulations [bigm, perspective_rescaled]; I1 constraints sector@0.02, dollar@0.02, style@0.10, style:Mom@0.025 (Decision 31); baseline_kinds [fixed_lambda]; perspective_slope_method central; polish 1e-9 (unchanged). I2 gets the same certification, formulations, baseline and slope method; its constraint is still "chosen after I1" (Decision 40).
+  - numerics.yaml: N1 and N2(a) formulations [bigm, perspective, perspective_rescaled]; cone_diagnostic true (both unchanged from S2b).
+  - **Operational keys added** for CHECKS items the runners must serve; they are not design parameters:
+    - integer.yaml `k29b: {n_instances: 3, scale_factor: 10}` (K29b);
+    - numerics.yaml `plain_relaxations: true` (K24, DESIGN §7 N1 as edited);
+    - numerics.yaml `determinism`: 3 solves for K25, chosen now, before N1 ran: 2017-12 N250 f0.5 base bigm; 2020-03 N250 f0.5 tight perspective; 2020-03 full f0.25 loose perspective_rescaled.
+  - `workers: 4` in both.
+- **Runner changes** (v2 files; no kept-core file changed, rule 14 not triggered):
+  - run_i1/run_i2:
+    - combined certification over big-M and the *rescaled* perspective (solve_combined(rescale_perspective=True)). Arms are recorded as "bigm" and "perspective_rescaled", and so are v_from/b_from; v_tie and b_tie are recorded.
+    - The perspective slope uses s3.slope_rule("central") = slopes.py "design" (step 0e).
+    - K29b: the first 3 I1 instances by sorted id (all at 2009-03) also get the slope at 10·s_obj, main δ only.
+    - The big-M relaxation value U_bigm_relax is recorded.
+    - I2's baseline records the K15-rule slope (δ = 1%, Decision 26 refinement) at every b > 0 (K27).
+  - run_n1: plain relaxations once per instance (n1_relax, src.opt.rootprobe.plain_relaxations); the K25 reruns (ids suffixed "_rerun"; the summary separates them).
+  - src/opt/integer.py (v2): incumbent_verdict(), the raw incumbent checked at FeasibilityTol 1e-6 and IntFeasTol 1e-5 *at the solve's current bounds* (K26). PMIResult.incumbent_verdict carries it, and s3.pmi_record records it.
+    - Why a new field: the existing PMIResult.incumbent_violations checks against the base mandate, not the current bounds, at 1e-7. It is not recorded in any frame and no reported result uses it, so rule 13 is not triggered. I left it unchanged; tests/test_integer.py asserts on it.
+- **Tests:** tests/test_s3_production.py (13 tests, 16 with parametrization). RED logs/test_s3_production_red_* (ImportError on incumbent_verdict). GREEN logs/test_s3_production_green_* (37 passed with test_s3_runners.py).
+- **Spec changes in tests/test_s3_runners.py** (rule 5: neither weakens a test; both follow GATE DESIGN):
+  - test_production_run_refused_while_proposed: the assertion that the real config is "proposed" is replaced by a monkeypatched proposed config. The guard is still tested on a proposed config, and test_approved_configs_run_as_production tests the approved ones.
+  - test_i2_task_records: `len(i2_slope_points) == 3` becomes `== 5`, because DESIGN §6 as edited needs the 5-point stencil.
+- **Suite:** 406 passed, 1 skipped, 2 xfailed (logs/test_s3_step1_full_20261020T230638Z.log).
+- **0f — P7 projection for the final design.** S2c's projection was for the proposed configs, so here is one for these. Inputs: S2 P5's 1.124 Work/s and W* = 340; 4 workers; expected Work per point from S2b (combined P6 point median 2.09 at I1 settings; P4 arm medians 1.09 / 2.05 / 0.77).
+  - I1: 48 cases × 3 points = 144 points, 288 MIQP solves, plus 5-point Clarabel stencils (×2 on 12 K29b cases) and baseline QPs. Expected ≈ 144 × 2.09 / 1.124 / 4 ≈ 67 s of MIQP. Worst case (every solve at WorkLimit 680) ≈ 12 h.
+  - I2: 2 × 41 = 82 points, 164 solves; expected ≈ 40 s; worst ≈ 6.9 h.
+  - N1: 144 + 3 reruns = 147 solves at WorkLimit 340; expected ≈ 1 min (more at N = full); worst ≈ 3.1 h.
+  - N2(a): 24 solves; worst ≈ 0.5 h. N2(b): convex, seconds.
+  - Worst case total ≈ 22 h; expected well under 1 h. P5 confirmed Work and WorkLimit in Gurobi 13, so the TimeLimit fallback (run N1 alone, power checks) does not apply. Runs go one at a time, each with 4 workers.
+- **Next:** `make i1` in the background. Then the I2 constraint by DESIGN §7's rule from I1's output, recorded here before I2 runs. Then `make i2`, `make n1`, `make n2`.

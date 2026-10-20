@@ -34,9 +34,14 @@ def inst():
 # ----- the config guard -----
 
 @pytest.mark.parametrize("runner", ["i1", "i2", "n1", "n2"])
-def test_production_run_refused_while_proposed(runner):
+def test_production_run_refused_while_proposed(runner, monkeypatch):
+    """The guard refuses a production run while the runner's config is "proposed". Spec change in
+    S3 step 1 (PROGRESS): integer.yaml and numerics.yaml are approved at GATE DESIGN, so the
+    proposed state is now constructed (the real config with its S2 status) instead of read."""
     name = s3.DEFAULT_CONFIG[runner]
-    assert config(name)["status"].startswith("proposed")
+    real = config(name)
+    proposed = {**real, "status": "proposed, pending GATE DESIGN"}
+    monkeypatch.setattr(s3, "config", lambda n: proposed if n == name else config(n))
     with pytest.raises(RuntimeError, match="GATE DESIGN"):
         s3.load_run_config(runner, [])
 
@@ -157,7 +162,9 @@ def test_i2_task_records(inst):
     assert len(out["i2_slope_points"]) == 0                    # b = 0 is not an estimator point
     t = i2.make_task(cfg, inst, {"key": "sector", "b": 0.02}, b=0.02, estimator=True)
     out = i2.i2_task(t)
-    assert len(out["i2_slope_points"]) == 3 and out["i2_points"]["estimator"].iloc[0]
+    # spec change in S3 step 1 (PROGRESS): DESIGN §6 as edited at GATE DESIGN takes 5 stencil
+    # points (the three-point one-sided slopes), so the default "central" rule records 5, not 3
+    assert len(out["i2_slope_points"]) == 5 and out["i2_points"]["estimator"].iloc[0]
     assert {"mu_persp_raw", "mu_persp_raw_unusable", "persp_raw_usable",
             "persp_raw_status"} <= set(out["i2_points"].columns)
     _check_point_flags(out["i2_points"])

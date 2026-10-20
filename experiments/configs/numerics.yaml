@@ -1,7 +1,9 @@
-# PROPOSED, PENDING GATE DESIGN (Isaiah confirms or edits after the instructor discussion).
+# APPROVED AT GATE DESIGN (PROGRESS, "2026-10-20 — Isaiah: GATE DESIGN"), finalized in S3 step 1.
 # Drafted by S2 from DESIGN §7 (N1, N2) and the pilot: results/pilot/run_20261019T191206Z (00eff1c).
 # Updated by S2b from results/pilot_s2b/run_20261020T024318Z (99025d2): Decisions 24, 27(a) (PROGRESS, S2b).
-status: "proposed, pending GATE DESIGN"
+# GATE DESIGN: N1 and N2(a) formulations [bigm, perspective, perspective_rescaled]; cone_diagnostic true.
+status: "approved at GATE DESIGN (2026-10-20)"
+workers: 4                        # DESIGN §6: up to 4 workers
 s_obj: 10000.0
 W_star: 340.0
 polish: {method: dual_simplex, feasibility_tol: 1.0e-9, optimality_tol: 1.0e-9}   # Decision 24 (implemented); 1e-9 checker verdict recorded on every V
@@ -17,13 +19,18 @@ n1:
     loose: {style: 0.40, beta: 0.20}
     base: {style: 0.10, beta: 0.05}
     tight: {style: 0.025, beta: 0.0125}
-  formulations: [bigm, perspective, perspective_rescaled]   # Decision 27(a), proposed: + perspective with weights rescaled by the
-                                                            # largest position bound (PMI(rescale=True)); 36 instances × 3 = 108 solves
+  formulations: [bigm, perspective, perspective_rescaled]   # DESIGN §3.4/§7: perspective with weights rescaled by the largest
+                                                            # position bound (PMI(rescale=True)); 36 instances × 3 = 108 solves
+  plain_relaxations: true           # DESIGN §7 N1 / CHECKS K24: both z ∈ [0, 1] relaxations per instance (src.opt.rootprobe)
+  determinism:                      # CHECKS K25: rerun under WorkLimit; chosen in S3 before N1 ran, one per arm across dates, N, tightness
+    - {date: "2017-12", N: 250, f: 0.5, tightness: base, arm: bigm, presolve: -1}
+    - {date: "2020-03", N: 250, f: 0.5, tightness: tight, arm: perspective, presolve: -1}
+    - {date: "2020-03", N: "full", f: 0.25, tightness: loose, arm: perspective_rescaled, presolve: -1}
   settings: {mip_gap: 1.0e-4, threads: 1, seed: 0, work_limit_factor: 1.0, presolve: -1}   # WorkLimit W*
   presolve_off: {N: 250, presolve: 0}   # 12 instances × 3 arms = 36 solves
 n2:
   miqp: {N: 250, tightness: base, s_obj: [1.0, 10000.0], mip_gap: 1.0e-4, work_limit_factor: 1.0,
-         formulations: [bigm, perspective, perspective_rescaled]}   # Decision 27(a), proposed: 4 instances × 3 arms × 2 scales = 24 solves
+         formulations: [bigm, perspective, perspective_rescaled]}   # 4 instances × 3 arms × 2 scales = 24 solves
   convex:
     dates: ["2008-10", "2013-06", "2017-12", "2020-03", "2025-04"]
     solvers: [GUROBI_BARRIER, CLARABEL, SCS]   # installed conic solvers among Clarabel, SCS, ECOS (ECOS not installed)

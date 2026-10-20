@@ -304,6 +304,8 @@ class PMIResult:
     cone_n_capped: int = -1              # names where w²/ζ took the linking bound u|w| (-1: none)
     polished_violations: str = "not run"   # JSON: the checker on V's weights at 1e-9 (Decision 24)
     w_scale: float = 1.0                 # c of the rescaled solve (Decision 27(a)); 1.0 unscaled
+    incumbent_verdict: str = "not run"   # JSON: the checker on the raw incumbent at Gurobi's tolerances,
+                                         # the solve's bounds (CHECKS K26; incumbent_verdict())
 
     @property
     def cone_effect_rel(self) -> float:
@@ -463,7 +465,9 @@ class PMI:
                          incumbent_violations=inc_viol, flag_incumbent_exceeds_polished=f_inc,
                          flag_polished_exceeds_bound=f_bnd, cone_effect=c_eff, cone_n_capped=c_cap,
                          polished_violations=self.verdict(w, r.zp, r.zm) if use_pol
-                         else "V undefined", w_scale=c)
+                         else "V undefined", w_scale=c,
+                         incumbent_verdict=incumbent_verdict(self, r.w, r.zp, r.zm) if has
+                         else "no incumbent")
 
     def _shadows(self, res) -> dict[str, float]:
         """Raw (scaled) dU*/db per key: dollar, beta, gross, style and style:<f>, sector and
@@ -525,6 +529,23 @@ class PMI:
         except RuntimeError as err:
             persp.update(U_gurobi_barrier=np.nan, gurobi_barrier_status=str(err))
         return {"bigm": bigm, "perspective": persp}
+
+
+RAW_FEAS_TOL = 1e-6                  # Gurobi's default FeasibilityTol (CHECKS K26, raw incumbents)
+RAW_INT_TOL = 1e-5                   # Gurobi's default IntFeasTol
+
+
+def incumbent_verdict(pmi: "PMI", w, zp, zm, feas_tol: float = RAW_FEAS_TOL,
+                      int_tol: float = RAW_INT_TOL) -> str:
+    """The independent checker on a raw incumbent at Gurobi's tolerances (CHECKS K26): every row
+    of PMI.verdict at feas_tol, at the PMI's current bounds, with z rounded where it is within
+    int_tol of an integer; a larger fractionality is reported as "binary". JSON."""
+    zp, zm = np.asarray(zp, float), np.asarray(zm, float)
+    frac = float(max(np.abs(zp - np.round(zp)).max(), np.abs(zm - np.round(zm)).max()))
+    v = json.loads(pmi.verdict(w, np.round(zp), np.round(zm), tol=feas_tol))
+    if frac > int_tol:
+        v["binary"] = frac
+    return json.dumps(v, sort_keys=True)
 
 
 # ----- Decision 27(b): combined certification (an option for I1/I2) -----
