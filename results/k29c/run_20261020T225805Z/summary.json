@@ -1,0 +1,102 @@
+{
+ "method": "design",
+ "rel_delta": 0.001,
+ "s_obj": 10000.0,
+ "toy_seed": 20261019,
+ "n_toys": 200,
+ "verdict": {
+  "pass": true,
+  "toy_points_checked": 8399,
+  "toy_misses": 0,
+  "gated_pairs": 39,
+  "gated_pair_misses": 0,
+  "failed_fraction": 4.701457451810061e-05,
+  "failure_cap": 0.01
+ },
+ "toys": {
+  "n_toys": 200,
+  "n_points": 8400,
+  "kinds": {
+   "central": 7975,
+   "both": 400,
+   "forward": 15,
+   "backward": 9,
+   "failed": 1
+  },
+  "max_err_over_tol": {
+   "central": 0.022394714215034354,
+   "forward": 0.11277730511534075,
+   "backward": 0.11268568912145306
+  },
+  "relaxations": {
+   "relaxations": 42000,
+   "failed": 1,
+   "reasons": {
+    "gap": 1
+   }
+  },
+  "kink_flags": 224,
+  "concavity_failures": 0,
+  "n_almost_solved": 13401
+ },
+ "k8": {
+  "n_keys": 36,
+  "gated_keys": [
+   "2017-12/sector",
+   "2017-12/sector:0",
+   "2017-12/sector:1",
+   "2017-12/sector:2",
+   "2017-12/sector:6",
+   "2017-12/style",
+   "2020-03/sector",
+   "2020-03/sector:1",
+   "2020-03/sector:3",
+   "2020-03/sector:6",
+   "2020-03/sector:7",
+   "2020-03/style",
+   "2020-03/style:CMA"
+  ],
+  "gated_pairs": 39,
+  "gated_max_ratio": 0.002517041433605117,
+  "gated_max_rel_diff": 2.836517697454435e-07,
+  "diagnostic_pairs": 317,
+  "diagnostic_bound_keys_max_ratio": 0.07132430767002726,
+  "diagnostic_bound_keys_n_over_tol": 0,
+  "relaxations_gated_scales": {
+   "relaxations": 540,
+   "failed": 1,
+   "reasons": {
+    "gap": 1
+   }
+  },
+  "relaxations_all_scales": {
+   "relaxations": 900,
+   "failed": 1,
+   "reasons": {
+    "gap": 1
+   }
+  },
+  "failed_stencils": [
+   {
+    "month": "2017-12",
+    "s": 10000.0,
+    "key": "style:Mom",
+    "fail_reason": "gap"
+   }
+  ]
+ },
+ "pooled_gated": {
+  "relaxations": 42540,
+  "failed": 2,
+  "reasons": {
+   "gap": 2
+  }
+ },
+ "pooled_all_scales": {
+  "relaxations": 42900,
+  "failed": 2,
+  "reasons": {
+   "gap": 2
+  }
+ }
+}

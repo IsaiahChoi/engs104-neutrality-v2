@@ -1334,3 +1334,24 @@ index 4561d89..e8e5367 100644
   - tests/test_k29c.py (9). RED logs/test_s3_k29c_red_* (no module). GREEN logs/test_s3_k29c_green_*. Before GREEN I fixed my own grid test: its toy's ℓ and w° lie on the grid, so the union has 40 points, not 42. A second toy now covers the off-grid case.
   - Makefile: `k29c` added to RUNNERS.
 - **Config interpretation for step 1 (recorded before any production run):** integer.yaml keeps `perspective_slope_method: central` as approved: the estimate is the central slope. The runners map it to slopes.py's "design" rule, which records the three-point slopes, the 8N kink floor and the two-point concavity check (DESIGN §6 as edited). slopes.py's legacy "central" (3-point stencil, the pre-edit rule) is no longer reachable from integer.yaml.
+
+## 2026-10-20 — S3: step 0e done; K29c PASS (my read, every number against CHECKS K29c)
+- **Run:** results/k29c/run_20261020T225805Z at 4020dba (`make k29c`; suite 393 passed, 1 skipped, 2 xfailed, then the runner). make exit 0, DONE present, RUN_LOG row "ok". All three agree.
+- **Read:** the runner's summary.json, and an independent recomputation from the parquet frames: tools/k29c_read.py restates the closed forms and the tolerances and does not call toy_check or k8_pairs. Its output is results/scratch/k29c_read.json; the two agree on every count and maximum.
+
+| K29c clause | Criterion | Measured | Source |
+|---|---|---|---|
+| (i) family | ≥ 200 random toys, seed recorded, DESIGN §6 s_obj | 200 toys, seed 20261019; \|U*\|·s_obj ∈ [1, 100) on every toy | k29c_toys.parquet |
+| (i) points | every grid point b > 0 (and b = ℓ, b = w°) | 8400 points (b ≤ 0: 0); ℓ and w° on every toy | k29c_toys.parquet |
+| (i) away from kinks | \|ŝ − s\| ≤ 1e-6·max(\|s\|, 0.01a) + N | 7975 checked, 0 misses; max err/tol 0.0224 | k29c_toys.parquet |
+| (i) within 2δ_r of a kink | one-sided slope on the far side, + 4N | forward 15, backward 9; 0 misses; max err/tol 1.2e-4 / 3.0e-3 | k29c_toys.parquet |
+| (i) at b = ℓ and b = w° | both one-sided slopes, + 4N | 400 points, 0 misses; max err/tol 0.113 | k29c_toys.parquet |
+| (ii) gated | elasticity at s_obj ≥ 1e-4; s_obj, 10·s_obj, 100·s_obj pairwise within 1e-6·\|ŝ\| + 2N | 13 keys, 39 pairs, 0 misses; max diff/tol 2.5e-3; max relative difference 2.8e-7 | k29c_k8_pairs.parquet |
+| (ii) A9 diagnostic | s = 1 and 1e2, reported | 317 pairs; on bound keys max diff/tol 0.071, none above tolerance | k29c_k8_pairs.parquet |
+| (iii) failures | ≤ 1% of relaxations, (i) and (ii) pooled | 2 of 42540 (4.7e-5), both the gap clause: toy R082 at b = 0.2105, offset 0 (AlmostSolved); K8 2017-12 style:Mom at s = 1e4, offset −2 (gap 1.04e-7 > 5.64e-9) | k29c_toy_points.parquet, k29c_k8_points.parquet |
+| (iii) failed K8 stencils listed | — | 2017-12 style:Mom, s = 1e4 (the same stencil failed in S2d) | summary.json k8.failed_stencils |
+| raw duals (diagnostic) | compared, reported | gated keys: max \|raw − ŝ\|/\|ŝ\| 3.3e-7; all usable | k29c_k8.parquet |
+
+- **Verdict: no miss; K29c PASS.** I1 may run.
+- **About the failed style:Mom stencil:** its elasticity at s_obj is undefined, so its (1e5, 1e6) pair was not gated. At the other scales the elasticity is 0.52, and that pair agrees to diff/tol 3.0e-7. The failing point, b − 2δ_r, is needed only by the edited rule's backward three-point slope. The family key "style" at 2017-12 moves the same binding row and is gated and passes. K29c says failed stencils are "counted … and excluded; failed K8 stencils are listed", so this is compliant.
+- **Observation on the edited kink rule (supports Decision 38):** the 224 toy kink flags are exactly the points within 2δ_r of ℓ or w°, apart from the b = w° points, where both one-sided slopes are 0 and nothing is flagged. Interior points: 0 flags of 7975. S2d's two-point rule flagged 1551 nonflat interior points and almost every flat one. Concavity failures (two-point): 0.
