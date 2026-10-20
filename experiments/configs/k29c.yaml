@@ -1,0 +1,16 @@
+# S3 step 0e: the K29c gate run (CHECKS K29c) for the perspective slope method of DESIGN §6 as
+# edited at GATE DESIGN (src.opt.slopes method "design"). `make k29c` → results/k29c/run_<UTC>/.
+# Plain decimals with a dot (PyYAML reads 1e-6 as text).
+runner: k29c
+status: "K29c gate run (S3 step 0e)"
+s_obj: 10000.0                     # the chosen s_obj (S2 pilot P1); K8 gated scales s_obj, 10·s_obj, 100·s_obj
+workers: 4                         # DESIGN §6: up to 4 workers
+rel_delta: 0.001                   # δ_r = 1e-3·b (DESIGN §6)
+toys: {seed: 20261019, n: 200, grid: 41}   # K9's random family (core.yaml seed); each toy at choose_s_obj(U*)
+k8:                                # CHECKS K8's fixed instances: top 30 by ADV, K = round(0.5·S), base mandate
+  months: ["2017-12", "2020-03"]
+  N: 30
+  f: 0.5
+  position: 0.06
+  min_position: 0.0025
+  scales_diagnostic: [1.0, 100.0]  # A9 diagnostic legs (K29c (ii)), not gated
