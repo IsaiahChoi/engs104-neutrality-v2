@@ -16,12 +16,14 @@ from pathlib import Path
 import yaml
 
 from src.figures.fig_c import FIGURES as C_FIGURES
+from src.figures.fig_s3 import FIGURES as S3_FIGURES
 from src.utils import ROOT
 
 NUMBERS = ROOT / "report" / "numbers.tex"
 BASE_MANDATE = "experiments/configs/base_mandate.yaml"
 INSTANCES = "experiments/instances.py"
-FIGURES: list = [*C_FIGURES]   # (name, function) pairs: Figs. 1-3 and the C3 summary (S2)
+FIGURES: list = [*C_FIGURES, *S3_FIGURES]   # (name, function) pairs: Figs. 1-3 and the C3 summary (S2);
+                                             # Figs. 4-5 and Tables II-III (S3)
 
 
 def sha256(rel: str) -> str:

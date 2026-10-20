@@ -94,6 +94,7 @@ def n1_task(t: dict) -> dict[str, pd.DataFrame]:
                 cone_diag=t["cone_diag"])
     ids = {k: t[k] for k in ("id", "date", "N", "N_names", "f", "K", "tightness", "arm",
                              "presolve", "lam_star", "rerun")}
+    ids["N"] = str(ids["N"])                # a label: 100, 250 or "full" (parquet needs one type)
     rec = s3.pmi_record(r, ids)
     w = pd.DataFrame({"id": t["id"], "i": np.arange(len(r.w)), "w": r.w, "zp": r.zp, "zm": r.zm})
     return {"n1_solves": pd.DataFrame([rec]), "n1_weights": w}
@@ -109,6 +110,7 @@ def make_relax_task(cfg: dict, p: dict, inst) -> dict:
 def relax_task(t: dict) -> dict[str, pd.DataFrame]:
     P = PMI(**t["kwargs"], formulation="bigm", s_obj=t["s_obj"])
     ids = {k: t[k] for k in ("id", "date", "N", "N_names", "f", "K", "tightness", "lam_star", "s_obj")}
+    ids["N"] = str(ids["N"])
     return {"n1_relax": pd.DataFrame([{**ids, **plain_relaxations(P)}])}
 
 

@@ -154,3 +154,21 @@ def test_n1_relax_task(inst):
     r = out["n1_relax"].iloc[0]
     assert np.isfinite(r["bigm"]) and np.isfinite(r["perspective"]) and r["perspective_ok"]
     assert r["perspective"] <= r["bigm"] + 1e-8 * abs(r["bigm"])          # A6 on the plain relaxations
+
+
+def test_n1_frames_with_full_and_numeric_N_write_to_parquet(inst, tmp_path):
+    """The N1 run of 2026-10-20 (results/n1/run_20261020T232021Z) failed at finish: N mixed ints
+    (100, 250) and "full", which parquet cannot store. N is recorded as a text label."""
+    import pandas as pd
+    cfg = config("numerics")
+    recs, rels = [], []
+    for N in (30, "full"):
+        p = {"date": SMALL["date"], "N": N, "f": SMALL["f"], "tightness": "base", "arm": "bigm",
+             "presolve": -1}
+        recs.append(n1.n1_task(n1.make_task(cfg, p, inst))["n1_solves"])
+        q = {k: p[k] for k in ("date", "N", "f", "tightness")}
+        rels.append(n1.relax_task(n1.make_relax_task(cfg, q, inst))["n1_relax"])
+    for frames in (recs, rels):
+        df = pd.concat(frames, ignore_index=True)
+        assert list(df["N"]) == ["30", "full"]
+        df.to_parquet(tmp_path / "x.parquet", index=False)

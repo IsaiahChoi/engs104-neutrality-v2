@@ -1,0 +1,22 @@
+{
+ "miqp": {
+  "n": 24,
+  "statuses": {
+   "OPTIMAL": 22,
+   "WORK_LIMIT": 2
+  },
+  "n_checker_violations": 0,
+  "n_v_undefined": 0,
+  "work_total": 711.3072226278905,
+  "work_median": 1.206381437835428,
+  "runtime_total": 498.49429202079773
+ },
+ "convex": {
+  "n": 65,
+  "statuses": {
+   "optimal": 65
+  },
+  "n_failed": 0,
+  "solve_time_total": 2.3165869842283935
+ }
+}

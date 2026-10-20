@@ -1,6 +1,7 @@
 """Figs. 1–3 and the C3 summary figure (DESIGN §10), from the newest finished C1–C3 runs.
 
-Until GATE C every file name carries "preliminary" (RUNBOOK §4, S2). Print figures: one IEEE
+Final since S3 (RUNBOOK §4 S3 step 4, after GATE C); until then the file names carried
+"preliminary" (RUNBOOK §4, S2). Print figures: one IEEE
 column (3.5 in), text ≥ 8 pt, vector PDF with deterministic metadata (byte-identical rebuilds)
 plus a 300-dpi PNG in figures/png/. Identity is never carried by color alone: series also differ
 in line style or marker, stacks in hatching, and every figure has a legend (src/figures/style.py
@@ -29,7 +30,7 @@ import pandas as pd
 from experiments.common import latest_done
 from src.figures import style
 
-TAG = "_preliminary"
+TAG = ""                             # "_preliminary" until GATE C (S2)
 FAMILY_PANELS = [("dollar", "Dollar (net)"), ("beta", "Beta"), ("style_all", "All styles"),
                  ("style:Mom", "Momentum"), ("sector", "Sector"), ("gross", "Gross"),
                  ("position", "Position cap"), ("liquidity", "Liquidity (θ)")]

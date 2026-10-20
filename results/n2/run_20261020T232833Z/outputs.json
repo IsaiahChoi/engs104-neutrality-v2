@@ -1,0 +1,7 @@
+{
+ "n2_miqp.parquet": "b6ea33d576e6efd66cc187444492594f9fbd8f6e6ba481ec1ecdfea968c1a1d0",
+ "n2_miqp_weights.parquet": "7fb4fa23bf936f788d8974a22fc40d73fc5d04aeb111438380b326f0e1135ba8",
+ "n2_convex.parquet": "8f8648c667ddeefeec967c0b4c1933dc073391e677b672955d1a6d2c559a4cf1",
+ "n2_convex_duals.parquet": "40c4396b386708341cf24f98bd70401a99eca46453174387675eacd12f1dcdcf",
+ "summary.json": "a48b7dcca0b9fc210b6fe488c85680bfa1d6ca620e8914a1b38a97f476722e28"
+}

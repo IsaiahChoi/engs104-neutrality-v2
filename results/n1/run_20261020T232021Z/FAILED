@@ -1,0 +1,2 @@
+2026-10-20T23:27:05Z
+ArrowInvalid: ("Could not convert 'full' with type str: tried to convert to int64", 'Conversion failed for column N with type object')

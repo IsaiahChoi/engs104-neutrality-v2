@@ -1,0 +1,9 @@
+{
+ "i2_points.parquet": "b7e2283730e8078270d2f04d6138c5c8f1e802c6497b8c1805075f6eb2ce4608",
+ "i2_solves.parquet": "2f85262636c0f930ce7ea0b16e4f2348361fc01051fa7ff41dc0a4c34d0f98ff",
+ "i2_baseline.parquet": "567316846b4edb151a417252c539c9d95e362f00d173292ed22c399a6c7443cc",
+ "i2_slope_points.parquet": "ff599a1aab1bec22e85fce9a21a693f4e87d91d31b583613d3d4567a41fd5394",
+ "i2_weights.parquet": "3c464ec31df1f4731b698adcfe57cf15e61f5fb208ea35753a773f0f8044c1ee",
+ "i2_intervals.parquet": "d6bf67f6078be16dd05d6fbc87f965dd866de5d2aacd638cfedd12a2af88d9be",
+ "summary.json": "e48afd2d59c28d2cb38433a1cdc6b4d83c06d6f21fd5f1d20d88abe9f043a61b"
+}

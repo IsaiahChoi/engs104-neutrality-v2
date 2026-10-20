@@ -1403,3 +1403,17 @@ index 4561d89..e8e5367 100644
   - Source: results/i1/run_20261020T231007Z/i1_estimators.parquet (rel_delta = 0.10).
 - **Next:** `make i2`, then `make n1`, then `make n2`, one at a time, in the background.
 - **Spec change** (tests/test_s3_runners.py::test_i2_requires_an_explicit_constraint): the pre-choice constraint text is now constructed and still refused; the test also asserts that the chosen {sector, 0.02} is accepted. Reason: integer.yaml now holds the chosen constraint.
+
+## 2026-10-20 — S3: I2 and N2 done; N1 failed at finish (a runner bug that raises, not a value); fixed test-first; analysis and figure code; N1 rerun next
+- **I2:** results/i2/run_20261020T231806Z at 64eabe2. make exit 0, DONE, RUN_LOG "ok". 82 points, 164 solves all OPTIMAL (summary.json).
+- **N1 (failed):** results/n1/run_20261020T232021Z at 64eabe2. make exit 2, FAILED marker, RUN_LOG "failed". All 147 solves and 36 plain relaxations finished as chunks. finish() then failed writing n1_solves.parquet: pyarrow ArrowInvalid, because column N mixes ints (100, 250) with "full".
+  - The bug is latent in S2d's run_n1: its smoke run had N = 100 only. It can only raise, never produce a value, so rule 13 is not triggered. No result was read from the failed run.
+  - **Fix, test-first:** N1 records now hold N as a text label ("100", "250", "full"); N_names stays the integer size. Test test_s3_production.py::test_n1_frames_with_full_and_numeric_N_write_to_parquet: RED logs/test_s3_n1_label_red_* (N = [30, 'full']), GREEN logs/test_s3_n1_label_green_*.
+  - The failed run stays "failed" in RUN_LOG. N1 is rerun from scratch on a new run directory at the next commit.
+- **N2:** results/n2/run_20261020T232833Z at 64eabe2. make exit 0, DONE, RUN_LOG "ok". MIQP 24 solves (22 OPTIMAL, 2 WORK_LIMIT), 0 checker violations, 0 undefined V; convex 65 solves, all "optimal". Its records carry N as an integer (250), so the bug does not touch it.
+- **Analysis and figure code:**
+  - src/analysis/s3.py: estimator errors with n, interval containment, the non-binding breakdown, K22, K23, K24, K25, K27, K29b, N1 root gaps, N2 disagreements. Tests first: tests/test_s3_analysis.py (11), RED logs/test_s3_analysis_red_* (no module), GREEN logs/test_s3_analysis_green_*. While N2 was running I drafted it under results/scratch/draft/ and moved the tests in before the module.
+  - tools/s3_analysis.py → results/s3_analysis/. It checks every source run's outputs.json hashes and records them.
+  - src/figures/fig_s3.py: Figs. 4–5, and Tables II–III as bare tabulars in report/tables/ (writing mode B: no captions). It is wired into make_all.FIGURES. tests/test_fig_s3.py (2) was written after the draft, so it has no RED step.
+  - Figs. 1–3 and the C3 summary are final: fig_c.TAG = "". The old *_preliminary files were moved to results/scratch/trash/figures_preliminary/ (rule 3: no rm).
+- **Suite:** 420 passed, 1 skipped, 2 xfailed (logs/test_s3_pre_n1rerun_20261020T233433Z.log).
