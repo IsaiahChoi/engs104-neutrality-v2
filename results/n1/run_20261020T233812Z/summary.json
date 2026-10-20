@@ -1,0 +1,26 @@
+{
+ "solves": {
+  "n": 144,
+  "statuses": {
+   "OPTIMAL": 138,
+   "WORK_LIMIT": 6
+  },
+  "n_checker_violations": 0,
+  "n_v_undefined": 0,
+  "work_total": 2532.571927684568,
+  "work_median": 1.288431926688653,
+  "runtime_total": 1387.615193605423
+ },
+ "reruns": {
+  "n": 3,
+  "statuses": {
+   "OPTIMAL": 3
+  },
+  "n_checker_violations": 0,
+  "n_v_undefined": 0,
+  "work_total": 5.050941388445091,
+  "work_median": 2.0325881902102023,
+  "runtime_total": 4.3359901905059814
+ },
+ "n_relax": 36
+}

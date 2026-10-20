@@ -1417,3 +1417,12 @@ index 4561d89..e8e5367 100644
   - src/figures/fig_s3.py: Figs. 4–5, and Tables II–III as bare tabulars in report/tables/ (writing mode B: no captions). It is wired into make_all.FIGURES. tests/test_fig_s3.py (2) was written after the draft, so it has no RED step.
   - Figs. 1–3 and the C3 summary are final: fig_c.TAG = "". The old *_preliminary files were moved to results/scratch/trash/figures_preliminary/ (rule 3: no rm).
 - **Suite:** 420 passed, 1 skipped, 2 xfailed (logs/test_s3_pre_n1rerun_20261020T233433Z.log).
+
+## 2026-10-20 — S3 steps 2–4: N1 rerun done; analysis, Figs. 4–5, Tables II–III; Figs. 1–3 final
+- **N1:** results/n1/run_20261020T233812Z at 189d5ea. make exit 0, DONE, RUN_LOG "ok". 144 solves (138 OPTIMAL, 6 WORK_LIMIT, all six big-M with presolve off) plus 3 K25 reruns (OPTIMAL); 36 plain relaxations; 0 checker violations. The failed run_20261020T232021Z stays "failed".
+- **Runs behind every S3 number:** I1 results/i1/run_20261020T231007Z (2d45cee); I2 results/i2/run_20261020T231806Z (64eabe2); N1 results/n1/run_20261020T233812Z (189d5ea); N2 results/n2/run_20261020T232833Z (64eabe2); K29c results/k29c/run_20261020T225805Z (4020dba).
+- **Analysis:** `uv run python -m tools.s3_analysis` → results/s3_analysis/s3_analysis.json and CSVs. Every source run's outputs.json hashes are checked first and recorded under "sources".
+- **Figures and tables:** `make figures` → figures/fig1–3, fig_c3_summary (final names), fig4_value_functions, fig5_formulations (PDF + PNG), report/tables/table2_i1.tex, table3_n2.tex, report/numbers.tex. A second `make figures` gives byte-identical PDFs and PNGs.
+  - Table III's MIQP block is directional: whose V lies above whose B_eff. The analysis gained i_beats_j/j_beats_i; test test_n2_disagreement_direction, RED KeyError, then GREEN.
+  - Fig. 4 layout fixed: the legend no longer overlaps the first panel title, and the tangents are longer and thicker.
+- **Suite:** see the commit's log (logs/test_s3_post_analysis_*).

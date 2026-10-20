@@ -1,0 +1,6 @@
+{
+ "n1_solves.parquet": "4627c3e3619efd351c869cd0b299d7a0c9bd0c6de3006cb8bddcb68bd34e5f7d",
+ "n1_weights.parquet": "702cbf241c8a22cbc0e0eb26c77f617aaf3e407c8b99ba63161b7a5ff09f21ea",
+ "n1_relax.parquet": "d5d1b3bdf5b4b5552bf000c8419b5889d627f412993112fd3f437a6f3f475db7",
+ "summary.json": "571b3a2e0d5a215d2173ba0604b43e334fd1911bd7b61f08e1a9f6c303c17b9b"
+}

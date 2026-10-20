@@ -143,3 +143,12 @@ def test_n2_cross_formulation():
                       {**_n1("perspective", 1.001, 1.0015), "s_obj": 1.0}])     # its own claimed gap 5e-4 < ΔV = 1e-3
     r = A.n2_disagreements(m).iloc[0]
     assert bool(r["incumbent_beats_other_bound"]) and bool(r["beyond_claimed_gap"])
+
+
+def test_n2_disagreement_direction():
+    """Which arm's V lies above which arm's B_eff (Table III counts by direction)."""
+    m = pd.DataFrame([{**_n1("bigm", 1.0002, 1.00025), "s_obj": 1.0},
+                      {**_n1("perspective_rescaled", 1.0, 1.0001), "s_obj": 1.0}])
+    r = A.n2_disagreements(m).iloc[0]
+    assert r["arm_i"] == "bigm" and bool(r["i_beats_j"]) and not bool(r["j_beats_i"])
+    assert bool(r["incumbent_beats_other_bound"])

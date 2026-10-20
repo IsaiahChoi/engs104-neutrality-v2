@@ -14,7 +14,10 @@ deterministic metadata plus a 300-dpi PNG; identity never by color alone (line s
   (K = round(f·S) differs by date), δ = 10%, and how many lie in [L, H]; the convex baseline's
   dual-versus-secant error at the same step beneath. report/tables/table2_i1.tex.
 - Table III (N2): (b) convex solver variants against the reference (max over the dates);
-  (a) MIQP arms at each s_obj. report/tables/table3_n2.tex.
+  (a) MIQP arms at each s_obj: median certified gap, the largest cone effect, and how often
+  the arm's V lies above another arm's B_eff, or its B_eff below another arm's V (no
+  disagreement beyond the larger claimed gap is counted in the analysis, n2_pairs).
+  report/tables/table3_n2.tex.
 Tables are bare tabular environments (writing mode B: no captions).
 """
 from __future__ import annotations
@@ -52,7 +55,7 @@ def fig4_value_functions() -> Path:
     insts = sorted(pts["instance"].unique())
     fig, axes = plt.subplots(len(insts), 1, figsize=(style.COLUMN_WIDTH_IN, 4.6), sharex=True)
     axes = np.atleast_1d(axes)
-    half = 0.12 * float(pts["b_base"].iloc[0])
+    half = 0.2 * float(pts["b_base"].iloc[0])
     for ax, inst in zip(axes, insts):
         g, gb = pts[pts["instance"] == inst], base[base["instance"] == inst]
         ax.plot(g["bound"], 1e4 * g["V"], color=style.SERIES[0], marker="o", ms=2.5, lw=1.0,
@@ -64,7 +67,7 @@ def fig4_value_functions() -> Path:
                 mu = r[col]
                 if np.isfinite(mu):
                     x = np.array([r["bound"] - half, r["bound"] + half])
-                    ax.plot(x, 1e4 * (r["V"] + mu * (x - r["bound"])), ls=ls, lw=1.0,
+                    ax.plot(x, 1e4 * (r["V"] + mu * (x - r["bound"])), ls=ls, lw=1.4,
                             color=style.SERIES[slot], label=label)
         date, rest = inst.split("_N")
         ax.set_title(f"{date}, N = {rest.split('_')[0]}, K = {inst.split('_K')[1]}", loc="left")
@@ -73,9 +76,9 @@ def fig4_value_functions() -> Path:
     seen = {}
     for hh, ll in zip(*axes[0].get_legend_handles_labels()):
         seen.setdefault(ll, hh)
+    fig.tight_layout(rect=(0, 0, 1, 0.88))
     fig.legend(list(seen.values()), list(seen.keys()), loc="upper center", ncol=2,
-               bbox_to_anchor=(0.5, 1.06), columnspacing=0.8, handletextpad=0.4)
-    fig.tight_layout()
+               bbox_to_anchor=(0.5, 1.0), columnspacing=0.8, handletextpad=0.4)
     return _save(fig, "fig4_value_functions")
 
 
@@ -170,14 +173,15 @@ def table3_n2() -> Path:
                      f"{_sci(g['w_l1_rel_err'].max())} & {_sci(g['max_binding_dual_rel_err'].max())} & "
                      f"{int(g['ok'].sum())}/{len(g)} \\\\")
     lines += [r"\hline",
-              r"MIQP arm, $s_{\mathrm{obj}}$ & median $(B_{\mathrm{eff}}-V)/|V|$ & max cone effect & beats other bound & beyond gap \\",
+              r"MIQP arm, $s_{\mathrm{obj}}$ & median $(B_{\mathrm{eff}}-V)/|V|$ & max cone effect & $V$ above other $B_{\mathrm{eff}}$ & $B_{\mathrm{eff}}$ below other $V$ \\",
               r"\hline"]
     alab = {a: l for a, l, _, _, _ in ARM_STYLE}
     for (arm, s), g in m.groupby(["arm", "s_obj"], sort=True):
-        inv = dd[(dd["s_obj"] == s) & ((dd["arm_i"] == arm) | (dd["arm_j"] == arm))]
+        ds = dd[dd["s_obj"] == s]
+        above = int(ds.loc[ds["arm_i"] == arm, "i_beats_j"].sum() + ds.loc[ds["arm_j"] == arm, "j_beats_i"].sum())
+        below = int(ds.loc[ds["arm_j"] == arm, "i_beats_j"].sum() + ds.loc[ds["arm_i"] == arm, "j_beats_i"].sum())
         cone = "--" if arm == "bigm" else _sci(g["cone_effect_rel"].max())
-        lines.append(f"{alab.get(arm, arm)}, {s:g} & {_sci(g['gap_eff'].median())} & {cone} & "
-                     f"{int(inv['incumbent_beats_other_bound'].sum())} & {int(inv['beyond_claimed_gap'].sum())} \\\\")
+        lines.append(f"{alab.get(arm, arm)}, {s:g} & {_sci(g['gap_eff'].median())} & {cone} & {above} & {below} \\\\")
     lines += [r"\hline", r"\end{tabular}"]
     return _write("table3_n2", lines)
 

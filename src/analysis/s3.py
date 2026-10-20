@@ -132,13 +132,15 @@ def _pairs(solves: pd.DataFrame, group: list[str]) -> pd.DataFrame:
                    "both_reached_gap": bool(a["reached_gap"]) and bool(c["reached_gap"])}
             if not all(np.isfinite(x) for x in (a["V"], c["V"], a["B"], c["B"])):
                 out.append({**rec, "undefined": True, "pass": np.nan, "abs_dV": np.nan,
-                            "allowed": np.nan, "ratio": np.nan, "within_allowed": np.nan})
+                            "allowed": np.nan, "ratio": np.nan, "within_allowed": np.nan,
+                            "i_beats_j": False, "j_beats_i": False})
                 continue
             bi, bj = float(b_eff(a["B"], a["V"])), float(b_eff(c["B"], c["V"]))
             dV = abs(a["V"] - c["V"])
             allowed = max(bi - a["V"], bj - c["V"])
             out.append({**rec, "undefined": False, "V_i": a["V"], "V_j": c["V"], "Beff_i": bi,
-                        "Beff_j": bj, "pass": bool(a["V"] <= bj and c["V"] <= bi), "abs_dV": dV,
+                        "Beff_j": bj, "pass": bool(a["V"] <= bj and c["V"] <= bi),
+                        "i_beats_j": bool(a["V"] > bj), "j_beats_i": bool(c["V"] > bi), "abs_dV": dV,
                         "allowed": allowed, "ratio": dV / allowed if allowed > 0 else np.inf,
                         "within_allowed": bool(dV <= allowed)})
     return pd.DataFrame(out)
