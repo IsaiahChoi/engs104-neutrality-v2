@@ -1402,3 +1402,4 @@ index 4561d89..e8e5367 100644
   - **Chosen: sector@0.02**; integer.yaml i2.constraint = {key: sector, b: 0.02}. It is close: Mom@0.025 is 3.5% lower. Ranked by the perspective estimator instead, Mom would come first. The rule names the slope, so I applied it to s. Isaiah may override before S4; I2 would then rerun.
   - Source: results/i1/run_20261020T231007Z/i1_estimators.parquet (rel_delta = 0.10).
 - **Next:** `make i2`, then `make n1`, then `make n2`, one at a time, in the background.
+- **Spec change** (tests/test_s3_runners.py::test_i2_requires_an_explicit_constraint): the pre-choice constraint text is now constructed and still refused; the test also asserts that the chosen {sector, 0.02} is accepted. Reason: integer.yaml now holds the chosen constraint.

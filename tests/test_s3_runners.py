@@ -105,9 +105,13 @@ def test_i2_points_include_the_estimator_neighbours():
 
 
 def test_i2_requires_an_explicit_constraint():
+    """Spec change in S3 (PROGRESS, I2 constraint entry): integer.yaml now holds the constraint
+    chosen after I1, so the pre-choice text is constructed; it is still refused."""
     cfg = config("integer")
+    pre = {**cfg["i2"], "constraint": "the I1 constraint with the largest median slope (chosen after I1)"}
     with pytest.raises(ValueError, match="constraint"):
-        i2.constraint_of(cfg["i2"])                    # "chosen after I1": not a key yet
+        i2.constraint_of(pre)                          # "chosen after I1": not a key yet
+    assert i2.constraint_of(cfg["i2"]) == {"key": "sector", "b": 0.02}
 
 
 def test_n1_plan_counts():
