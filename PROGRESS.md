@@ -867,3 +867,6 @@ w_c = −(2λ)⁻¹Σ⁻¹a_c, and expected alpha splits as α'w* = α'w_α + Σ
 34. **The kink definition (Decision 26).** By the exact active set, including caps and support, it is 35 kinks / 29 curvature flags. By mandate rows only, it is 2 / 62. Which one does the report use?
 - **Decision 25** (keep raw duals of failed relaxations) was decided at GATE C but is not in the S2b prompt. It is not implemented yet; I propose doing it at the start of S3, test-first.
 - **Commits this session (S2b):** 99025d2 (code, tests, runner) and the commit containing this entry, the run directory, the RUN_LOG row and the proposed configs.
+
+## 2026-10-19 — Isaiah: Decision 32 (interim, before GATE DESIGN)
+- The S2 pilot run_20261019T191206Z keeps RUN_LOG status "pilot". Its P1–P3 and P5 stand. Its P4 and P6 are superseded by results/pilot_s2b/run_20261020T024318Z. Its P7 projection is for the pre-S2b design and is replaced for planning. FACTS must not cite the superseded items.
