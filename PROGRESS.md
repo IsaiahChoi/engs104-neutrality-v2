@@ -870,3 +870,66 @@ w_c = −(2λ)⁻¹Σ⁻¹a_c, and expected alpha splits as α'w* = α'w_α + Σ
 
 ## 2026-10-19 — Isaiah: Decision 32 (interim, before GATE DESIGN)
 - The S2 pilot run_20261019T191206Z keeps RUN_LOG status "pilot". Its P1–P3 and P5 stand. Its P4 and P6 are superseded by results/pilot_s2b/run_20261020T024318Z. Its P7 projection is for the pre-S2b design and is replaced for planning. FACTS must not cite the superseded items.
+
+## 2026-10-20 — S2c (Claude Code, Opus 5.5): FACTS refresh (Decision 32), two read-only answers, K20 on S2b; stop before GATE DESIGN
+- **Scope kept:** no solver run for S3; src/, the experiment runners, proposal/proposal.tex, DESIGN and CHECKS are unchanged. No kept-core file changed (rule 14 not triggered). Pilot statuses are unchanged in RUN_LOG.
+- **1–3. tools/make_facts.py, test-first** (tests/test_make_facts.py, 8 tests): RED logs/test_s2c_facts_red_20261020T034735Z.log (all 8 fail on the missing names); GREEN logs/test_s2c_facts_green_20261020T035006Z.log.
+  - Before GREEN I narrowed one assertion in my own new test. The P7 line has to cite the S2 pilot's summary.json for P5's Work/s and W*, which stand under Decision 32. So the test forbids any S2 source on P4 and P6 lines, and forbids S2's p4*/p6*/p7* files anywhere.
+  - Decision 32 is applied. From the S2 pilot only P1–P3 and P5 are cited. The s_obj line now quotes S2b's P4 |V|·s_obj (10.1–13.6). The S2 lines for P4, P4 (A9), the P6 rule, the P6 proposal and P7 are gone.
+  - P4: one header line (statuses, 1e-9 polish, 0 checker violations), then one line per arm: agreement with big-M and worst ratio, max cone effect/|V|, max (B − V)/|V| against the exact V, max shortfall against the best V, and median Work. Gaps and shortfall are recomputed from the stored V and B.
+  - P6: the S2b rule (ties, combined certification), then one line per candidate (11) with combined L, H and s, binding or not, the suppliers of V and B at b ± δ, and exact V ties. Then the mechanical selection, ending "the final I1 set is decided at GATE DESIGN (Decision 31)".
+  - **C1 attribution fact (item 2):** for α_mom at base over D12, each family's loss as a share of α'w_α − α'w* (attribution.py's identity over FAMILY_ORDER, including `inactive`). The tool refuses to write the line if the identity fails beyond 1e-9 relative. Median (range): position 0.44 (0.13–0.55), trading 0.30 (0.16–0.48), sector 0.087 (0.019–0.11), borrow 0.070 (0.033–0.12), inactive 0.051 (0.0097–0.12), dollar 0.0052 (0–0.28), beta 0, style 0 (0–0.023), gross 0. Shares sum to 1 within 5.3e-15.
+  - **P7 projection (item 3; a FACTS line marked "projection"):** S2 P5's 1.124 Work/s and W* = 340; 4 workers. Expected Work per solve is the median Work of S2b's P6 solves (1.03) for I1/I2 and of S2b's P4 solves (1.09) for N1/N2(a).
+    - Counts are taken from the proposed integer.yaml and numerics.yaml: I1 105 points × 2 = 210 solves; I2 82 × 2 = 164; N1 (36 + 12 presolve-off) × 3 arms = 144; N2(a) 8 × 3 = 24.
+    - Expected / worst-case hours: I1 0.013 / 8.8; I2 0.010 / 6.9; N1 0.0097 / 3.0; N2(a) 0.0016 / 0.50. The worst case for all of S3 is about 19 h at 4 workers; the expected total is a few minutes.
+    - The Work medians come from N = 250 instances at 2017-12/2020-03 (P6: 2017-12, K = 67 only), so the expected times are optimistic for N = full.
+- **Suite:** `make test` 290 passed, 2 xfailed (logs/test_s2c_full_20261020T035136Z.log). FACTS regenerated: proposal/FACTS.md, final, 91 lines.
+
+### 4(a). How src/opt/miqp.py captures root_bound
+- **With a callback**, not an attribute (Gurobi has no "root bound" model attribute). MIQPModel.solve (miqp.py:189–212) passes `cb` to `optimize`. On every call where `where == MIPNODE` and `MIPNODE_NODCNT == 0`, it overwrites root["bnd"] = MIPNODE_OBJBND and root["best"] = MIPNODE_OBJBST. After the solve, root_bound = −root["bnd"] (minimizing −U), or nan if no root MIPNODE callback fired. src/opt/integer.py's _run_mip ports this line for line (integer.py:132–153) and PMI divides by s_obj (integer.py:445).
+- **It is the value after the root cut loop.** Gurobi's callback-codes reference: "the MIPNODE callback will be called once for each cut pass during the root node solve"; "The MIPNODE_NODCNT value will remain at 0 until the root node is complete"; "the first MIPNODE callback will give the relaxation with no cutting planes, and the last will give the relaxation after all root cuts have been applied" (docs.gurobi.com, Optimizer reference, Callback codes).
+  - Because the dict is overwritten, root_bound is the global best bound (MIPNODE_OBJBND, "Current best objective bound") at the last root cut pass, so it includes root cuts.
+  - It misses any bound change after that last pass but before branching.
+  - It is nan if Gurobi never fires a root MIPNODE callback (e.g. the problem is solved in presolve). In S2b, 0 of 68 solves are nan; at least one rescaled P4 solve finished in 1 node and still recorded one.
+  - tests/test_miqp.py::test_root_gap_matches_a_root_only_solve checks it against a NodeLimit = 1 solve within 5% relative.
+  - (The ECC docs-lookup agent had no documentation access; the quotes come from fetching the Gurobi page directly.)
+- **Observation for N1 / Fig. 5 (stored S2b pilot data, not a reported result).** The default-scaling perspective's recorded root gap, (root_bound − V_best)/|V_best|, is 0.25%–11.7% (median 1.6%), against 0.044%–0.42% for big-M and 0.011%–0.23% for the rescaled perspective.
+  - At 2020-03 K79 it is 11.5% / 11.7% (base / tight).
+  - In theory the perspective relaxation is at least as tight as big-M's, so this recorded root bound is not the perspective relaxation's value.
+  - Likely causes, not investigated: the cone tolerance (A9; it also inflates the final bound) and Gurobi's MIQCP root handling (MIQCPMethod default, possibly an outer approximation).
+  - The rescaled arm removes it. If N1 reports root gaps for the default perspective arm, this needs a sentence, or a decision on which arm's root gap represents "perspective".
+
+### 4(b). The I1 continuous baseline (d) and K27's slope
+- **Nothing is coded yet.** There is no I1/I2 runner (experiments/ has only the pilot, C and check runners), and integer.yaml has no baseline block. The plan is DESIGN §7 I1 (d), "the same constraint in the continuous problem (ℓ = 0, no K), dual versus slope", and I2, "for both P-MI and the continuous baseline".
+- **Which problem.** As written it reads as P-MI with the integer parts removed: the fixed-λ* mean-variance QP with u = 6%, the base mandate, no z, ℓ = 0 and no K, held at the instance's λ* across ±δ and sweep points as §3.4 requires.
+  - This is the kept QP of src/opt/continuous.py at λ = λ* (dual simplex, 1e-9). Its value is U(b), in P-MI's units, so Fig. 4 compares like with like.
+  - The other reading is P-RB at u = 6%, with λ re-root-found at each b and value A*(b).
+  - The two agree at the base bound when the risk row binds (λ* is P-RB's μ_risk there, so the same w and the same μ_j). They differ away from it: fixed λ lets risk float; P-RB holds risk at 3%.
+  - My recommendation is the fixed-λ* QP. **Isaiah's call:** DESIGN does not name it.
+- **K27's slope: δ is not fixed anywhere.** CHECKS K27 says only "matches its slope within 1%". Three choices:
+  - (i) I1's δ = 10% (5% robustness), the same stencil as estimator (c). This is a secant: with N = 250 and u = 6%, a 10% step will often cross active-set changes. C1 shows 64 of 115 flags already at 1%, and the worst coarse error there is 2.25e-2. So "within 1%" would likely fail for curvature rather than error.
+  - (ii) K15's rule (δ = 1%, kink refinement at 0.1%, Decision 26). This tests the dual as a derivative.
+  - (iii) In I2, the 41-point grid has spacing 0.05·b_base, so slopes from the sweep alone would be δ = 5% secants.
+  - My recommendation: compute K27 by (ii), on extra stencil solves (cheap: continuous QPs). Also record the baseline secant at I1's δ (10% and 5%) beside estimator (c), so the baseline sits on the same footing as the integer estimators.
+  - For family keys perturbed jointly (sector: all 11 s_j together; style: all five), the slope compared is d/db of the jointly moved bound against Σ_j μ_j, as shadow_price sums them.
+
+### 5. K20 on the S2b run: **VERDICT: PASS** (results/checks/K20_s2b_20261020T042200Z.md)
+- **Scope.** This is evidence for GATE DESIGN, not a CONT round. Under Decision 32, P1–P3 and P5 are from the S2 pilot (confirmed by hash; recomputed in CONT round 1); P4, P6 and P7 were recomputed independently. The checker built instances itself (λ* within 3.5e-11; S = 133, 158) and imported only quiet_env.
+- **Provenance.** All 11 S2b output hashes match; 99025d2 matches RUN_LOG; the S2 run is unchanged since 12c45aa.
+- **P4.** 24/24 OPTIMAL. V re-evaluated from the weights to 3.2e-11; 0 violations at 1e-9. Agreement with big-M, recomputed: perspective 8/8 (worst 0.8916, 2020-03 K79 base), rescaled 8/8 (worst 0.0867). Max (B − V)/|V|: 9.73e-5 / 3.40e-3 / 9.39e-5. Max shortfall: 8.5e-6 / 3.02e-3 / 0. Median Work: 1.086 / 2.052 / 0.766.
+- **P6.** Same 11 candidates in the same order. 44/44 OPTIMAL. The combined V and B reproduce exactly; big-M supplied all 22 V and all 22 B (9 ties). L, H and s match to 9.4e-13. The selection is sector@0.02, dollar@0.02, style@0.1, style:Mom@0.1.
+- **P7.** Matches the FACTS line to 2 s.f.
+- **Non-gating notes:**
+  - The cone effect is not recomputed exactly, because the raw cone variables are not stored. A proxy (raw minus exact value at the incumbent's weights) reproduces it.
+  - The default perspective passes at 2020-03 only through its own inflated allowance.
+  - Decision 31 is open.
+  - The perspective's P6 weights are not stored. It never supplied V, so they are not needed.
+  - The checker's own big-M reference hit its WorkLimit of 60 at the four 2020-03 P4 instances, so that outside check is loose there.
+
+### Commits this session (S2c)
+- 620e11e (make_facts.py, tests, FACTS, Isaiah's Decision 32 note), and the commit containing this entry and the K20 report. Not pushed.
+
+### Decisions needed (for GATE DESIGN; in addition to 31, 33, 34)
+- 35. **The I1/I2 continuous baseline:** fixed-λ* mean-variance QP (my recommendation) or P-RB at u = 6% (4(b)).
+- 36. **K27's δ:** K15's rule (my recommendation), I1's δ = 10%, or the I2 grid spacing; and whether the baseline secant at I1's δ is also recorded (4(b)).
+- 37. **N1 root gaps for the default perspective arm:** the recorded root bound is far looser than big-M's (median 1.6%, up to 11.7%), against theory. Report it as an A9 effect, or use the rescaled arm for the "perspective" root gap (4(a)).
