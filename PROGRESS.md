@@ -1201,3 +1201,9 @@ w_c = −(2λ)⁻¹Σ⁻¹a_c, and expected alpha splits as α'w* = α'w_α + Σ
 ### Decisions needed (in addition to 31, 33–40)
 - 41. **Decision 25's DESIGN wording (yours).** §6 already says "Raw Clarabel duals and statuses are recorded for every solve as diagnostics (A9)". The code now does that for failed solves too, with a usable flag, and keeps them out of every estimator. Tell me if the report should also count the I1/I2 points whose relaxation failed but kept duals (mu_persp_raw_unusable defined).
 - 42. **The combined flag in the report.** n_flag_V_exceeds_B is now in each I1/I2 summary.json. CHECKS has no item that reads it yet; say if K-something should.
+
+## 2026-10-20 — S3 (Claude Code, Opus 5.5): stopped at the precondition; no GATE DESIGN note in PROGRESS
+- **Precondition not met.** RUNBOOK S3 requires Isaiah's GATE DESIGN note in PROGRESS.md. There is none: the last Isaiah entries are GATE C (2026-10-19) and Decision 32. The S3 prompt's addendum cites "GATE DESIGN (PROGRESS, 2026-10-23)", but no such entry exists, and today is 2026-10-20. The only GATE DESIGN artifact is a355991 ("CHECKS: GATE DESIGN edits": K18, K22–K24, K26, K27, K29b, K29c).
+- **Blocked without the note:** 0a (the approved DESIGN edits, verbatim), the final I1 set (Decision 31), answers to Decisions 33–42, and step 1 (removing "proposed" from integer.yaml and numerics.yaml). 0e (K29c) relies on "DESIGN §6 as edited", and DESIGN has not changed since 1dff151 (S1).
+- **Done (read-only, gate-independent):** confirmed that the S2e tests for 0b–0d pass: `uv run pytest tests/test_relaxation.py tests/test_integer_s2b.py tests/test_s3_runners.py` → 71 passed (logs/test_s3_precheck_*.log). No run was started; RUN_LOG and configs are unchanged.
+- **Decisions needed:** 43. Append the GATE DESIGN note (approved DESIGN text for 0a; Decision 31's I1 set; 33–42), then relaunch S3.
