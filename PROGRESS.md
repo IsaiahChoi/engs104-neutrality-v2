@@ -955,3 +955,8 @@ w_c = −(2λ)⁻¹Σ⁻¹a_c, and expected alpha splits as α'w* = α'w_α + Σ
   - src/opt/baseline.py gains baseline_value (one solve at any b, including 0, with weights for the checker), test-first (logs/test_s2d_baseline_value_red_*, green2_*).
   - tests/test_s3_runners.py (21). Its RED log (logs/test_s2d_s3runners_red_*) was taken after s3.py and run_i1.py existed but before run_i2/n1/n2, so the RED is the missing modules.
   - Suite: 355 passed, 1 skipped, 2 xfailed (logs/test_s2d_pre_commit2_*).
+- **Smoke runs, first pass (crash tests through make; nothing read beyond status, Work and Runtime):**
+  - I1, I2 and N1 each completed after a kill and a resume.
+  - N2 crashed on resume (results/n2/run_20261020T051802Z, RUN_LOG "failed"). The kill landed between two chunk writes of one item: the weights chunk was written and the completion-marker chunk was not. On resume the item counted as unfinished and was recomputed, and write_chunk refused to overwrite the leftover weights chunk (FileExistsError).
+  - Fixed test-first in experiments/cont.py pool_chunks (an S2 v2 file, not kept core). Before an unfinished item is recomputed, its leftover chunks move to chunks/_incomplete/<kind>/ in the run directory (kept, never deleted). tests/test_cont_pool.py (2): RED logs/test_s2d_pool_red_* reproduces the FileExistsError; GREEN logs/test_s2d_pool_green_*.
+  - The bug can only raise, never produce a value, and every earlier run that a result rests on finished with DONE, so no reported result is affected (rule 13 not triggered). N2's smoke sequence is rerun on a new run directory.

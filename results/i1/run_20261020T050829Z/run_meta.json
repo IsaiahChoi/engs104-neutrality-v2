@@ -1,0 +1,74 @@
+{
+ "name": "i1",
+ "created_utc": "2026-10-20T05:08:29Z",
+ "git_commit": "eced908f22b70ebadadf92ba5adf26439272ba2f",
+ "config_path": "experiments/configs/smoke_i1.yaml",
+ "config_sha256": "91ab64bd1d7a734dd8e852cfb90d57526d803e90674a67ca5cb9ed958b68747b",
+ "config": {
+  "runner": "i1",
+  "smoke": true,
+  "status": "smoke (S2d crash test; not a result)",
+  "s_obj": 10000.0,
+  "W_star": 340.0,
+  "mandate": {
+   "position": 0.06,
+   "min_position": 0.0025
+  },
+  "workers": 4,
+  "i1": {
+   "dates": [
+    "2017-12"
+   ],
+   "N": 100,
+   "f": [
+    0.5
+   ],
+   "certification": "combined",
+   "formulations": [
+    "bigm",
+    "perspective"
+   ],
+   "constraints": [
+    {
+     "key": "sector",
+     "b": 0.02
+    }
+   ],
+   "rel_delta": 0.1,
+   "robustness": {
+    "date": "2017-12",
+    "rel_delta": 0.05
+   },
+   "perspective_fd_rel_step": 0.001,
+   "settings": {
+    "mip_gap": 1e-06,
+    "threads": 1,
+    "seed": 0,
+    "work_limit_factor": 2.0
+   }
+  }
+ },
+ "finish_status": "pilot",
+ "args": {},
+ "data": {
+  "panel_sha256_manifest": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "panel_sha256_build_meta": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "files": {
+   "data/processed/panel.parquet": "64bfa137742934c24328a9fabe7d54c3a33ffc827d3a80c9af9db0790f95081e",
+   "data/processed/factors_daily.parquet": "4c295060b1d7d9160fbccbe264b22507e716fde80815d73f025c2fb5134399cc",
+   "data/processed/risk/w252_loadings.parquet": "eab160341656cf72bec51fb4dd2ff7d0edb95ef774c3ec94bdabb617322eaceb",
+   "data/processed/risk/w252_factor_cov.parquet": "6202357042b1e20205d2361ae864b8e7401b33a84b5af571b05a16cfd4da1293"
+  }
+ },
+ "provenance": {
+  "python": "3.12.4",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.0.6",
+  "cvxpy": "1.9.3",
+  "clarabel": "0.11.1",
+  "gurobipy": "13.0.3"
+ }
+}

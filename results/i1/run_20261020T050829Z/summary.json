@@ -1,0 +1,16 @@
+{
+ "n_cases": 2,
+ "solves": {
+  "n": 12,
+  "statuses": {
+   "OPTIMAL": 12
+  },
+  "n_checker_violations": 0,
+  "n_v_undefined": 0,
+  "work_total": 5.407382925775293,
+  "work_median": 0.28951595914198003,
+  "runtime_total": 4.816766977310181
+ },
+ "baseline_checker_violations": 0,
+ "perspective_slope_failed": 0
+}

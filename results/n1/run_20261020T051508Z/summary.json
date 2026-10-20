@@ -1,0 +1,13 @@
+{
+ "solves": {
+  "n": 3,
+  "statuses": {
+   "OPTIMAL": 3
+  },
+  "n_checker_violations": 0,
+  "n_v_undefined": 0,
+  "work_total": 1.089045794576569,
+  "work_median": 0.26218574676769624,
+  "runtime_total": 1.0192363262176514
+ }
+}

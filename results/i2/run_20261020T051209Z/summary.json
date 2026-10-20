@@ -1,0 +1,15 @@
+{
+ "n_points": 11,
+ "solves": {
+  "n": 22,
+  "statuses": {
+   "OPTIMAL": 22
+  },
+  "n_checker_violations": 0,
+  "n_v_undefined": 0,
+  "work_total": 8.395158371755306,
+  "work_median": 0.30236784880423495,
+  "runtime_total": 7.9987709522247314
+ },
+ "baseline_checker_violations": 0
+}
