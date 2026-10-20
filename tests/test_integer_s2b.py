@@ -164,6 +164,29 @@ def test_rescaled_and_unscaled_bigm_agree_on_k8_instances(ym):
     assert b.B >= b.V - 1e-6 * abs(b.V)
 
 
+@pytest.mark.parametrize("ym", ["2017-12", "2020-03"])
+def test_rescaled_perspective_agrees_with_bigm_on_k8_instances(ym):
+    """S2e item 2 (Decision 27(a), the N1/N2 arm): on both K8 instances at MIPGap 0 the rescaled
+    perspective gives big-M's (unscaled) z exactly and its V within 1e-9 relative; its polished V's
+    weights pass the independent checker (src.opt.feasibility.pmi_violations) at 1e-9, as does the
+    solve's own recorded verdict; c is recorded."""
+    from tests.realdata import pmi_case
+    inst = pmi_case(ym)
+    a = PMI(**inst.kwargs, formulation="bigm", s_obj=1e4).solve(mip_gap=0.0)
+    M = PMI(**inst.kwargs, formulation="perspective", s_obj=1e4, rescale=True)
+    r = M.solve(mip_gap=0.0)
+    c = float(np.where(M.model.holdable, M.model.ub, 0.0).max())
+    assert a.status_name == r.status_name == "OPTIMAL"
+    assert a.v_source == r.v_source == "polished"
+    assert r.w_scale == c and r.settings["rescale"] and r.formulation == "perspective"
+    np.testing.assert_array_equal(r.zp, a.zp)
+    np.testing.assert_array_equal(r.zm, a.zm)
+    assert abs(r.V - a.V) <= 1e-9 * abs(a.V), (r.V - a.V) / abs(a.V)
+    assert pmi_violations(r.w, r.zp, r.zm, inst.B, inst.S, inst.mandate, inst.K, inst.ell,
+                          inst.adv, mkt=M.model.mkt, tol=1e-9) == {}
+    assert r.polished_violations == "{}"
+
+
 def test_rescaled_perspective_cone_effect_is_smaller_on_r110():
     """Round-3 Finding C toy R110 (seed 20261019) at b = 1.2079e-3: at default scaling Gurobi's
     perspective incumbent violates its cone by more than |V| in objective; with the weights
@@ -202,6 +225,47 @@ def test_combine_certification_rule():
     assert np.isnan(c["V"]) and c["v_from"] == "none" and np.isnan(c["B_eff"]) and c["B"] == 1.2
     c = combine_certification({"bigm": mk(1.0, 0.9999, "bigm"), "perspective": mk(0.98, 1.1, "perspective")})
     assert c["B_eff"] == pytest.approx(1.0 + 1e-6, rel=1e-15)          # V > B: max(B, V)
+
+
+def test_combined_flag_v_exceeds_b_constructed():
+    """S2e item 3: DESIGN §6's second flag (V > B + 1e-6·|V|) applied across formulations, to the
+    combined V and B. Constructed so that neither formulation flags on its own (V ≤ B + 1e-6·|V|
+    within each), but the combined V (perspective's) exceeds the combined B (big-M's) by
+    1.5e-6·|V|: flagged. 0.5e-6·|V| is not; undefined V or B is not flagged."""
+    from src.opt.integer import incumbent_flags, polished_exceeds_bound
+    T, _ = TOYS["T1"]
+    base = toy_pmi(T, 0.03, "bigm").solve(mip_gap=0.0)
+    mk = lambda V, B, f: dc_replace(base, V=V, B=B, formulation=f)
+    bm, ps = mk(1.0, 1.0 + 0.5e-6, "bigm"), mk(1.0 + 2e-6, 1.0 + 3e-6, "perspective")
+    for p in (bm, ps):                                   # each formulation on its own: no flag
+        assert not polished_exceeds_bound(p.V, p.B)
+        assert not incumbent_flags(p.V, p.V, p.B)[1]
+    c = combine_certification({"bigm": bm, "perspective": ps})
+    assert (c["v_from"], c["b_from"]) == ("perspective", "bigm")
+    assert c["V"] - c["B"] == pytest.approx(1.5e-6, rel=1e-6)          # |V| ≈ 1, so ≈ 1.5e-6·|V|
+    assert c["flag_V_exceeds_B"] is True
+    c = combine_certification({"bigm": mk(1.0, 1.0, "bigm"),
+                               "perspective": mk(1.0 + 0.5e-6, 1.0 + 1e-6, "perspective")})
+    assert c["flag_V_exceeds_B"] is False                # 0.5e-6·|V| ≤ the slack
+    V = 2.0
+    assert not polished_exceeds_bound(V, V - 0.9999e-6 * abs(V))   # just inside the slack
+    assert polished_exceeds_bound(V, V - 1.0001e-6 * abs(V))       # just outside
+    assert polished_exceeds_bound(-1.0, -1.0 - 2e-6)               # |V| for negative values
+    for V, B in ((np.nan, 1.0), (1.0, np.nan), (np.nan, np.nan)):
+        assert polished_exceeds_bound(V, B) is False
+    c = combine_certification({"bigm": mk(np.nan, 1.2, "bigm"), "perspective": mk(np.nan, 1.3, "perspective")})
+    assert c["flag_V_exceeds_B"] is False
+    # incumbent_flags' second flag is the same rule
+    for V, B in ((1.0, 1.0 - 2e-6), (1.0, 1.0 - 0.5e-6), (np.nan, 1.0)):
+        assert incumbent_flags(V, V, B)[1] == polished_exceeds_bound(V, B)
+
+
+def test_solve_combined_records_the_flag():
+    """CombinedResult carries the flag from combine_certification (a real toy solve: not flagged)."""
+    T, _ = TOYS["T1"]
+    c = solve_combined(toy_pmi(T, 0.03, "bigm"), mip_gap=0.0)
+    assert c.flag_V_exceeds_B is False
+    assert c.flag_V_exceeds_B == combine_certification(c.parts)["flag_V_exceeds_B"]
 
 
 @pytest.mark.parametrize("name", list(TOYS))

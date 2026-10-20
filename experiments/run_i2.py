@@ -32,7 +32,7 @@ from experiments.run_i1 import _set, solve_point
 from src.opt.baseline import KINDS as BASELINE_KINDS
 from src.opt.baseline import baseline_value
 from src.opt.certified import certified_interval_eff
-from src.opt.integer import PMI
+from src.opt.integer import PMI, polished_exceeds_bound
 from src.opt.sensitivity import set_bound_by_key
 from src.opt.slopes import relaxation_slope
 
@@ -83,10 +83,11 @@ def i2_task(t: dict) -> dict[str, pd.DataFrame]:
     V, B, vf, bf, parts, fixed, w = solve_point(P, t, duals=True)
     rel = P.relaxation_duals(v_ref=V if np.isfinite(V) else None)
     pt = {**ids, "V": V, "B": B, "v_from": vf, "b_from": bf,
+          "flag_V_exceeds_B": polished_exceeds_bound(V, B),
           "mu_fixed": (fixed or {}).get("shadow", {}).get(key, np.nan),
           "fixed_status": (fixed or {}).get("status", "not run"),
           "mu_bigm_relax": rel["bigm"]["shadow"].get(key, np.nan),
-          "mu_persp_raw": rel["perspective"]["shadow"].get(key, np.nan),
+          **s3.persp_raw_columns(rel["perspective"], key),
           "work_total": sum(p.work for p in parts.values())}
     slope_pts = pd.DataFrame()
     if t["estimator"]:
@@ -150,7 +151,8 @@ def main(argv=None) -> int:
         out = pool_chunks(run, FRAMES, tasks, lambda t: t["id"], i2_task, s3.workers(cfg))
         out["i2_intervals"] = intervals(out["i2_points"], est, rel)
         summary = {"n_points": len(out["i2_points"]), "solves": s3.solve_summary(out["i2_solves"]),
-                   "baseline_checker_violations": int((out["i2_baseline"]["checker"] != "{}").sum())}
+                   "baseline_checker_violations": int((out["i2_baseline"]["checker"] != "{}").sum()),
+                   "points": s3.point_flag_summary(out["i2_points"])}
         (run / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
         finish(run, cfg_path, out, f"i2: {summary['n_points']} points; solves {summary['solves'].get('statuses')}",
                extra_files=[run / "summary.json"])

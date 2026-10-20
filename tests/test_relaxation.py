@@ -216,9 +216,13 @@ def test_relaxation_failure_rule(monkeypatch, status, cvx, r_prim, r_dual, ok):
     """DESIGN §6: a perspective relaxation counts as failed if Clarabel's status is neither
     Solved nor AlmostSolved, or its relative residuals (Clarabel's r_prim, r_dual) exceed 1e-8
     (the duality-gap clause is test_gap_clause); a failure keeps its status and residuals,
-    carries no value or duals, and is never raised."""
+    carries no value and no usable duals (shadow, which the estimators read, is empty), keeps
+    Clarabel's raw duals marked unusable (raw_duals, raw_duals_usable False; Decision 25, GATE C),
+    and is never raised."""
     T, _ = TOYS["T2"]
     M = toy_pmi(T, 0.005)
+    clean = M.relaxation_duals()["perspective"]            # the same solve, unpatched
+    assert clean["ok"] and clean["shadow"]
     real = relaxation._solve
 
     def patched(prob, opts):
@@ -232,10 +236,15 @@ def test_relaxation_failure_rule(monkeypatch, status, cvx, r_prim, r_dual, ok):
     assert rec["ok"] is ok and rec["clarabel"]["clarabel_status"] == status
     assert (rec["clarabel"]["r_prim"], rec["clarabel"]["r_dual"]) == (r_prim, r_dual)
     assert rec["almost_solved"] == (status == "AlmostSolved")
+    assert rec["raw_duals_usable"] is ok
+    assert set(rec["raw_duals"]) == set(clean["shadow"])
+    for k, mu in clean["shadow"].items():
+        assert rec["raw_duals"][k] == pytest.approx(mu, rel=1e-12, abs=1e-300), k
     if ok:
-        assert np.isfinite(rec["U"]) and rec["shadow"]
+        assert np.isfinite(rec["U"]) and rec["shadow"] and rec["raw_duals"] == rec["shadow"]
     else:
-        assert np.isnan(rec["U"]) and rec["shadow"] == {} and "residual" in rec["status"]
+        assert np.isnan(rec["U"]) and rec["shadow"] == {} and rec["raw_shadow"] == {}
+        assert "residual" in rec["status"]
 
 
 # ---- Decision 21 (DESIGN §6, revised 2026-10-19): the relaxation's value is the objective at
@@ -393,3 +402,66 @@ def test_gap_clause(monkeypatch, gap_factor, v_ref_factor, ok):
         assert np.isfinite(rec["U"]) and rec["shadow"]
     else:
         assert np.isnan(rec["U"]) and rec["shadow"] == {} and "gap" in rec["status"]
+
+
+# ---- Decision 25 (GATE C, 2026-10-19): a failed perspective relaxation keeps Clarabel's raw duals
+# (DESIGN §6 records them for every solve as A9 diagnostics), marked unusable; no estimator reads
+# them: `shadow` (what the estimators and the runners' mu_persp_raw read) stays empty on failure
+
+def test_r082_gap_failure_keeps_raw_duals_unusable():
+    """The real gap failure R082 (test_r082_failed_by_gap_clause): Clarabel returned duals; they are
+    kept in original units (raw_duals; the Clarabel record's duals in Gurobi's convention, ÷ s_obj
+    through shadow_price), marked unusable, and kept out of shadow and raw_shadow."""
+    T, b = _random_point(82, 37)
+    M = toy_pmi(T, b)
+    rec = M.relaxation_duals(v_ref=T.value(T.w_opt))["perspective"]
+    sol = relaxation.perspective_relaxation(M.model, v_ref=M.s_obj * T.value(T.w_opt))
+    assert not rec["ok"] and rec["fail_reason"] == "gap" and not sol.ok
+    assert rec["raw_duals_usable"] is False
+    assert rec["shadow"] == {} and rec["raw_shadow"] == {}
+    assert set(rec["raw_duals"]) == {"gross", "cardinality"}
+    assert all(np.isfinite(v) for v in rec["raw_duals"].values())
+    assert set(sol.duals) == {("gross", "upper"), ("cardinality", "upper")}
+    from src.opt.miqp import GRB_SHADOW_SIGN
+    assert rec["raw_duals"]["gross"] == pytest.approx(
+        GRB_SHADOW_SIGN * float(np.sum(sol.duals[("gross", "upper")])) / M.s_obj, rel=1e-15)
+
+
+def test_clarabel_record_duals_on_success_equal_result_duals():
+    """On success the Clarabel record's duals are the result's (one set of duals, two places)."""
+    T, _ = TOYS["T2"]
+    sol = relaxation.perspective_relaxation(toy_pmi(T, 0.005).model)
+    assert sol.ok and set(sol.duals) == set(sol.result.duals)
+    for k in sol.duals:
+        np.testing.assert_array_equal(sol.duals[k], sol.result.duals[k])
+
+
+def test_status_failure_without_duals_records_none(monkeypatch):
+    """A status failure where CVXPY returned no duals (e.g. a SolverError on unpacking): raw_duals
+    is empty and unusable; nothing is invented."""
+    T, _ = TOYS["T2"]
+    M = toy_pmi(T, 0.005)
+    real = relaxation._solve
+
+    def failing(prob, opts):
+        raw = real(prob, opts)
+        for con in prob.constraints:
+            for dv in con.dual_variables:
+                dv.save_value(None)
+        raw["status"], raw["cvxpy_status"] = "NumericalError", cp.SOLVER_ERROR
+        return raw
+
+    monkeypatch.setattr(relaxation, "_solve", failing)
+    rec = M.relaxation_duals()["perspective"]
+    assert not rec["ok"] and rec["fail_reason"] == "status"
+    assert rec["raw_duals"] == {} and rec["raw_duals_usable"] is False and rec["shadow"] == {}
+
+
+def test_bigm_relaxation_records_carry_the_same_fields():
+    """The big-M relaxation (Gurobi dual simplex) has the same two fields, so a reader can treat
+    both alike: usable duals on success, none and unusable on failure."""
+    T, _ = TOYS["T2"]
+    rec = toy_pmi(T, 0.005).relaxation_duals()["bigm"]
+    assert rec["ok"] and rec["raw_duals_usable"] is True and rec["raw_duals"] == rec["shadow"]
+    failed = PMI._failed("NUMERIC")
+    assert failed["raw_duals"] == {} and failed["raw_duals_usable"] is False

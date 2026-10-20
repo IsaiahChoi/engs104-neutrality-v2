@@ -84,6 +84,26 @@ def pmi_record(r, extra: dict) -> dict:
     return _rec(r, extra)
 
 
+def persp_raw_columns(rec: dict, key: str) -> dict:
+    """The perspective relaxation's raw Clarabel dual for `key`, a diagnostic (DESIGN §6, A9).
+    mu_persp_raw is read from `shadow` (usable duals only, nan if the relaxation failed); under
+    Decision 25 a failed relaxation's kept raw dual goes to mu_persp_raw_unusable instead (nan
+    when the relaxation succeeded or Clarabel returned none). No estimator reads either."""
+    usable = bool(rec.get("raw_duals_usable", False))
+    return {"mu_persp_raw": rec["shadow"].get(key, np.nan),
+            "mu_persp_raw_unusable": np.nan if usable else rec.get("raw_duals", {}).get(key, np.nan),
+            "persp_raw_usable": usable, "persp_raw_status": rec["status"]}
+
+
+def point_flag_summary(df: pd.DataFrame) -> dict:
+    """Counts over I1/I2 points: points, flag_V_exceeds_B (DESIGN §6's second flag on the point's
+    V and B, combined across formulations under combined certification), undefined V."""
+    if df.empty:
+        return {"n_points": 0, "n_flag_V_exceeds_B": 0, "n_V_undefined": 0}
+    return {"n_points": len(df), "n_flag_V_exceeds_B": int(df["flag_V_exceeds_B"].astype(bool).sum()),
+            "n_V_undefined": int(df["V"].isna().sum())}
+
+
 def baseline_problem(kwargs: dict) -> tuple[ContinuousProblem, np.ndarray]:
     """The continuous baseline's problem on a P-MI instance: the same universe and mandate (u = 6%),
     no integer parts (DESIGN §7 I1 (d))."""

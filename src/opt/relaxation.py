@@ -35,6 +35,10 @@ gap_abs = |p − d|, gap_rel = |p − d|/max(|p|, |d|) (the pure relative gap), 
 |p − d|/max(1, min(|p|, |d|)) (Clarabel's own), the value, Clarabel's objective, their difference,
 the gap threshold and V_ref. The duals returned are Clarabel's raw duals, a diagnostic (the
 perspective estimator is a finite difference of values).
+
+Decision 25 (GATE C). A failed solve keeps Clarabel's raw duals (`duals`, mapped back as on
+success; empty where CVXPY returned none), so DESIGN §6's A9 record covers every solve. They are
+unusable: a failed solve has no `result`, and src.opt.integer keeps them out of `shadow`.
 """
 from __future__ import annotations
 
@@ -62,6 +66,8 @@ class ClarabelRelaxation:
     wp: np.ndarray | None = None         # Clarabel's returned point in original units (recorded
     wm: np.ndarray | None = None         # whenever the status is accepted, failed or not)
     s: np.ndarray | None = None          # cone_exact_s at that point
+    duals: dict = field(default_factory=dict)   # Clarabel's raw duals, Gurobi's convention, model
+                                                # units; kept failed or not (Decision 25)
 
 
 def cone_exact_s(v, zeta, ub) -> tuple[np.ndarray, int]:
@@ -93,6 +99,18 @@ def _solve(prob: cp.Problem, opts: dict) -> dict:
             out["cvxpy_status"] = prob.status
         except cp.error.SolverError:
             out["cvxpy_status"] = cp.SOLVER_ERROR
+    return out
+
+
+def _raw_duals(rows: dict, c: float) -> dict:
+    """Each row's dual in Gurobi's convention for `expr <= b` in min(−U), in model units (a
+    mandate row's dual is divided by c); rows CVXPY returned no dual for are left out."""
+    out = {}
+    for key, con in rows.items():
+        if con.dual_value is None:
+            continue
+        k = 1.0 if key[0] == "cardinality" else c
+        out[key] = -np.atleast_1d(np.asarray(con.dual_value, float)) / k
     return out
 
 
@@ -140,6 +158,7 @@ def perspective_relaxation(model: MIQPModel, opts: dict | None = None,
          - c * m.borrow_monthly * cp.sum(wm) - c * m.trade_cost * cp.sum(wp + wm))
     prob = cp.Problem(cp.Maximize(U), cons + list(rows.values()))
     raw = _solve(prob, opts)
+    duals = _raw_duals(rows, c)
     p, d = raw["obj_primal"], raw["obj_dual"]
     gap = abs(p - d)
     nan = float("nan")
@@ -155,7 +174,7 @@ def perspective_relaxation(model: MIQPModel, opts: dict | None = None,
     if status not in ACCEPTED:
         info["fail_reason"] = "status"
         return ClarabelRelaxation(ok=False, status=f"clarabel relax status {raw['status']} "
-                                  f"({status})", info=info)
+                                  f"({status})", info=info, duals=duals)
     # the DESIGN §6 value: the objective at the returned point with every cone exact
     wpv, wmv = c * np.asarray(wp.value, float), c * np.asarray(wm.value, float)
     zpv, zmv = np.asarray(zp.value, float), np.asarray(zm.value, float)
@@ -168,7 +187,7 @@ def perspective_relaxation(model: MIQPModel, opts: dict | None = None,
     info.update(cvxpy_value=float(prob.value), value=value,
                 value_minus_clarabel=value - info["clarabel_objective"],
                 gap_threshold=threshold, n_s_capped=n_cap)
-    point = dict(wp=wpv, wm=wmv, s=s_ex)
+    point = dict(wp=wpv, wm=wmv, s=s_ex, duals=duals)
     if not (raw["r_prim"] <= RESIDUAL_MAX and raw["r_dual"] <= RESIDUAL_MAX):
         info["fail_reason"] = "residual"
         return ClarabelRelaxation(ok=False, status=f"clarabel relax residual above {RESIDUAL_MAX:g} "
@@ -179,10 +198,6 @@ def perspective_relaxation(model: MIQPModel, opts: dict | None = None,
         return ClarabelRelaxation(ok=False, status=f"clarabel relax duality gap {gap:.2e} above "
                                   f"{GAP_RTOL:g}·max(|V|, |V_ref|) = {threshold:.2e} "
                                   f"({raw['status']})", info=info, **point)
-    duals = {}
-    for key, con in rows.items():
-        k = 1.0 if key[0] == "cardinality" else c
-        duals[key] = -np.atleast_1d(np.asarray(con.dual_value, float)) / k
     res = MIQPResult(U=value, bound=value, w=wv, zp=zpv, zm=zmv,
                      status=-1, status_name=status, runtime=raw["solve_time"], nodes=0.0,
                      final_gap=0.0, root_gap=0.0, reached_gap=True, duals=duals)

@@ -36,7 +36,7 @@ from experiments.run_pilot import _key_bounds
 from src.opt.baseline import KINDS as BASELINE_KINDS
 from src.opt.baseline import baseline_point, baseline_value
 from src.opt.certified import certified_interval, certified_interval_eff
-from src.opt.integer import PMI, solve_combined
+from src.opt.integer import PMI, polished_exceeds_bound, solve_combined
 from src.opt.sensitivity import set_bound_by_key
 from src.opt.slopes import relaxation_slope
 
@@ -106,7 +106,8 @@ def i1_task(t: dict) -> dict[str, pd.DataFrame]:
         _set(P, key, b + sg * d)
         V, B, vf, bf, parts, fixed, w = solve_point(P, t, duals=sg == 0)
         pts[tag] = {**ids, "point": tag, "bound": b + sg * d, "V": V, "B": B, "v_from": vf,
-                    "b_from": bf, "work_total": sum(p.work for p in parts.values()),
+                    "b_from": bf, "flag_V_exceeds_B": polished_exceeds_bound(V, B),
+                    "work_total": sum(p.work for p in parts.values()),
                     "mu_fixed": (fixed or {}).get("shadow", {}).get(key, np.nan),
                     "fixed_status": (fixed or {}).get("status", "not run")}
         solves += [s3.pmi_record(r, {**ids, "point": tag, "arm": f}) for f, r in parts.items()]
@@ -126,8 +127,7 @@ def i1_task(t: dict) -> dict[str, pd.DataFrame]:
               "binding": False, "solver_error": False, "interval_error": str(err)}
     est = {**ids, "delta": d, "V": V0, "B": pts["b"]["B"], **iv,
            "mu_bigm_relax": rel["bigm"]["shadow"].get(key, np.nan), "bigm_relax_ok": rel["bigm"]["ok"],
-           "mu_persp_raw": rel["perspective"]["shadow"].get(key, np.nan),
-           "persp_raw_status": rel["perspective"]["status"],
+           **s3.persp_raw_columns(rel["perspective"], key),
            "persp_slope": slope["slope"], "persp_forward": slope["forward"],
            "persp_backward": slope["backward"], "persp_kink": slope["kink"],
            "persp_concave": slope["concave"], "persp_noise": slope["noise"],
@@ -169,7 +169,8 @@ def main(argv=None) -> int:
         out = pool_chunks(run, FRAMES, tasks, lambda t: t["id"], i1_task, s3.workers(cfg))
         summary = {"n_cases": len(out["i1_estimators"]), "solves": s3.solve_summary(out["i1_solves"]),
                    "baseline_checker_violations": int((out["i1_baseline"]["checker"] != "{}").sum()),
-                   "perspective_slope_failed": int((~out["i1_estimators"]["persp_ok"]).sum())}
+                   "perspective_slope_failed": int((~out["i1_estimators"]["persp_ok"]).sum()),
+                   "points": s3.point_flag_summary(out["i1_points"])}
         (run / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
         finish(run, cfg_path, out, f"i1: {summary['n_cases']} cases; solves {summary['solves'].get('statuses')}",
                extra_files=[run / "summary.json"])

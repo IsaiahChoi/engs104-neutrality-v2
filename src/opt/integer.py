@@ -20,10 +20,13 @@
   Decision 21); Clarabel's own objective (U_clarabel) and the difference are recorded alongside.
   A failed relaxation (DESIGN §6: Clarabel status neither Solved nor AlmostSolved, a relative
   residual above 1e-8, or a duality gap above 1e-9·max(|V|, |V_ref|), v_ref in original units)
-  is recorded with its reason and no value or duals, never raised; Clarabel's status, residuals
+  is recorded with its reason and no value or usable duals, never raised; Clarabel's status, residuals
   and gap are recorded for every solve, AlmostSolved flagged (almost_solved). The perspective
   estimator is the finite-difference slope of these values (DESIGN §6, gated by CHECKS K29c in
-  S3); Clarabel's raw perspective duals here are a diagnostic.
+  S3); Clarabel's raw perspective duals here are a diagnostic. Every relaxation record carries
+  raw_duals (dU*/db per key, original units) and raw_duals_usable. Decision 25 (GATE C): a failed
+  perspective relaxation keeps Clarabel's raw duals there, with raw_duals_usable False; shadow
+  and raw_shadow, which the estimators read, stay empty, so no estimator reads them.
   fixed_integer_duals(z) re-solves the convex problem at fixed z. Shadow prices dU*/db use
   src.opt.miqp.shadow_price (sign established by the kept tests), divided by s_obj.
 - Effort. Work (deterministic) and Runtime are recorded; work_limit sets Gurobi's WorkLimit.
@@ -50,13 +53,16 @@
     polished value, B = the smaller final bound, B_eff = max(B, V) + 1e-6·|V|; the fixed-integer
     dual at the incumbent that supplied V; the suppliers of V and B are recorded (exact ties go to
     big-M, the first of FORMULATIONS, and are flagged). combined_interval is the certified
-    interval (DESIGN §6) from combined values and bounds.
+    interval (DESIGN §6) from combined values and bounds. S2e item 3: DESIGN §6's second flag,
+    V > B + 1e-6·|V|, is also applied to the combined V and B (flag_V_exceeds_B), recorded on
+    every I1/I2 point and counted in the runners' summaries.
 """
 from __future__ import annotations
 
 import copy
 import json
 from dataclasses import dataclass, field, replace
+from types import SimpleNamespace
 
 import gurobipy as gp
 import numpy as np
@@ -99,14 +105,21 @@ def choose_s_obj(U_abs: float) -> float:
     return s
 
 
+def polished_exceeds_bound(V: float, B: float, rtol: float = FLAG_RTOL) -> bool:
+    """DESIGN §6's second flag: V > B + rtol·|V| (False if V or B is undefined). Applied per solve
+    (incumbent_flags) and, for combined certification, to the combined V and B (S2e item 3)."""
+    if not (np.isfinite(V) and np.isfinite(B)):
+        return False
+    return bool(V > B + rtol * abs(V))
+
+
 def incumbent_flags(U_incumbent: float, V: float, B: float,
                     rtol: float = FLAG_RTOL) -> tuple[bool, bool]:
     """(exact objective at the incumbent's weights > V + rtol·|V|, V > B + rtol·|V|); both False
     when V is undefined (the polish failed)."""
     if not np.isfinite(V):
         return False, False
-    slack = rtol * abs(V)
-    return bool(U_incumbent > V + slack), bool(V > B + slack)
+    return bool(U_incumbent > V + rtol * abs(V)), polished_exceeds_bound(V, B, rtol)
 
 
 def exact_objective(w, alpha, lam: float, B, F, d, mandate: Mandate) -> float:
@@ -471,13 +484,15 @@ class PMI:
 
     def _dual_record(self, res, status: str = "OPTIMAL") -> dict:
         raw = self._shadows(res)
+        shadow = {k: v / self.s_obj for k, v in raw.items()}
         return {"ok": True, "status": status, "U": res.U / self.s_obj, "work": res.work,
-                "raw_shadow": raw, "shadow": {k: v / self.s_obj for k, v in raw.items()}}
+                "raw_shadow": raw, "shadow": shadow,
+                "raw_duals": dict(shadow), "raw_duals_usable": True}
 
     @staticmethod
     def _failed(status: str) -> dict:
         return {"ok": False, "status": status, "U": np.nan, "work": np.nan,
-                "raw_shadow": {}, "shadow": {}}
+                "raw_shadow": {}, "shadow": {}, "raw_duals": {}, "raw_duals_usable": False}
 
     def fixed_integer_duals(self, zp, zm) -> dict:
         return self._dual_record(self.model.fixed_integer(zp, zm))
@@ -495,6 +510,9 @@ class PMI:
         P = self._model("perspective")
         cl = perspective_relaxation(P, v_ref=None if v_ref is None else self.s_obj * v_ref)
         persp = self._dual_record(cl.result, cl.status) if cl.ok else self._failed(cl.status)
+        if not cl.ok and cl.duals:                # Decision 25: kept, unusable, not in shadow
+            persp["raw_duals"] = {k: v / self.s_obj for k, v in
+                                  self._shadows(SimpleNamespace(duals=cl.duals)).items()}
         s, info = self.s_obj, cl.info
         persp.update(solver="clarabel", clarabel=info,
                      almost_solved=info.get("clarabel_status") == "AlmostSolved",
@@ -514,7 +532,10 @@ class PMI:
 def combine_certification(parts: dict[str, PMIResult]) -> dict:
     """V = the larger defined polished value, B = the smaller defined final bound over the
     formulations solved, B_eff = max(B, V) + 1e-6·|V|, and who supplied each (FORMULATIONS order;
-    an exact tie goes to the first and is flagged; "none" if no formulation has one)."""
+    an exact tie goes to the first and is flagged; "none" if no formulation has one).
+    flag_V_exceeds_B is DESIGN §6's second flag on the combined values, V > B + 1e-6·|V| (S2e
+    item 3): V and B can come from different formulations, so it can be set when neither
+    formulation's own flag is."""
     forms = [f for f in FORMULATIONS if f in parts]
     Vs = {f: parts[f].V for f in forms if np.isfinite(parts[f].V)}
     Bs = {f: parts[f].B for f in forms if np.isfinite(parts[f].B)}
@@ -526,7 +547,8 @@ def combine_certification(parts: dict[str, PMIResult]) -> dict:
             "B_eff": effective_bound(B, V) if np.isfinite(V) and np.isfinite(B) else np.nan,
             "v_from": v_from, "b_from": b_from,
             "v_tie": sum(v == V for v in Vs.values()) > 1,
-            "b_tie": sum(v == B for v in Bs.values()) > 1}
+            "b_tie": sum(v == B for v in Bs.values()) > 1,
+            "flag_V_exceeds_B": polished_exceeds_bound(V, B)}
 
 
 @dataclass
@@ -538,6 +560,7 @@ class CombinedResult:
     b_from: str                  # the formulation that supplied B
     v_tie: bool
     b_tie: bool
+    flag_V_exceeds_B: bool       # combined V > combined B + 1e-6·|V| (DESIGN §6's second flag)
     w: np.ndarray                # V's weights and incumbent z
     zp: np.ndarray
     zm: np.ndarray

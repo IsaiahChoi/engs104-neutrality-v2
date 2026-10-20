@@ -141,6 +141,8 @@ def test_i1_task_records(inst):
     assert e["L"] <= e["s"] <= e["H"] and np.isfinite(e["mu_bigm_relax"])
     assert {"mu_fixed", "persp_slope", "persp_ok", "persp_kink", "mu_persp_raw", "binding",
             "solver_error", "work_total"} <= set(out["i1_estimators"].columns)
+    assert {"mu_persp_raw_unusable", "persp_raw_usable", "persp_raw_status"} <= set(e.index)
+    _check_point_flags(out["i1_points"])
     b = out["i1_baseline"]
     assert set(b["kind"]) == {"fixed_lambda", "risk_budget"} and (b["checker"] == "{}").all()
     assert len(out["i1_weights"]) == 3 * SMALL["N"]
@@ -156,6 +158,9 @@ def test_i2_task_records(inst):
     t = i2.make_task(cfg, inst, {"key": "sector", "b": 0.02}, b=0.02, estimator=True)
     out = i2.i2_task(t)
     assert len(out["i2_slope_points"]) == 3 and out["i2_points"]["estimator"].iloc[0]
+    assert {"mu_persp_raw", "mu_persp_raw_unusable", "persp_raw_usable",
+            "persp_raw_status"} <= set(out["i2_points"].columns)
+    _check_point_flags(out["i2_points"])
 
 
 def test_n1_task_records(inst):
@@ -208,3 +213,46 @@ def test_summaries_hold_no_estimator_values():
     s = s3.solve_summary(df)
     assert s == {"n": 2, "statuses": {"OPTIMAL": 1, "WORK_LIMIT": 1}, "n_checker_violations": 0,
                  "n_v_undefined": 1, "work_total": 3.0, "work_median": 1.5, "runtime_total": pytest.approx(0.3)}
+
+
+# ---- Decision 25: failed perspective relaxations keep Clarabel's raw duals, marked unusable; the
+# runners record them in their own column and never in mu_persp_raw
+
+def _persp_rec(ok: bool) -> dict:
+    duals = {"sector": 1.5e-3, "dollar": 2e-5}
+    return {"ok": ok, "status": "optimal" if ok else "clarabel relax duality gap 1e-12 above ...",
+            "shadow": dict(duals) if ok else {}, "raw_duals": dict(duals), "raw_duals_usable": ok}
+
+
+def test_persp_raw_columns_usable():
+    out = s3.persp_raw_columns(_persp_rec(True), "sector")
+    assert out["mu_persp_raw"] == 1.5e-3 and np.isnan(out["mu_persp_raw_unusable"])
+    assert out["persp_raw_usable"] is True
+
+
+def test_persp_raw_columns_failed_kept_apart():
+    out = s3.persp_raw_columns(_persp_rec(False), "sector")
+    assert np.isnan(out["mu_persp_raw"])
+    assert out["mu_persp_raw_unusable"] == 1.5e-3 and out["persp_raw_usable"] is False
+    assert "duality gap" in out["persp_raw_status"]
+    none = s3.persp_raw_columns({**_persp_rec(False), "raw_duals": {}}, "sector")
+    assert np.isnan(none["mu_persp_raw"]) and np.isnan(none["mu_persp_raw_unusable"])
+
+
+# ---- S2e item 3: combined certification's V > B flag on every I1/I2 point, counted in the summary
+
+def _check_point_flags(df: pd.DataFrame) -> None:
+    from src.opt.integer import polished_exceeds_bound
+    assert "flag_V_exceeds_B" in df.columns
+    expect = [polished_exceeds_bound(V, B) for V, B in zip(df["V"], df["B"])]
+    assert df["flag_V_exceeds_B"].astype(bool).tolist() == expect
+
+
+def test_point_flag_summary_counts_constructed():
+    df = pd.DataFrame({"V": [1.0, 1.0 + 2e-6, np.nan, 1.0],
+                       "B": [1.0 + 1e-3, 1.0, 1.0, 1.0 - 0.5e-6]})
+    df["flag_V_exceeds_B"] = [False, True, False, False]
+    assert s3.point_flag_summary(df) == {"n_points": 4, "n_flag_V_exceeds_B": 1,
+                                         "n_V_undefined": 1}
+    assert s3.point_flag_summary(pd.DataFrame()) == {"n_points": 0, "n_flag_V_exceeds_B": 0,
+                                                     "n_V_undefined": 0}
