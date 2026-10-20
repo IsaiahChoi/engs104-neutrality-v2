@@ -1,0 +1,19 @@
+# S2d item 5: smoke config for experiments/run_i2.py (a crash test only; RUN_LOG "pilot", then
+# marked superseded). Not a DESIGN config: integer.yaml stays the proposed I2 config.
+runner: i2
+smoke: true
+status: "smoke (S2d crash test; not a result)"
+s_obj: 10000.0
+W_star: 340.0
+mandate: {position: 0.06, min_position: 0.0025}
+workers: 4
+i2:
+  instances: [{date: "2017-12", N: 100, f: 0.5}]
+  constraint: {key: sector, b: 0.02}  # a crash test, not the I2 choice (made after I1)
+  points: 5                           # DESIGN: 41; the estimator neighbours are added
+  estimator_fractions: [0.5, 1.0, 1.5]
+  rel_delta: 0.10
+  perspective_fd_rel_step: 0.001
+  certification: combined
+  formulations: [bigm, perspective]
+  settings: {mip_gap: 1.0e-6, threads: 1, seed: 0, work_limit_factor: 2.0}

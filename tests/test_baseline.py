@@ -128,3 +128,22 @@ def test_non_binding_key_takes_the_fine_step():
     f = baseline_point(P, alpha, k, kind="fixed_lambda", lam=rb.lam)
     assert f["mu"] == 0 and f["kink"] and f["step_checked"] == pytest.approx(1e-3 * bound_value(P, k))
     assert f["within"]
+
+
+def test_baseline_value_at_any_bound_including_zero():
+    """baseline_value(b) is one solve at bound b (b = 0 allowed, for the I2 sweep): the value, the
+    key's dual, λ, the risk flag and the weights; bounds are restored. At the base bound it is
+    baseline_point's value and dual, and the weights satisfy the mandate (independent checker)."""
+    from dataclasses import replace
+    from src.opt.baseline import baseline_value
+    from src.opt.feasibility import violations
+    P, alpha, rb = k13()
+    k = binding_keys(P, rb)[0]
+    b = bound_value(P, k)
+    for kind, kw in (("fixed_lambda", {"lam": rb.lam}), ("risk_budget", {"lam_guess": rb.lam})):
+        v = baseline_value(P, alpha, k, b, kind=kind, **kw)
+        pt = baseline_point(P, alpha, k, kind=kind, **kw)
+        assert v["value"] == pt["value"] and v["mu"] == pt["mu"]
+        assert violations(v["w"], P.B, P.S, P.mandate, P.adv, mkt=P.mkt) == {}
+        z = baseline_value(P, alpha, k, 0.0, kind=kind, **kw)
+        assert np.isfinite(z["value"]) and z["b"] == 0.0 and bound_value(P, k) == b

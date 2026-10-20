@@ -1,0 +1,9 @@
+{
+ "rootgap.parquet": "f078d1a03e3e3074a38955ae213e63489d484f0428cfd98ca70cd07880b8cc61",
+ "rootgap_probes.parquet": "2c98818347ac3307e964936ed8efe9ef9f54862fa652a3f9948015c307ec183c",
+ "rootgap_plain.parquet": "7e9eda2d7c29ab519bf05fb4450cabead2d08aaac5f53bda36b520d91bb59df7",
+ "k29c_toys.parquet": "ff23daef2e3f2fd21a62fb691e2437a6d602b045d9e7130fd0d51e02d3d2c552",
+ "k29c_k8.parquet": "2e7bbe061e48b1aa699ce0d80db77c6eed877072225901fd8f18ee6f7de0cc4b",
+ "clarabel_scale.parquet": "a80806fc5f44e1201603ee065d19d3a94e777332b5db437d99ed2a1d9556136a",
+ "summary.json": "d3a6b4afa55d34d8988da2b827860423bac178a2fd90735bf7510632477ea36a"
+}

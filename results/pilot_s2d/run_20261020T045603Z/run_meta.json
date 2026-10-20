@@ -1,0 +1,145 @@
+{
+ "name": "pilot_s2d",
+ "created_utc": "2026-10-20T04:56:03Z",
+ "git_commit": "16d52f8edb1be28f2d36c028358ad0972d43ade7",
+ "config_path": "experiments/configs/pilot_s2d.yaml",
+ "config_sha256": "1239173602134006f4a3f0107f4de27c8c64526077674f5e742894a1dafff41d",
+ "config": {
+  "mandate_config": "experiments/configs/base_mandate.yaml",
+  "s2b_run": "results/pilot_s2b/run_20261020T024318Z",
+  "s_obj": 10000.0,
+  "W_star": 340.0,
+  "workers": 4,
+  "rootgap": {
+   "probes": [
+    {
+     "probe": "bigm",
+     "formulation": "bigm",
+     "rescale": false,
+     "params": {}
+    },
+    {
+     "probe": "perspective",
+     "formulation": "perspective",
+     "rescale": false,
+     "params": {}
+    },
+    {
+     "probe": "perspective_feastol1e-9",
+     "formulation": "perspective",
+     "rescale": false,
+     "params": {
+      "FeasibilityTol": 1e-09
+     }
+    },
+    {
+     "probe": "perspective_miqcp0",
+     "formulation": "perspective",
+     "rescale": false,
+     "params": {
+      "MIQCPMethod": 0
+     }
+    },
+    {
+     "probe": "perspective_miqcp1",
+     "formulation": "perspective",
+     "rescale": false,
+     "params": {
+      "MIQCPMethod": 1
+     }
+    },
+    {
+     "probe": "perspective_feastol1e-9_miqcp0",
+     "formulation": "perspective",
+     "rescale": false,
+     "params": {
+      "FeasibilityTol": 1e-09,
+      "MIQCPMethod": 0
+     }
+    },
+    {
+     "probe": "perspective_rescaled",
+     "formulation": "perspective",
+     "rescale": true,
+     "params": {}
+    }
+   ],
+   "mip_gap": 0.0001
+  },
+  "k29c": {
+   "scales": [
+    1.0,
+    100.0,
+    10000.0
+   ],
+   "rel_delta": 0.001,
+   "toys": {
+    "seed": 20261019,
+    "n": 200,
+    "grid": 41
+   },
+   "k8": {
+    "months": [
+     "2017-12",
+     "2020-03"
+    ],
+    "N": 30,
+    "f": 0.5,
+    "keys": [
+     "dollar",
+     "beta",
+     "gross",
+     "style",
+     "sector",
+     "style:SMB",
+     "style:HML",
+     "style:RMW",
+     "style:CMA",
+     "style:Mom"
+    ]
+   }
+  },
+  "clarabel_scale": {
+   "dates": [
+    "2009-03",
+    "2017-12",
+    "2020-03"
+   ],
+   "f": [
+    0.25,
+    0.5,
+    0.75
+   ],
+   "N": 250,
+   "scales": [
+    1.0,
+    100.0,
+    10000.0,
+    1000000.0
+   ]
+  }
+ },
+ "finish_status": "pilot",
+ "args": {},
+ "data": {
+  "panel_sha256_manifest": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "panel_sha256_build_meta": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "files": {
+   "data/processed/panel.parquet": "64bfa137742934c24328a9fabe7d54c3a33ffc827d3a80c9af9db0790f95081e",
+   "data/processed/factors_daily.parquet": "4c295060b1d7d9160fbccbe264b22507e716fde80815d73f025c2fb5134399cc",
+   "data/processed/risk/w252_loadings.parquet": "eab160341656cf72bec51fb4dd2ff7d0edb95ef774c3ec94bdabb617322eaceb",
+   "data/processed/risk/w252_factor_cov.parquet": "6202357042b1e20205d2361ae864b8e7401b33a84b5af571b05a16cfd4da1293"
+  }
+ },
+ "provenance": {
+  "python": "3.12.4",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.0.6",
+  "cvxpy": "1.9.3",
+  "clarabel": "0.11.1",
+  "gurobipy": "13.0.3"
+ }
+}

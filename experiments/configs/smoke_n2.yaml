@@ -1,0 +1,20 @@
+# S2d item 5: smoke config for experiments/run_n2.py (a crash test only; RUN_LOG "pilot", then
+# marked superseded). Not a DESIGN config: numerics.yaml stays the proposed N2 config.
+runner: n2
+smoke: true
+status: "smoke (S2d crash test; not a result)"
+s_obj: 10000.0
+W_star: 340.0
+mandate: {position: 0.06, min_position: 0.0025}
+cone_diagnostic: true
+workers: 4
+n1:
+  tightness: {base: {style: 0.10, beta: 0.05}}
+n2:
+  miqp: {dates: ["2017-12"], f: [0.5], N: 100, tightness: base, s_obj: [1.0, 10000.0], mip_gap: 1.0e-4,
+         work_limit_factor: 1.0, formulations: [bigm, perspective, perspective_rescaled]}
+  convex:
+    dates: ["2017-12"]
+    N: 100                            # DESIGN: the full universe (C1 base); N = 100 for the crash test
+    solvers: [GUROBI_BARRIER, CLARABEL, SCS]
+    reference: {solver: CLARABEL, scaled: true, tol: 1.0e-10}

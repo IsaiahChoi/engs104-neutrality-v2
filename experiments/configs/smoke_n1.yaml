@@ -1,0 +1,18 @@
+# S2d item 5: smoke config for experiments/run_n1.py (a crash test only; RUN_LOG "pilot", then
+# marked superseded). Not a DESIGN config: numerics.yaml stays the proposed N1 config.
+runner: n1
+smoke: true
+status: "smoke (S2d crash test; not a result)"
+s_obj: 10000.0
+W_star: 340.0
+mandate: {position: 0.06, min_position: 0.0025}
+cone_diagnostic: true
+workers: 4
+n1:
+  dates: ["2017-12"]
+  N: [100]
+  f: [0.5]
+  tightness: {base: {style: 0.10, beta: 0.05}}
+  formulations: [bigm, perspective, perspective_rescaled]
+  settings: {mip_gap: 1.0e-4, threads: 1, seed: 0, work_limit_factor: 1.0, presolve: -1}
+  presolve_off: {N: 250, presolve: 0}   # no N = 250 instance here, so no presolve-off solve

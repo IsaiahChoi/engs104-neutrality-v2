@@ -18,7 +18,8 @@ baseline_point returns, for one shadow-price key (src.opt.attribution.shadow_pri
   δ = 0.1%; the error |slope − μ| is read relative to max(|μ|, 1e-4·|V|/b) (the bindingness scale,
   so a zero dual is compared against the elasticity threshold) and is within if ≤ tol = 1%;
 - the secant (V(b + δ) − V(b − δ))/(2δ) at each of secant_rels (I1's δ = 10%; 5% robustness).
-The problem's bounds are restored afterwards.
+baseline_value(b) is one solve at bound b (b = 0 allowed: the I2 sweep starts there): value, the
+key's dual, λ, the risk flag and the weights. The problem's bounds are restored afterwards.
 """
 from __future__ import annotations
 
@@ -35,7 +36,7 @@ KINDS = ("fixed_lambda", "risk_budget")
 
 def _evaluator(problem: ContinuousProblem, alpha, kind: str, lam: float | None,
                lam_guess: float | None):
-    """() ↦ (V, shadow prices, λ used, risk_binding, ann. vol) at the problem's current bounds."""
+    """() ↦ (V, shadow prices, λ used, risk_binding, ann. vol, w) at the problem's current bounds."""
     if kind not in KINDS:
         raise ValueError(f"kind {kind!r} not in {KINDS}")
     if kind == "fixed_lambda":
@@ -44,12 +45,27 @@ def _evaluator(problem: ContinuousProblem, alpha, kind: str, lam: float | None,
 
         def ev():
             s = problem.solve(alpha, lam=lam)
-            return s.objective, shadow_prices(problem, s), float(lam), None, problem.ann_vol(s.w)
+            return (s.objective, shadow_prices(problem, s), float(lam), None, problem.ann_vol(s.w),
+                    s.w)
     else:
         def ev():
             r = solve_risk_budget(problem, alpha, lam_guess=lam_guess)
-            return r.A, shadow_prices(problem, r.sol), r.lam, r.risk_binding, r.vol_ann
+            return r.A, shadow_prices(problem, r.sol), r.lam, r.risk_binding, r.vol_ann, r.sol.w
     return ev
+
+
+def baseline_value(problem: ContinuousProblem, alpha, key: str, b: float, kind: str,
+                   lam: float | None = None, lam_guess: float | None = None) -> dict:
+    """One baseline solve with the bound behind `key` at b (module docstring)."""
+    ev = _evaluator(problem, alpha, kind, lam, lam_guess)
+    snap = snapshot(problem)
+    set_bound_by_key(problem, key, b)
+    try:
+        V, sp, lm, rbind, vol, w = ev()
+    finally:
+        restore(problem, snap)
+    return {"key": key, "kind": kind, "b": float(b), "value": V, "mu": float(sp[key]), "lam": lm,
+            "risk_binding": rbind, "vol_ann": vol, "w": np.asarray(w, float)}
 
 
 def baseline_point(problem: ContinuousProblem, alpha, key: str, kind: str,
@@ -67,7 +83,7 @@ def baseline_point(problem: ContinuousProblem, alpha, key: str, kind: str,
     def at(b: float):
         set_bound_by_key(problem, key, b)
         try:
-            V, sp, lm, rbind, vol = ev()
+            V, sp, lm, rbind, vol, _ = ev()
             return V, float(sp[key]), lm, rbind, vol
         finally:
             restore(problem, snap)

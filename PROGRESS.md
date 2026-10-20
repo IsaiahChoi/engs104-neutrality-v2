@@ -948,3 +948,10 @@ w_c = −(2λ)⁻¹Σ⁻¹a_c, and expected alpha splits as α'w* = α'w_α + Σ
   - The rootprobe RED log was taken after the module was written, by moving the module to results/scratch/trash/ for the run and back.
 - **Suite:** 333 passed, 1 skipped, 2 xfailed (logs/test_s2d_pre_commit1_*).
 - Next: `make pilot_s2d` in the background, then the item 5 runners.
+- **`make pilot_s2d` done:** results/pilot_s2d/run_20261020T045603Z at 16d52f8. make exit 0; DONE present; RUN_LOG row closed "pilot". Numbers come in the closing entry.
+- **Item 5 code (before the smoke runs):**
+  - experiments/s3.py: the config guard (a production run is refused while integer.yaml or numerics.yaml is "proposed"; --config takes only a `smoke: true` config for that runner; such runs are logged "pilot").
+  - experiments/run_i1.py, run_i2.py, run_n1.py, run_n2.py, and experiments/configs/smoke_{i1,i2,n1,n2}.yaml (2017-12, N = 100, one K, base tightness; sector@0.02 is the I1/I2 smoke constraint, kept by every Decision 31 option).
+  - src/opt/baseline.py gains baseline_value (one solve at any b, including 0, with weights for the checker), test-first (logs/test_s2d_baseline_value_red_*, green2_*).
+  - tests/test_s3_runners.py (21). Its RED log (logs/test_s2d_s3runners_red_*) was taken after s3.py and run_i1.py existed but before run_i2/n1/n2, so the RED is the missing modules.
+  - Suite: 355 passed, 1 skipped, 2 xfailed (logs/test_s2d_pre_commit2_*).
