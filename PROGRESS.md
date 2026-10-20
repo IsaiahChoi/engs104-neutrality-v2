@@ -933,3 +933,18 @@ w_c = −(2λ)⁻¹Σ⁻¹a_c, and expected alpha splits as α'w* = α'w_α + Σ
 - 35. **The I1/I2 continuous baseline:** fixed-λ* mean-variance QP (my recommendation) or P-RB at u = 6% (4(b)).
 - 36. **K27's δ:** K15's rule (my recommendation), I1's δ = 10%, or the I2 grid spacing; and whether the baseline secant at I1's δ is also recorded (4(b)).
 - 37. **N1 root gaps for the default perspective arm:** the recorded root bound is far looser than big-M's (median 1.6%, up to 11.7%), against theory. Report it as an A9 effect, or use the rescaled arm for the "perspective" root gap (4(a)).
+
+## 2026-10-20 — S2d (Claude Code, Opus 5.5): code before `make pilot_s2d`
+- **Scope:** gate-independent hardening before GATE DESIGN; pilot status only. No I1, I2, N1 or N2 result is produced, read or reported. DESIGN, CHECKS, every default and every "proposed" config are unchanged. No kept-core file changed (rule 14 not triggered): slopes.py, baseline.py and rootprobe.py are new v2 modules; the Makefile gains `pilot_s2d` in RUNNERS and an optional RUNARGS (empty by default).
+- **Code at f4b21b7, tests first** (RED/GREEN logs under logs/test_s2d_*):
+  - src/opt/slopes.py (item 2): DESIGN §6's central slope (the default) and the three-point one-sided option, with the kink flag on their difference, the concavity check and the a-priori noise term 4·1e-9·max(|V|, |V_ref|)/δ_r. tests/test_slopes.py (22) uses exact rational arithmetic on the A7 toy, with the kinks at ℓ and w° named.
+  - src/opt/baseline.py (item 4): both baseline candidates as options (fixed_lambda, risk_budget). tests/test_baseline.py (6) covers the K13 chain and FD of A* and U.
+  - src/opt/rootprobe.py (item 1): the root bound at every Gurobi root cut pass, and the plain relaxations. tests/test_rootprobe.py (5 + 1 skip).
+  - experiments/run_pilot_s2d.py with configs/pilot_s2d.yaml (items 1–3). tests/test_pilot_s2d.py (10).
+- **Test notes, all before GREEN, on my own new tests:**
+  - The exact-arithmetic toy now restates src.opt.toy's closed forms in Fractions, because Toy.w_opt divides by the float 2.0.
+  - The w° test first expected the central slope to be exact there. It is λdδ/2 off at the curvature jump, so the test now asserts that value exactly.
+  - The K8 real-instance slope test first asserted that every stencil point succeeds. At s = 1e4 the style:Mom point at b − 2δ fails DESIGN §6's gap clause (1.0e-7 > 5.6e-9), so the test now checks that a failure is recorded with its reason.
+  - The rootprobe RED log was taken after the module was written, by moving the module to results/scratch/trash/ for the run and back.
+- **Suite:** 333 passed, 1 skipped, 2 xfailed (logs/test_s2d_pre_commit1_*).
+- Next: `make pilot_s2d` in the background, then the item 5 runners.
