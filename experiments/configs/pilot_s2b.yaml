@@ -1,0 +1,37 @@
+# S2b pilot reruns (Isaiah's GATE C note, 2026-10-19: Decisions 24, 26, 27, 28):
+# `make pilot_s2b` → results/pilot_s2b/run_<UTC>/ (RUN_LOG "pilot"). No DESIGN §7 result.
+# Plain decimals with a dot (PyYAML reads 1e-6 as text).
+mandate_config: experiments/configs/base_mandate.yaml
+s2_pilot_run: results/pilot/run_20261019T191206Z   # the S2 pilot: s_obj (P1) and W* (P5) below must match it
+s_obj: 10000.0
+W_star: 340.0
+i1: {dates: ["2009-03", "2017-12", "2020-03"]}     # P6 ranks candidates on α_mom elasticities at these dates
+n1_tight: {style: 0.025, beta: 0.0125}              # DESIGN §7 N1 tightness "tight"
+p4:
+  dates: ["2017-12", "2020-03"]
+  N: 250
+  f: [0.25, 0.5]
+  tightness: [base, tight]
+  mip_gap: 1.0e-4
+  work_limit_factor: 1.0                           # WorkLimit W* (N1's setting; S2's P4 ran under TimeLimit 300 s before W* was known)
+  arms:
+    - {arm: bigm, formulation: bigm, rescale: false}
+    - {arm: perspective, formulation: perspective, rescale: false}
+    - {arm: perspective_rescaled, formulation: perspective, rescale: true}   # Decision 27(a)
+p6:
+  date: "2017-12"
+  N: 250
+  f: 0.5
+  n_families: 4
+  ties: include                                    # Decision 28: every candidate tied at the cutoff
+  mom_bound: 0.025
+  rel_delta: 0.10
+  mip_gap: 1.0e-6
+  work_limit_factor: 2.0                           # WorkLimit 2·W* (the I1 settings)
+  max_keep: 4
+  certification: combined                          # Decision 27(b): big-M + perspective at default scaling
+  rescale_perspective: false
+kinks:                                             # Decision 26 reporting: active sets at b − δ, b, b + δ
+  c1_run: results/c1/run_20261019T192500Z
+  active_tol: 1.0e-9
+workers: 4                                         # DESIGN §6: up to 4 workers

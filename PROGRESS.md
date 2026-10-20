@@ -694,3 +694,38 @@ Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). Thes
 - Decision 29: K18 means attribution.py's identity, as its text says. S2b quotes the identity; I'll name it in CHECKS at GATE DESIGN. Fig. 3's caption keeps the SV total at λ* distinct from the fixed-risk loss.
 - Decision 30: accepted. C3 covers 240 month-ends; S2b proposes the DESIGN §7 wording.
 - Writing mode: B (AI-use policy pending).
+
+## 2026-10-19 — S2b (Claude Code, Opus 5.5): code for the GATE C follow-ups, before `make pilot_s2b`
+- **Scope:** pilot status only; no S3 experiment run. Prompt items 1–2 (Decisions 24, 27) and the runner for items 3–4. Labels follow the S2b prompt: 2(a) = rescaled perspective, 2(b) = combined certification, the reverse of the GATE C note's (b)/(a).
+- **No kept-core file changed** (rule 14 not triggered): src/opt/miqp.py is untouched. src/opt/integer.py and src/opt/sensitivity.py are S1 v2 files. The Makefile gains the `pilot_s2b` runner target.
+- **Decision 24, test-first** (src/opt/integer.py):
+  - PolishModel extends the kept MIQPModel._build for mode "fixed" only, setting POLISH_PARAMS = Method 1, FeasibilityTol = OptimalityTol = 1e-9. PMI builds it, so the polish behind V and the fixed-integer duals (the same QP) both run at 1e-9.
+  - The kept solve, relax and fixed_integer methods are untouched, so the existing tests that monkeypatch them still exercise the same paths.
+  - Every solve records polished_violations, the independent checker's verdict on V's weights at 1e-9 at the solve's current bounds (PMI.verdict; a non-common style or sector bound is checked element by element), and settings["polish"]. Recorded, not used to exclude.
+  - RED 1 (logs/test_s2b_red1_*): ImportError on the new names.
+  - RED 2 (logs/test_s2b_red2_*), with everything in place except the 1e-9 parameters: the stored-toy band test fails. At R025, b = ℓ − 5e-7, the polish returned w = b with the min-position row broken by 5e-7. This is the defect the CORE checker found.
+  - GREEN (logs/test_s2b_green1_*): 79 passed in the integer, toy, relaxation and kept MIQP test files.
+  - The test covers the K8 instances (both formulations, MIPGap 0) and the stored toys: the T1/T2 grids, and band points b = ℓ − δ on all 202 stored toys (δ = 5e-7), with δ ∈ {1e-10, 1e-8, 1e-7, 9.9e-7} on 12 of them. Where ℓ − b > 1e-9, V is now 0 or undefined, never f(b) > 0.
+- **Decision 27(a), an option** (default off): PMI(rescale=True) solves the binary P-MI in w' = w/c, with c the largest holdable position bound (build_rescaled_mip, solve_mip_rescaled).
+  - Rows become ≤ b/c and bounds u_i/c, ℓ/c. The objective is the same function written in w', so values and bounds need no mapping.
+  - Cones: t_i = v_i/u_i, s_i = u_i²·s'_i, t_i² ≤ s'_i·ζ_i. The incumbent and the cone variables are mapped back to original units; c is recorded (w_scale). The polish, duals and relaxations stay unscaled.
+  - Tests: rescaled and unscaled big-M give the same z and V within 1e-9 on both K8 instances, and the mapped incumbent satisfies the rows at 1e-6. On toy R110 the rescaled cone effect is below the unscaled one, which exceeds |V|.
+- **Decision 27(b), an option for I1/I2:** combine_certification, solve_combined, combined_interval and CombinedResult.
+  - Both formulations are solved (siblings at the current bounds). V is the larger polished value and B the smaller final bound; B_eff = max(B, V) + 1e-6·|V|.
+  - The fixed-integer duals are taken at V's incumbent. The suppliers of V and B are recorded; exact ties go to big-M and are flagged.
+  - Tests: the rule on constructed values, including ties and undefined V or B. On the toys: V = U*, B_eff ≥ U*, the fixed dual equals its closed form, and the interval contains the exact secant, including across ℓ.
+  - A 7-name MIQP (K = 3, which binds) is solved by enumerating all 379 sign patterns with CVXPY + Clarabel. V = U* to 1e-7, V's pattern is the optimum, the fixed duals match the pattern QP's, and the interval for the binding sector bound contains the exact secant.
+- **Decision 26 tool** (src/opt/sensitivity.py): active_set, the P-RB QP rows that are tight within 1e-9 (nonnegativity, trading, mandate, position), with active_set_change. A changed nonnegativity row means a name entered or left the support, so support changes count as active-set changes; the breakdown is recorded.
+- **Runner** experiments/run_pilot_s2b.py with configs/pilot_s2b.yaml (P4 three arms, P6 combined with ties, C1 active sets). Tests in tests/test_pilot_s2b.py (8), written before the runner: RED then GREEN, logs/test_s2b_runner_*. Choices fixed before the run:
+  - P4 runs under WorkLimit W* = 340 (N1's setting). S2's P4 used TimeLimit 300 s, before W* was known; neither limit bound there.
+  - "The gap against the exact V" is read as (B − V)/|V| with V the polished value. The best polished V over the three arms, the shortfall, and Gurobi's own gap against its raw incumbent are recorded alongside.
+  - P6's combined certification uses big-M plus the perspective at default scaling, DESIGN §7's I1 formulation; the rescaled arm is the N1/N2 option.
+  - With ties included, style:Mom appears twice: at b = 0.10, tied at median 0, and at 0.025, the DESIGN rule. Selection labels candidates key@b.
+  - s_obj = 1e4 and W* = 340 are checked against the S2 pilot's summary.json.
+  - The C1 points are rebuilt exactly as run_c1 builds them; the stored A(b), A(b ± δ) are compared.
+- **Smoke tests** (scratch, not evidence, results/scratch/s2b/):
+  - 2011-08: 15 envelope points in 8 s, A reproduced to 0.0; the CMA point is a kink (style:lower:3 changes).
+  - One P4 instance, three arms, all OPTIMAL with 0 violations at 1e-9.
+  - One P6 candidate, combined.
+- **Suite:** 282 passed, 2 xfailed (logs/test_s2b_pre_commit_*).
+- Next: commit; `make pilot_s2b` in the background.

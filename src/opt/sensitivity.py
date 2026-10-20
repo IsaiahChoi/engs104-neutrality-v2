@@ -11,6 +11,12 @@ difference with δ = 1% of the bound; where the stencil crosses an active-set ch
 constraint's own dual is 0 at b + δ or b − δ, or the forward and backward differences differ by
 more than KINK_RTOL = 1% of the central one) the point is flagged as a kink and checked with
 δ = 0.1%; both slopes are recorded.
+
+active_set (S2b; Decision 26 reporting, Isaiah's GATE C note): the exact active set of the P-RB QP
+at a solution, the inequality rows of problem.cons (nonnegativity, trading, mandate, position)
+that hold within ACTIVE_TOL = 1e-9 (the QP's FeasibilityTol, SOLVER_OPTS["GUROBI"]), labelled
+'<family>:<side>:<i>' and evaluated from the solution's own (w⁺, w⁻, t, y). A flagged point is a
+kink if the set differs among b − δ, b and b + δ (active_set_change), else a curvature flag.
 """
 from __future__ import annotations
 
@@ -20,6 +26,9 @@ from src.opt.continuous import ContinuousProblem
 
 BINDING_ELASTICITY = 1e-4
 KINK_RTOL = 1e-2
+ACTIVE_TOL = 1e-9
+SUPPORT_FAMILIES = ("nonneg",)          # rows whose change means a name enters or leaves
+BOUND_FAMILIES = ("nonneg", "trade", "position")   # not mandate rows
 
 
 def _split(key: str) -> tuple[str, int | None]:
@@ -145,3 +154,29 @@ def envelope_point(problem: ContinuousProblem, alpha, key: str, mu: float, A: fl
     out["step_checked"] = out["fine_step"] if kink else h
     out["within"] = bool(out["rel_err"] <= tol)
     return out
+
+
+def active_set(problem: ContinuousProblem, sol, tol: float = ACTIVE_TOL) -> frozenset[str]:
+    """The rows of problem.cons that hold within tol at sol (module docstring). The problem's
+    variables are set to sol's values to evaluate the rows (a later solve overwrites them)."""
+    for var, val in zip(problem._vars, (sol.wp, sol.wm, sol.t, sol.y)):
+        var.value = np.asarray(val, float)
+    out = set()
+    for (fam, side), con in problem.cons.items():
+        res = np.atleast_1d(np.asarray(con.expr.value, float))     # expr = lhs − rhs ≤ 0
+        out.update(f"{fam}:{side}:{i}" for i in np.flatnonzero(res >= -tol))
+    return frozenset(out)
+
+
+def active_set_change(A_minus: frozenset, A0: frozenset, A_plus: frozenset) -> dict:
+    """Whether the active set differs among b − δ, b and b + δ, the sizes of the symmetric
+    differences against b, the mandate rows that change (';'-joined, sorted), and the number of
+    nonnegativity rows that change (names entering or leaving the support)."""
+    dm, dp = A_minus ^ A0, A_plus ^ A0
+    both = dm | dp
+    fam = lambda k: k.split(":")[0]
+    return {"differs": bool(both), "changed_minus": bool(dm), "changed_plus": bool(dp),
+            "n_diff_minus": len(dm), "n_diff_plus": len(dp),
+            "mandate_rows_changed": ";".join(sorted(k for k in both if fam(k) not in BOUND_FAMILIES)),
+            "n_support_rows_changed": sum(fam(k) in SUPPORT_FAMILIES for k in both),
+            "n_position_rows_changed": sum(fam(k) == "position" for k in both)}
