@@ -682,3 +682,15 @@ Script and outputs: results/scratch/diag_d21_22.{py,json,log} (gitignored). Thes
 - 29. **K18's reading** (from the checker). K18 was evaluated as attribution.py's identity: Σ losses = α'w_α − α'w*. Read as A*_unc(σ) − A* (the fixed-risk loss, which DESIGN §10 says the attribution exceeds), or as α'w_α − A* (net of costs), it would fail. Confirm the reading in CHECKS if you want it explicit.
 - 30. **C3 and DESIGN §7's "all 241 month-ends".** α_mom is undefined at 2005-12-30 (no 252-day lookback), so C3 has 240.
 - Non-gating notes from the checker: the attribution's `inactive` term (zero names' L1 kinks) reaches 11.8% of the total loss at binding points; the K15 stencil solves don't store a risk flag (all bind on recomputation); K15 passes only under Decision 26 (1 of 115 misses at a 1% step alone).
+
+## 2026-10-19 — Isaiah: GATE C
+- Read S2. CHECK CORE round 3 PASS (results/checks/CORE_20261019T190157Z.md); CHECK CONT round 1 PASS. Pilot: P1 pass; P4 pass, with the Decision 27 caveat (at the tightest instance the allowed gap is the perspective model's cone-inflated B − V). Continuous results look sound: YES. Noted: the risk budget is slack in 4 of 36 P2 solves, all under α∥, as A4 predicts; the report says so wherever α∥ appears.
+- Proposed I1/N1 parameters: noted; finalized at GATE DESIGN after the instructor discussion and the S2b follow-ups below.
+- Decision 24: the polish is what DESIGN §6 says: the fixed-integer QP by dual simplex at FeasibilityTol = OptimalityTol = 1e-9. Implement in S2b; keep the independent 1e-9 verdict on every V.
+- Decision 25: keep the raw records (DESIGN §6 requires them as A9 diagnostics).
+- Decision 26, reporting: only flags where the exact active set changes within the stencil are called kinks; the rest are reported as curvature flags.
+- Decision 27: report the cone-tolerance effect (Q3/A9) and fix it for Q2. Proposed for GATE DESIGN: (a) I1/I2 use combined certification: both formulations solved; V = the larger polished value; B = the smaller final bound; B_eff = max(B, V) + 1e-6·|V|; the fixed-integer dual at the incumbent that supplied V. (b) N1/N2 add a perspective arm with weights rescaled by the largest position bound. S2b implements both as options and reruns P4 (three arms) and P6 (under (a), same rule). Reason, recorded before those reruns: at δ = 10% and e ≈ 0.014, a value error of ε·|V| moves the re-solve slope by about 10ε/e, so the measured 0.08–0.3% shortfall and the 3.4e-3 true gap would put Q2's ground truth off by roughly 60% to over 200%.
+- Decision 28: include all candidates tied at the cutoff; the selection is unchanged.
+- Decision 29: K18 means attribution.py's identity, as its text says. S2b quotes the identity; I'll name it in CHECKS at GATE DESIGN. Fig. 3's caption keeps the SV total at λ* distinct from the fixed-risk loss.
+- Decision 30: accepted. C3 covers 240 month-ends; S2b proposes the DESIGN §7 wording.
+- Writing mode: B (AI-use policy pending).
