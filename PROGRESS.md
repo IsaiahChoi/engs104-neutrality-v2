@@ -960,3 +960,150 @@ w_c = −(2λ)⁻¹Σ⁻¹a_c, and expected alpha splits as α'w* = α'w_α + Σ
   - N2 crashed on resume (results/n2/run_20261020T051802Z, RUN_LOG "failed"). The kill landed between two chunk writes of one item: the weights chunk was written and the completion-marker chunk was not. On resume the item counted as unfinished and was recomputed, and write_chunk refused to overwrite the leftover weights chunk (FileExistsError).
   - Fixed test-first in experiments/cont.py pool_chunks (an S2 v2 file, not kept core). Before an unfinished item is recomputed, its leftover chunks move to chunks/_incomplete/<kind>/ in the run directory (kept, never deleted). tests/test_cont_pool.py (2): RED logs/test_s2d_pool_red_* reproduces the FileExistsError; GREEN logs/test_s2d_pool_green_*.
   - The bug can only raise, never produce a value, and every earlier run that a result rests on finished with DONE, so no reported result is affected (rule 13 not triggered). N2's smoke sequence is rerun on a new run directory.
+
+## 2026-10-20 — S2d closing entry (Claude Code, Opus 5.5): gate-independent hardening done; stopped before GATE DESIGN
+- **Scope kept:** pilot status only.
+  - No I1, I2, N1 or N2 result was produced, read or reported. From the smoke runs only status, the checker's counts, Work and Runtime were read.
+  - DESIGN, CHECKS, every default and every "proposed" config (integer.yaml, numerics.yaml) are unchanged.
+  - No kept-core file changed (rule 14 not triggered).
+- **Run:** R = results/pilot_s2d/run_20261020T045603Z at 16d52f8 (`make pilot_s2d`; suite then runner). make exit 0, DONE, RUN_LOG "pilot".
+- **Derived numbers:** B = results/pilot_s2d/s2d_breakdown_run_20261020T045603Z.json, written by tools/s2d_breakdown.py from R (read-only; tests/test_s2d_breakdown.py checks it against R/summary.json).
+- **Runners missing at the start:** all four (I1, I2, N1, N2); experiments/ had only the pilot, C and check runners. All are now written test-first (item 5).
+
+### Item 1: the N1 root-gap contradiction (8 P4 instances of the S2b run; V = V_comb, the larger polished V of big-M and the default perspective)
+- **When the root bound is taken.** The recorded root bound is the last root cut pass, i.e. after the root cut loop.
+  - Shown by Gurobi's callback semantics (S2c 4(a)) and by a separating test: a root-only probe with the kept solve's parameters reproduces every stored root bound exactly (24 of 24 arm-instances, difference 0).
+- **A6 holds for the plain relaxations.** perspective ≤ big-M at 8/8. The margin (big-M − perspective)/|V| is 0.026–0.256 (median 0.058).
+- **A6 fails for the recorded root bounds** at 8/8: the margin is −0.116 to −7.9e-5.
+- **Explanations:**
+  - (ii) Root cuts do tighten big-M a lot: (plain − last pass)/|V| = 0.026–0.255. But (ii) does not explain the contradiction, because the default perspective's recorded root bound lies above its own plain relaxation (e.g. 0.115 against 1.4e-4 at 2020-03 K79), and cuts cannot raise a bound. The plain relaxations separate this.
+  - (i) Cone-tolerance inflation is not supported as the main cause. With FeasibilityTol 1e-9 (the separating test) the default perspective's root gap is 0.99× its default value at the median (0.012×–4.4×; only 2017-12 K33 base collapses). The incumbent's cone effect is at most 0.48% of |V|, against root gaps up to 11.7%.
+  - (iii) Neither; the data support a third cause. The default perspective's root bound is Gurobi's linearized outer approximation (OA) of the cones, and its root cut loop stops before the approximation converges. Separating tests:
+    - MIQCPMethod 1 (OA) reproduces the default's last pass exactly at 7/8 instances.
+    - MIQCPMethod 0 (a QCP relaxation at the node) brings the last pass to the plain Clarabel relaxation (difference −5.0e-3 to +7.5e-5 of |V|; negative means cuts tighten further).
+    - The first root pass is 7.2%–345% above V for the default perspective and also for the rescaled arm; the rescaled arm's loop converges (median 21.5 passes, against 10) to 0.011%–0.23%.
+  - Hypothesis, not tested: why the OA loop stops early at default scaling but converges when rescaled. Absolute tolerances in OA cut generation or termination, against cones of size u_i², would fit.
+- **A side observation:** Gurobi's barrier on the plain perspective relaxation (the kept relax(), a cross-check only) returns SUBOPTIMAL at 6 of 8 instances.
+
+### Item 2: the three-point slope option (src/opt/slopes.py; DESIGN §6's central method stays the default)
+- **Exact tests.** Rational arithmetic on the A7 toy (tests/test_slopes.py, 22 tests):
+  - on each piece both three-point slopes are exact;
+  - at ℓ they are exactly the left and right derivatives (a − λdℓ, a − 2λdℓ) and the point is flagged;
+  - at w° both are exactly 0 and the point is not flagged, while the central slope is λdδ/2 off;
+  - the noise term is attained by the worst-case sign pattern.
+- **Seeded family.** K9's 200 random toys (seed 20261019), 40 points each (b = 0 dropped), at s ∈ {1, 1e2, 1e4}, V_ref = U*. Errors are read against max(|closed form|, 1e-4·U*/b). The interior points (no kink within 2δ_r) split into "nonflat" (b < w°, slope ≠ 0) and "flat" (b > w°, slope 0).
+- **Every error is inside the a-priori noise term.** Error/noise is at most 0.25 (central) and 0.22 (one-sided) at any scale.
+- **Concavity check on the three-point slopes.** It fails at 13–14 points per scale, all within 2δ of a kink and none interior, at up to 5.9e4× the noise: across a kink, one-sided three-point differences need not keep the concave ordering. The two-point check never fails beyond noise (0 per scale).
+- **K8 instances** (top 30, f = 0.5, 10 keys, 2 dates). "Binding" means |slope| > 1e-4·|V|/b.
+  - Binding keys agree across scales: central ≤ 2.7e-7, three-point one-sided ≤ 1.4e-5.
+  - Non-binding keys (slope ~1e-13) differ by up to 1.44e-3 on the bindingness scale, where the noise term is 0.04.
+  - One stencil failed: 2017-12 style:Mom at s = 1e4, the gap clause at b − 2δ.
+
+### Item 3: Clarabel status against scale (nine I1 (date, f) instances, N = 250, perspective relaxation at base bounds)
+- **Statuses** (Solved / AlmostSolved): s = 1: 8/1; s = 1e2: 4/5; s = 1e4: 2/7; s = 1e6: 1/8. No DESIGN §6 failure at any scale.
+- **Values agree across scales** to at most 2.9e-10 relative (max pairwise), and to at most 1.7e-12 among s ≥ 1e2.
+  - The s = 1 values carry that 2.9e-10: their pure relative gap reaches 4.4e-10, against ≤ 3.9e-12 at s ≥ 1e2.
+- So the status flips with scale while the residuals stay ≤ 1.4e-11 and the values agree. Status is not an accuracy signal here; the residual and gap clauses are.
+
+### Item 4: the I1 continuous baseline (d), both candidates as options
+- src/opt/baseline.py:
+  - baseline_point: the dual; the slope at δ = 1% with K15's kink rule and recheck at 0.1%; secants at any δ_rel (I1's 10%, and 5%).
+  - baseline_value: one solve at any b, including 0, with weights for the checker.
+  - kind "fixed_lambda" (the kept QP at λ*, ℓ = 0, no K) or "risk_budget" (P-RB, λ re-root-found).
+- tests/test_baseline.py (7):
+  - K13 chain: at the base bound both kinds give the same dual for every binding key (1e-6), A* for P-RB, and U = A* − λ*·variance for fixed λ*.
+  - The P-RB slope equals fd_slope_rb's FD of A* (1e-9), and both kinds' duals match their slopes within 1%.
+  - Secants, bound restoration, and the zero-dual fine-step path.
+- No run; the choice is Decisions 35–36. The I1/I2 runners compute both kinds unless the config names one.
+
+### Item 5: S3 runner smoke tests (2017-12, N = 100, one K, base tightness; status "pilot", now "superseded")
+- **Code:**
+  - experiments/s3.py: the production guard; --config takes a smoke config only.
+  - experiments/run_{i1,i2,n1,n2}.py and configs/smoke_{i1,i2,n1,n2}.yaml.
+  - tests/test_s3_runners.py (21): the guard; plan counts against the proposed configs (I1 9·4 + 3·4 = 48 cases; N1 108 + 36 = 144 solves; N2(a) 24); task records on a top-30 instance.
+- **Checks, for each runner:**
+  - a dirty tree is refused: 4 RUN_LOG "failed before the run started" rows at eced908, logs/smoke_*_dirty.log;
+  - a production run without --config is refused ("proposed, pending GATE DESIGN"), logs/smoke_*_production_refused.log;
+  - kill after the first chunk, then resume: logs/smoke_*_sequence.log, make logs logs/smoke_*_make{1,2}.log.
+- **Bug found and fixed.** The N2 run crashed on resume: pool_chunks could not recompute an item whose chunk writes were cut by the kill. Fixed in ddef653 (entry above); the N2 sequence was rerun on a new run.
+
+| Runner | Run | After kill | Resume | DONE | RUN_LOG | Solves | Checker | Work total | Runtime total (s) |
+|---|---|---|---|---|---|---|---|---|---|
+| I1 | results/i1/run_20261020T050829Z | 1 of 2 chunks | same dir, 1 chunk written | yes | pilot → superseded | 12 OPTIMAL | 0 violations (P-MI); 0 (baseline) | 5.41 | 4.82 |
+| I2 | results/i2/run_20261020T051209Z | 4 of 11 | same dir, 7 written | yes | pilot → superseded | 22 OPTIMAL | 0; 0 | 8.40 | 8.00 |
+| N1 | results/n1/run_20261020T051508Z | 2 of 3 | same dir, 1 written | yes | pilot → superseded | 3 OPTIMAL | 0 | 1.09 | 1.02 |
+| N2 (1st) | results/n2/run_20261020T051802Z | 1 item half-written | crashed (FileExistsError) | no | failed → superseded | — | — | — | — |
+| N2 | results/n2/run_20261020T052424Z | 2 of 7 | same dir, 5 written | yes | pilot → superseded | 6 OPTIMAL (MIQP); 13 convex "optimal" | 0 (MIQP); checked on every convex solve | 3.17 | 3.07 (+0.085 convex) |
+
+- Sources: each run's summary.json, and n2_convex.parquet for the convex statuses.
+- Orphaned pool workers (parent PID 1, idle) were left by each kill and were stopped. The pool_chunks fix's `_incomplete` path was not hit in the N2 rerun; tests/test_cont_pool.py covers it.
+
+### Table: every number in this entry and its source
+| Item | Quantity | Value | Source |
+|---|---|---|---|
+| 1 | stored root bound = last root pass (probe reproduction, arm-instances) | 24/24, difference 0 | B item1.stored_root_reproduced_exactly; R/rootgap.parquet |
+| 1 | A6 on plain relaxations; on recorded root bounds | 8/8; 0/8 | R/summary.json rootgap |
+| 1 | A6 margin, plain: min / median / max | 0.0263 / 0.0581 / 0.256 | B item1.a6_margin_plain |
+| 1 | A6 margin, recorded roots: min / median / max | −0.116 / −0.0145 / −7.88e-5 | B item1.a6_margin_root_stored |
+| 1 | root gap vs V, recorded: big-M / perspective / rescaled (min–max) | 4.4e-4–4.2e-3 / 2.5e-3–0.117 / 1.1e-4–2.3e-3 | B item1.gap_root_stored_* |
+| 1 | plain relaxation gap: big-M / perspective (min–max) | 0.0268–0.258 / 1.1e-4–7.7e-3 | B item1.gap_plain_* |
+| 1 | big-M root-cut tightening (plain − last)/\|V\| | 0.0264–0.255 | B item1.cut_tightening_bigm |
+| 1 | perspective first root pass gap; rescaled first pass | 0.0717–3.45; 0.0759–3.45 | B item1.gap_probe_first_* |
+| 1 | perspective last pass with FeasibilityTol 1e-9 ÷ default (min / median / max) | 0.0124 / 0.992 / 4.39 | B item1.feastol1e-9_over_default_root_gap |
+| 1 | MIQCPMethod 1 last pass = default last pass | 7/8 | B item1.persp_default_vs_miqcp1_last_equal |
+| 1 | MIQCPMethod 0 last pass − plain perspective (÷\|V\|) | −4.99e-3 to 7.53e-5 | B item1.miqcp0_last_minus_plain_perspective |
+| 1 | rescaled last-pass gap | 1.1e-4–2.3e-3 | B item1.gap_probe_last_perspective_rescaled |
+| 1 | median root passes: perspective / rescaled / big-M | 10 / 21.5 / 22.5 | B item1.probe_n_passes_median |
+| 1 | stored cone effect/\|V\| (default perspective) | 0–4.79e-3 | B item1.cone_effect_rel_perspective |
+| 1 | plain Clarabel statuses; Gurobi barrier (cross-check) statuses | Solved 3, AlmostSolved 5; OPTIMAL 2, SUBOPTIMAL 6 | B item1 |
+| 2 | toy failures (DESIGN §6) at s = 1 / 1e2 / 1e4 (of 8000) | 334 gap / 4 gap / 4 gap + 1 residual | B item2_toys.*.fail_reasons |
+| 2 | nonflat interior central error, max (n) | 4.54e-5 (2974) / 1.04e-6 (3105) / 1.03e-6 (3104) | B item2_toys.*.err_central_nonflat |
+| 2 | ... above 1e-6 (of which AlmostSolved) | 12 (11) / 1 (1) / 1 (1) | B item2_toys.*.n_err_central_nonflat_gt_1e-6* |
+| 2 | ... Solved points only, max | 2.89e-6 / 3.24e-8 / 1.98e-8 | B item2_toys.*.err_central_nonflat_solved_only |
+| 2 | nonflat three-point one-sided error, max (fwd; bwd) | 1.93e-5; 1.87e-4 / 5.84e-6; 1.03e-5 / 4.12e-6; 3.98e-6 | B item2_toys.*.err_{fwd3,bwd3}_nonflat |
+| 2 | flat (slope 0) central error, max | 7.57e-4 / 2.58e-4 / 1.16e-4 | B item2_toys.*.err_central_flat |
+| 2 | near-kink one-sided error, max (n) | 5.48e-5 (23) / 2.42e-5 (24) / 8.39e-5 (24) | B item2_toys.*.err_one_sided_near_kink |
+| 2 | max error ÷ noise: central; forward; backward | 0.249, 0.211, 0.224 / 0.164, 0.082, 0.122 / 0.034, 0.128, 0.128 | B item2_toys.*.max_err_*_over_noise |
+| 2 | noise ÷ error scale: nonflat median–max; flat | 1.03e-5–9.63e-4; 0.04 (every scale) | B item2_toys.*.noise3_rel_* |
+| 2 | kink flags on nonflat interior points: three-point / two-point | 1 / 1551; 0 / 1633; 0 / 1631 | B item2_toys.*.kink{3,2}_nonflat_interior |
+| 2 | three-point kink flags: points near ℓ; flat interior | 8/8 per scale; 4657 / 4864 / 4844 | B item2_toys.*.kink3_near_ell, kink3_flat |
+| 2 | concavity failures: three-point (interior); two-point beyond noise | 13 (0) / 14 (0) / 14 (0); 0 / 0 / 0 | B item2_toys.*.concavity* |
+| 2 | K8 binding keys, cross-scale vs s = 1: central; forward; backward (max) | s = 1e2: 2.74e-7; 1.34e-5; 1.41e-5. s = 1e4: 1.16e-7; 1.38e-5; 1.40e-5 | B item2_k8 |
+| 2 | K8 non-binding keys, central cross-scale (max); noise ÷ scale | 1.44e-3 at both; 0.04 | B item2_k8 |
+| 2 | K8 raw Clarabel dual vs central slope, binding keys (max): s = 1 / 1e2 / 1e4 | 9.34e-7 / 2.85e-7 / 2.82e-8 | B item2_k8 |
+| 2 | K8 stencil failures | 1 of 60 (2017-12 style:Mom, s = 1e4, gap) | R/summary.json k29c_k8 |
+| 3 | statuses Solved/AlmostSolved at s = 1 / 1e2 / 1e4 / 1e6 | 8/1, 4/5, 2/7, 1/8; DESIGN §6 failures 0 | B item3 |
+| 3 | r_prim max; r_dual max | 1.71e-12, 1.35e-11, 9.69e-12, 1.35e-11; 5.57e-15, 2.42e-15, 2.37e-14, 1.80e-14 | B item3 |
+| 3 | gap_abs (original units) max | 4.52e-13, 5.42e-15, 2.05e-15, 1.28e-15 | B item3 |
+| 3 | pure relative gap max | 4.38e-10, 3.90e-12, 1.66e-12, 9.19e-13 | B item3 |
+| 3 | \|V_s\| range | 1.03e-3–1.42e-3, ×1e2, ×1e4, ×1e6 | B item3 |
+| 3 | value difference: max pairwise; vs s = 1e4 for s = 1e2 / 1e6 | 2.90e-10; 1.65e-12 / 5.50e-13 | B item3 |
+| 4 | baseline tests | 7 passed | logs/test_s2d_baseline_green2_* |
+| 5 | smoke runs | the item 5 table above | each run's summary.json; logs/smoke_*_sequence.log |
+| all | suite at the last code commit; at the closing commit | 357 passed, 1 skipped, 2 xfailed; 358 passed, 1 skipped, 2 xfailed | logs/test_s2d_pre_commit3_*; logs/test_s2d_final_* |
+
+### Commits this session (S2d)
+- f4b21b7 slopes, baseline, rootprobe, the pilot_s2d runner, Makefile.
+- 16d52f8 PROGRESS before `make pilot_s2d`.
+- eced908 S3 runners, smoke configs, baseline_value, the pilot_s2d run.
+- ddef653 the pool_chunks resume fix and the first smoke run directories.
+- The commit containing this entry: superseded markers, the N2 rerun, tools/s2d_breakdown.py with its test, the breakdown JSON and RUN_LOG.
+- Not pushed.
+
+### Decisions needed (for GATE DESIGN; in addition to 31 and 33–36)
+- 37 (evidence now in). The default perspective's recorded root bound is Gurobi's unconverged outer approximation, not the perspective relaxation. Options:
+  - (a) report it as is, as an A9/Q3 finding (Gurobi's default MIQCP handling at default scaling), with the plain relaxations beside it;
+  - (b) take N1's "perspective root gap" from the rescaled arm;
+  - (c) add MIQCPMethod 0 for the perspective arms, a settings change to DESIGN §6's "default tolerances and presolve".
+  - My recommendation: (a) plus (b), so N1 shows both the formulation's tightness and the solver effect; (c) only as an N2 diagnostic.
+- 38. **K29c and the three-point option.**
+  - Inside the toy pieces where the slope is nonzero, the central method meets 1e-6 except at 12 / 1 / 1 points (s = 1 / 1e2 / 1e4), all but one AlmostSolved.
+  - Where the closed-form slope is 0 (b > w°, about 60% of the grid), "1e-6 relative" has no denominator. On the bindingness scale the errors reach 7.6e-4 there, all inside the noise term (0.04 of that scale). K29c (yours) needs a rule for zero slopes, e.g. "within the noise term", or the bindingness scale with a stated tolerance.
+  - The three-point kink flag removes the two-point rule's curvature flags on quadratic pieces (1551 → 1) and still flags all 8 points at ℓ. Both rules flag almost every flat point (a relative test against a slope near 0).
+  - The three-point concavity check misfires within 2δ of a kink (13–14 points per scale); the two-point check does not.
+  - Proposal, not applied: kink flag = |s₊ − s₋| > max(1e-4·|slope|, 2·noise) on the three-point slopes; concavity check on the two-point differences; the central slope stays the estimate.
+- 39. **Toy failures at s = 1.** The gap clause fails at 334 of 8000 toy stencil points at s = 1, against 4–5 at s ≥ 1e2. This matches item 3: at s = 1 Clarabel's absolute gap floor, not its accuracy, governs. If K29c's family runs at s = 1, about 4% of points are counted as failed.
+- 40. **Runners at GATE DESIGN.** The production runs start only when integer.yaml and numerics.yaml stop saying "proposed".
+  - I2 also needs its constraint as {key, b}.
+  - I1/I2 compute both baseline kinds and the central perspective slope unless the config sets baseline_kinds and perspective_slope_method.
+  - Tell me if you want the guard keyed to a different field.
