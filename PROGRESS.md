@@ -1107,3 +1107,97 @@ w_c = −(2λ)⁻¹Σ⁻¹a_c, and expected alpha splits as α'w* = α'w_α + Σ
   - I2 also needs its constraint as {key, b}.
   - I1/I2 compute both baseline kinds and the central perspective slope unless the config sets baseline_kinds and perspective_slope_method.
   - Tell me if you want the guard keyed to a different field.
+
+## 2026-10-20 — S2e (Claude Code, Opus 5.5): Decision 25, rescaled perspective on K8, combined V > B flag; stopped before GATE DESIGN
+- **Scope kept:** pilot status only.
+  - No I1, I2, N1 or N2 run of any kind, production or smoke. No `make` runner target and no RUN_LOG row.
+  - DESIGN, CHECKS, proposal/, integer.yaml and numerics.yaml are unchanged.
+  - No kept-core file changed (rule 14 not triggered). relaxation.py (S1), integer.py (S1), s3.py, run_i1.py and run_i2.py (S2d) are all v2 files.
+
+### 1. Decision 25 (GATE C): a failed perspective relaxation keeps Clarabel's raw duals, marked unusable
+- **Code:**
+  - src/opt/relaxation.py: ClarabelRelaxation.duals holds Clarabel's raw duals on every outcome (ok, status, residual or gap failure), mapped back as on success. Rows CVXPY returned no dual for are left out, so a status failure without duals gives {}.
+  - src/opt/integer.py: every relaxation record (big-M and perspective) carries raw_duals (dU*/db per key, original units) and raw_duals_usable.
+    - On a failed perspective relaxation, raw_duals holds Clarabel's duals and raw_duals_usable is False.
+    - shadow and raw_shadow stay empty, so no estimator reads the failed duals.
+  - experiments/s3.py persp_raw_columns, used by run_i1 and run_i2:
+    - mu_persp_raw still reads shadow (usable duals only; nan on failure);
+    - a failed relaxation's kept dual goes to a new column, mu_persp_raw_unusable;
+    - persp_raw_usable and persp_raw_status are recorded (persp_raw_status is new in I2).
+  - The perspective estimator (slopes.py) reads relaxation values only, as before.
+- **Spec change in tests/test_relaxation.py::test_relaxation_failure_rule** (Decision 25):
+  - Old docstring clause: "a failure keeps its status and residuals, carries no value or duals, and is never raised."
+  - New: "a failure keeps its status and residuals, carries no value and no usable duals (shadow, which the estimators read, is empty), keeps Clarabel's raw duals marked unusable (raw_duals, raw_duals_usable False; Decision 25, GATE C), and is never raised."
+  - Old assertion:
+    ```
+    if ok:
+        assert np.isfinite(rec["U"]) and rec["shadow"]
+    else:
+        assert np.isnan(rec["U"]) and rec["shadow"] == {} and "residual" in rec["status"]
+    ```
+  - New assertion (clean = the same relaxation solved without the patch, before it):
+    ```
+    assert rec["raw_duals_usable"] is ok
+    assert set(rec["raw_duals"]) == set(clean["shadow"])
+    for k, mu in clean["shadow"].items():
+        assert rec["raw_duals"][k] == pytest.approx(mu, rel=1e-12, abs=1e-300), k
+    if ok:
+        assert np.isfinite(rec["U"]) and rec["shadow"] and rec["raw_duals"] == rec["shadow"]
+    else:
+        assert np.isnan(rec["U"]) and rec["shadow"] == {} and rec["raw_shadow"] == {}
+        assert "residual" in rec["status"]
+    ```
+  - Every old clause is kept (no value, empty shadow, "residual" in the status). What changes is that a failure now must keep the raw duals, equal to the unpatched solve's duals and marked unusable.
+  - test_gap_clause and test_r082_failed_by_gap_clause still say "no value or duals" in their docstrings. Their assertions (empty shadow) still hold, and I left them unchanged.
+- **New tests:**
+  - test_relaxation.py (4):
+    - the real gap failure R082 keeps its raw duals (gross and cardinality), unusable and out of shadow;
+    - a successful solve's record duals equal its result's;
+    - a status failure without duals records {};
+    - the big-M records carry the same two fields.
+  - test_s3_runners.py (2): persp_raw_columns. The I1/I2 record tests now also require the new columns.
+- **Logs:** RED logs/test_s2e_d25_red_20261020T201522Z.log (12 failing on the missing names); GREEN logs/test_s2e_d25_green_20261020T201706Z.log (99 passed).
+  - logs/test_s2e_d25_pregreen_* is the first green attempt. Two of my own new tests were wrong there, and I fixed them before GREEN:
+    - R082's key set omitted the toy's cardinality row;
+    - CVXPY's SOC constraint rejects save_dual_value(None), so the harness now clears the dual variables directly.
+
+### 2. Rescaled perspective on the K8 instances (Decision 27(a), the N1/N2 arm): PASS; the formulation is unchanged
+- New test tests/test_integer_s2b.py::test_rescaled_perspective_agrees_with_bigm_on_k8_instances. At both K8 dates, at MIPGap 0, it checks:
+  - the rescaled perspective's z⁺ and z⁻ equal big-M's exactly;
+  - |ΔV| ≤ 1e-9·|V|;
+  - V's weights pass pmi_violations at 1e-9, and the solve's own polished_violations is "{}".
+- S2b's existing K8 test compared rescaled big-M with unscaled big-M; this one is new.
+- **No RED step:** the formulation exists since S2b and no code changed, so the test passed on its first run. Logs: logs/test_s2e_rescaled_20261020T201823Z.log; logs/test_s2e_rescaled_nocollect_* is an earlier invocation that collected nothing (a hook blocked the edit).
+- **Margins** (logs/s2e_item2_margins_20261020T201838Z.log; test evidence, not a reported result):
+
+| Date | K | c | z equal | \|ΔV\|/\|V\| | checker at 1e-9 |
+|---|---|---|---|---|---|
+| 2017-12 | 9 | 0.06 | yes | 0.0 | {} |
+| 2020-03 | 10 | 0.06 | yes | 0.0 | {} |
+
+  - ΔV is exactly 0 because equal z gives the same fixed-integer polish QP.
+
+### 3. Combined certification: DESIGN §6's second flag applied across formulations
+- **Code:**
+  - src/opt/integer.py polished_exceeds_bound(V, B) = V > B + 1e-6·|V|. It returns False if V or B is undefined, and incumbent_flags now uses it for its second flag (same rule).
+  - combine_certification returns flag_V_exceeds_B on the combined V and B, and CombinedResult carries it.
+  - run_i1 (i1_points) and run_i2 (i2_points) record flag_V_exceeds_B on every point. Under single certification it is the same rule on that formulation's V and B.
+  - Each summary.json gains "points": {n_points, n_flag_V_exceeds_B, n_V_undefined} (s3.point_flag_summary).
+- **Tests:**
+  - test_integer_s2b.py (2), a constructed case. Neither formulation flags on its own: big-M has V = 1, B = 1 + 0.5e-6; the perspective has V = 1 + 2e-6, B = 1 + 3e-6. The combined V (perspective) exceeds the combined B (big-M) by 1.5e-6: flagged.
+    - 0.5e-6·|V| is not flagged; just inside and just outside the slack are tested, and a negative V;
+    - an undefined V or B is never flagged;
+    - incumbent_flags agrees with the new rule;
+    - solve_combined carries the flag on a real toy solve (not flagged).
+  - test_s3_runners.py (1, plus the record tests): the count helper on a constructed frame, and the I1/I2 point column checked against the rule.
+- **Logs:** RED logs/test_s2e_flag_red_20261020T201938Z.log (5 failing on the missing names); GREEN logs/test_s2e_flag_green_20261020T202059Z.log (66 passed).
+  - logs/test_s2e_flag_pregreen_* is the first attempt: my test compared (V − B)/|V| with 1.5e-6, but it is 1.5e-6/1.000002. The assertion now compares V − B with 1.5e-6.
+- **Surprising, for GATE DESIGN:** neither formulation's own flag can catch this case. In the S2b P6 run every V and B came from big-M, so this flag would equal big-M's own there. It matters once the perspective supplies V.
+
+### Suite and commits
+- `make test`: 369 passed, 1 skipped, 2 xfailed (logs/test_s2e_full_20261020T202117Z.log). S2d closed at 358 passed; the 11 new tests are 6 (item 1), 2 (item 2) and 3 (item 3).
+- a94ede9: code and tests. The commit containing this entry: PROGRESS only. Not pushed.
+
+### Decisions needed (in addition to 31, 33–40)
+- 41. **Decision 25's DESIGN wording (yours).** §6 already says "Raw Clarabel duals and statuses are recorded for every solve as diagnostics (A9)". The code now does that for failed solves too, with a usable flag, and keeps them out of every estimator. Tell me if the report should also count the I1/I2 points whose relaxation failed but kept duals (mu_persp_raw_unusable defined).
+- 42. **The combined flag in the report.** n_flag_V_exceeds_B is now in each I1/I2 summary.json. CHECKS has no item that reads it yet; say if K-something should.
