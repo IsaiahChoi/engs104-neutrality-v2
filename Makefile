@@ -4,7 +4,8 @@
 SHELL := /bin/bash
 PY := uv run python
 MODE ?= draft
-RUNNERS := core pilot pilot_s2b c1 c2 c3 i1 i2 n1 n2
+RUNNERS := core pilot pilot_s2b pilot_s2d c1 c2 c3 i1 i2 n1 n2
+RUNARGS ?=
 
 .PHONY: help setup check-license test data-verify risk-verify $(RUNNERS) figures proposal report spec-check
 
@@ -29,10 +30,11 @@ data-verify:
 risk-verify:
 	uv run pytest -q tests/test_risk.py -k "built_model_every_date or built_model_reestimates_identically"
 
-# Experiments: tests first, then the runner; one timestamped log per run.
+# Experiments: tests first, then the runner; one timestamped log per run. RUNARGS passes runner
+# arguments, e.g. make i1 RUNARGS="--config experiments/configs/smoke_i1.yaml" (S2d smoke runs).
 $(RUNNERS): test
 	mkdir -p logs
-	set -o pipefail; $(PY) -m experiments.run_$@ 2>&1 | tee logs/$@_$$(date -u +%Y%m%dT%H%M%SZ).log   # (S1/S2)
+	set -o pipefail; $(PY) -m experiments.run_$@ $(RUNARGS) 2>&1 | tee logs/$@_$$(date -u +%Y%m%dT%H%M%SZ).log   # (S1/S2)
 
 figures:
 	$(PY) -m src.figures.make_all                               # (S1) also writes report/numbers.tex

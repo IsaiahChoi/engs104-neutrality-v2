@@ -1,0 +1,32 @@
+# S2d pilot (gate-independent hardening before GATE DESIGN): `make pilot_s2d` →
+# results/pilot_s2d/run_<UTC>/ (RUN_LOG "pilot"). Diagnostics only: no I1, I2, N1 or N2 result.
+# Plain decimals with a dot (PyYAML reads 1e-6 as text).
+mandate_config: experiments/configs/base_mandate.yaml
+s2b_run: results/pilot_s2b/run_20261020T024318Z   # stored P4 data (item 1); hashes checked against its outputs.json
+s_obj: 10000.0                                     # the chosen s_obj (S2 pilot P1); checked against the S2b run's config
+W_star: 340.0
+workers: 4                                         # DESIGN §6: up to 4 workers
+
+rootgap:                                           # item 1: the P4 instances and arms of the S2b run
+  probes:                                          # root-only Gurobi solves (NodeLimit 1), WorkLimit W*
+    - {probe: bigm, formulation: bigm, rescale: false, params: {}}
+    - {probe: perspective, formulation: perspective, rescale: false, params: {}}
+    - {probe: perspective_feastol1e-9, formulation: perspective, rescale: false, params: {FeasibilityTol: 1.0e-9}}
+    - {probe: perspective_miqcp0, formulation: perspective, rescale: false, params: {MIQCPMethod: 0}}
+    - {probe: perspective_miqcp1, formulation: perspective, rescale: false, params: {MIQCPMethod: 1}}
+    - {probe: perspective_feastol1e-9_miqcp0, formulation: perspective, rescale: false, params: {FeasibilityTol: 1.0e-9, MIQCPMethod: 0}}
+    - {probe: perspective_rescaled, formulation: perspective, rescale: true, params: {}}
+  mip_gap: 1.0e-4                                  # the S2b P4 settings
+
+k29c:                                              # item 2: the three-point method (an option), measured
+  scales: [1.0, 100.0, 10000.0]
+  rel_delta: 0.001                                 # δ_r = 1e-3·b
+  toys: {seed: 20261019, n: 200, grid: 41}         # the K9 random family (core.yaml), grid on (0, 1.25·u]
+  k8: {months: ["2017-12", "2020-03"], N: 30, f: 0.5,
+       keys: [dollar, beta, gross, style, sector, "style:SMB", "style:HML", "style:RMW", "style:CMA", "style:Mom"]}
+
+clarabel_scale:                                    # item 3: status vs scale on the nine I1 (date, f) instances
+  dates: ["2009-03", "2017-12", "2020-03"]
+  f: [0.25, 0.5, 0.75]
+  N: 250
+  scales: [1.0, 100.0, 10000.0, 1000000.0]
