@@ -1,0 +1,13 @@
+# S3b item 8 (optional; Isaiah's GATE I note, Decision 47): exploratory, no prediction; an A9
+# diagnostic of the N2(b) normalization null result. `make n2_probe` → results/n2_probe/run_<UTC>/.
+# Dates, N and the Gurobi-barrier settings are numerics.yaml's / run_n2's (unchanged).
+runner: n2_probe
+status: "S3b item 8, optional exploratory diagnostic (GATE I, Decision 47)"
+source_config: numerics
+n2_run: results/n2/run_20261021T002729Z     # the current N2 run (reference A* per date)
+scaled: [false, true]                       # N2(b)'s two objective scalings
+settings:                                   # Gurobi parameters on top of run_n2.DEFAULT_TOLS["GUROBI_BARRIER"]
+  default: {}
+  presolve0: {Presolve: 0}
+  scaleflag0: {ScaleFlag: 0}
+workers: 4
