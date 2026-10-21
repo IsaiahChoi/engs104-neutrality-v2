@@ -1,0 +1,17 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________________ test_leg_task_ids_are_unique_across_sources __________________
+
+    def test_leg_task_ids_are_unique_across_sources():
+        """The s3b run of 2026-10-21 (results/s3b/run_20261021T024025Z) failed writing chunks: the I1
+        base-bound relaxation id "<instance>_base" equals N1's relax id for the shared N = 250
+        instances. I1 ids carry the prefix "i1:"; duplicate ids raise before any solve."""
+        n1_id = "2017-12_N250_f0.25_K33_base"
+>       assert R.i1_leg_id("2017-12_N250_f0.25_K33") != n1_id
+               ^^^^^^^^^^^
+E       AttributeError: module 'experiments.run_s3b' has no attribute 'i1_leg_id'
+
+tests/test_s3b.py:148: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_s3b.py::test_leg_task_ids_are_unique_across_sources - Attri...
+1 failed, 8 deselected in 1.46s

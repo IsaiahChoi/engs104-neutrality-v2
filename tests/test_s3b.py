@@ -138,3 +138,15 @@ def test_legs_task_n1_matches_plain_relaxation():
     assert legs["value"] == ref["perspective"] and bool(legs["ok"]) == bool(ref["perspective_ok"])
     assert len(names) == inst.N and {"wp", "wm", "zp", "zm", "d"} <= set(names.columns)
     assert (names["wp"] >= -1e-9).all() and (names["zp"] <= 1 + 1e-9).all()
+
+
+def test_leg_task_ids_are_unique_across_sources():
+    """The s3b run of 2026-10-21 (results/s3b/run_20261021T024025Z) failed writing chunks: the I1
+    base-bound relaxation id "<instance>_base" equals N1's relax id for the shared N = 250
+    instances. I1 ids carry the prefix "i1-"; duplicate ids raise before any solve."""
+    n1_id = "2017-12_N250_f0.25_K33_base"
+    assert R.i1_leg_id("2017-12_N250_f0.25_K33") != n1_id
+    assert R.i1_leg_id("2017-12_N250_f0.25_K33").startswith("i1-")
+    R.check_unique_ids([{"id": "a"}, {"id": "b"}])
+    with pytest.raises(ValueError, match="duplicate"):
+        R.check_unique_ids([{"id": "a"}, {"id": "a"}])

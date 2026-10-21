@@ -52,6 +52,19 @@ def load_run(rel: str) -> dict[str, pd.DataFrame]:
     return {f[:-8]: pd.read_parquet(run / f) for f in hashes if f.endswith(".parquet")}
 
 
+def i1_leg_id(instance: str) -> str:
+    """The I1 base-bound relaxation's id; the prefix keeps it apart from N1's relax ids, which
+    coincide for the shared N = 250 instances."""
+    return f"i1-{instance}_base"
+
+
+def check_unique_ids(tasks: list[dict]) -> None:
+    ids = pd.Series([t["id"] for t in tasks])
+    dup = sorted(ids[ids.duplicated()].unique())
+    if dup:
+        raise ValueError(f"duplicate task ids: {dup}")
+
+
 def support_task(t: dict) -> dict[str, pd.DataFrame]:
     """Item 3 at one I1 case (module docstring). t: run_i1.make_task's task plus the case's
     stored "weights" (point, i, w) and "points" (point, bound, V, mu_fixed)."""
@@ -152,13 +165,15 @@ def main(argv=None) -> int:
         base = est[(est["key"] == "sector") & (est["rel_delta"] == float(icfg["i1"]["rel_delta"]))]
         for _, e in base.sort_values("instance").iterrows():      # sector@0.02 = the base mandate
             x = inst(e["date"], icfg["i1"]["N"], float(e["f"]), icfg, icfg["i1"].get("K"))
-            legs.append({"id": f"{e['instance']}_base", "source": "i1", "date": e["date"], "N": e["N"],
+            legs.append({"id": i1_leg_id(e["instance"]), "source": "i1", "date": e["date"], "N": e["N"],
                          "f": float(e["f"]), "K": int(e["K"]), "tightness": "base",
                          "kwargs": x.kwargs, "s_obj": float(icfg["s_obj"]), "v_ref": float(e["V"]),
                          "ref_value": float(e["persp_V"])})
         n_leg = exp["n1_relaxations"] + exp["i1_relaxations"]
         if len(legs) != n_leg:
             raise ValueError(f"{len(legs)} relaxations, expected {n_leg}")
+        check_unique_ids(sup)
+        check_unique_ids(legs)
         w = s3.workers(cfg)
         out = pool_chunks(run, SUPPORT_FRAMES, sup, lambda t: t["id"], support_task, w)
         out.update(pool_chunks(run, LEG_FRAMES, legs, lambda t: t["id"], legs_task, w))
