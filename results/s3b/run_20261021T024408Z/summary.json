@@ -1,0 +1,11 @@
+{
+ "support_rows": 144,
+ "support_cases": 48,
+ "max_V_rel_diff": 0.0,
+ "max_w_abs_diff": 0.0,
+ "support_mismatch": 0,
+ "relaxations": 45,
+ "relaxations_failed": 0,
+ "max_abs_value_minus_ref": 0.0,
+ "n_hedged_total": 11
+}
