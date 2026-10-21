@@ -1,0 +1,27 @@
+{
+ "n_items": 10,
+ "solves": 60,
+ "failed": 0,
+ "identical_A_by_setting": {
+  "default": 10,
+  "presolve0": 0,
+  "scaleflag0": 10
+ },
+ "max_dA_rel_by_setting": {
+  "default": 0.0,
+  "presolve0": 1.6235336251660663e-05,
+  "scaleflag0": 0.0
+ },
+ "lp_changed_lines": {
+  "2008-10/scaled0": 1,
+  "2008-10/scaled1": 1,
+  "2013-06/scaled0": 1,
+  "2013-06/scaled1": 1,
+  "2017-12/scaled0": 1,
+  "2017-12/scaled1": 1,
+  "2020-03/scaled0": 1,
+  "2020-03/scaled1": 1,
+  "2025-04/scaled0": 1,
+  "2025-04/scaled1": 1
+ }
+}
