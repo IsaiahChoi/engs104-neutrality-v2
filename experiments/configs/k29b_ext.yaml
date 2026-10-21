@@ -1,0 +1,12 @@
+# S3b item 2 (Isaiah's GATE I note, Decision 45): K29b extended, as a diagnostic, to every I1 case
+# K29b did not cover. `make k29b_ext` → results/k29b_ext/run_<UTC>/. CHECK INT stands as passed;
+# CHECKS is unchanged. Instances, s_obj, mandate, constraints, δ and δ_r are read from integer.yaml
+# (unchanged); this file holds only the extension's own settings.
+# Plain decimals with a dot (PyYAML reads 1e-6 as text).
+runner: k29b_ext
+status: "S3b item 2 diagnostic (GATE I, Decision 45)"
+source_config: integer             # experiments/configs/integer.yaml, read only
+scale_factor: 10.0                 # K29b's second scale: 10·s_obj
+n_cases_expected: 36               # 6 instances at 2017-12 and 2020-03 at δ = 10% (24) + 12 at 2017-12, δ = 5%
+criterion: "|s(10 s_obj) - s(s_obj)| <= 1e-5 |s| + 2N, N at s_obj (CHECKS K29b's rule)"
+workers: 4

@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 PY := uv run python
 MODE ?= draft
-RUNNERS := core pilot pilot_s2b pilot_s2d c1 c2 c3 c1_ratio k29c i1 i2 n1 n2
+RUNNERS := core pilot pilot_s2b pilot_s2d c1 c2 c3 c1_ratio k29c i1 i2 n1 n2 k29b_ext s3b
 RUNARGS ?=
 
 .PHONY: help setup check-license test data-verify risk-verify $(RUNNERS) figures proposal report spec-check
