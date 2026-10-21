@@ -1,0 +1,18 @@
+{
+ "n_dates": 240,
+ "n_skipped": 1,
+ "skipped": [
+  {
+   "date": "2005-12-30",
+   "reason": "need 252 trading days before 2005-12-30"
+  }
+ ],
+ "first": "2006-01-31",
+ "last": "2025-12-31",
+ "max_abs_z": 5.470126723328254,
+ "max_abs_z_date": "2024-04-30",
+ "n_dates_above": 240,
+ "n_names_above": 1936,
+ "n_names": 107592,
+ "clip": 3.0
+}

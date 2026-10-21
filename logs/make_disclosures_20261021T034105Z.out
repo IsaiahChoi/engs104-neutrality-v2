@@ -1,0 +1,40 @@
+uv run pytest -q
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 43%]
+........................................................................ [ 58%]
+..........................xx...s........................................ [ 73%]
+........................................................................ [ 87%]
+............................................................             [100%]
+=============================== warnings summary ===============================
+tests/test_s3b_hardening.py::test_i2_filters_raise_on_zero_rows
+  /Users/isaiahchoi/Desktop/engs_104_final_project/engs104-neutrality-v2/tools/s3_analysis.py:168: RuntimeWarning: divide by zero encountered in scalar divide
+    "secant": (g.loc[i + 1, "value"] - g.loc[i - 1, "value"]) / (h1 + h2)})
+
+tests/test_s3b_tool.py::test_item3_classes_predictions_and_spearman
+tests/test_s3b_tool.py::test_item3_p1_miss_is_reported_not_raised
+  /Users/isaiahchoi/Desktop/engs_104_final_project/engs104-neutrality-v2/src/analysis/s3b.py:104: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+    return float(spearmanr(np.asarray(x, float), np.asarray(y, float)).statistic)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+489 passed, 1 skipped, 2 xfailed, 3 warnings in 92.09s (0:01:32)
+mkdir -p logs
+set -o pipefail; uv run python -m experiments.run_disclosures  2>&1 | tee logs/disclosures_$(date -u +%Y%m%dT%H%M%SZ).log   # (S1/S2)
+{
+ "n_dates": 240,
+ "n_skipped": 1,
+ "skipped": [
+  {
+   "date": "2005-12-30",
+   "reason": "need 252 trading days before 2005-12-30"
+  }
+ ],
+ "first": "2006-01-31",
+ "last": "2025-12-31",
+ "max_abs_z": 5.470126723328254,
+ "max_abs_z_date": "2024-04-30",
+ "n_dates_above": 240,
+ "n_names_above": 1936,
+ "n_names": 107592,
+ "clip": 3.0
+}
