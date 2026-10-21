@@ -70,6 +70,26 @@ def test_item4_grid_counts():
     assert len(tri) == 3
 
 
+def test_item4_raises_when_a_point_has_no_weights():
+    """S4 step 0b: a grid point with no stored weights must raise, not give an empty support."""
+    pts = pd.DataFrame({"instance": "x", "id": ["p0", "p1", "p2"], "bound": [0.0, 0.01, 0.02],
+                        "V": [0.0, 0.1, 0.2], "B": [0.0, 0.1, 0.2]})
+    w = pd.DataFrame([{"id": "p0", "i": 0, "w": 0.01}, {"id": "p2", "i": 0, "w": 0.01}])
+    with pytest.raises(ValueError, match="p1"):
+        T.item4(pts, w)
+
+
+def test_item5_raises_when_a_relaxation_has_no_names():
+    """S4 step 0b: a relaxation with no stored names must raise, not count zero hedged names."""
+    legs = pd.DataFrame({"id": ["r", "s"], "source": ["n1", "n1"], "ell": [2.5e-3] * 2,
+                         "lam_star": [10.0] * 2, "borrow_monthly": [2.5e-4] * 2, "trade_cost": [5e-4] * 2,
+                         "ok": [True] * 2, "value_minus_ref": [0.0] * 2, "n_hedged": [1, 0]})
+    names = pd.DataFrame({"id": "r", "i": [0, 1], "wp": [1e-3, 0.0], "wm": [5e-4, 1e-3],
+                          "zp": [0.4, 0.0], "zm": [0.2, 0.4], "d": [0.01, 0.02]})
+    with pytest.raises(ValueError, match="s"):
+        T.item5(legs, names)
+
+
 def test_item5_hedged_counts():
     legs = pd.DataFrame({"id": ["r"], "source": ["n1"], "ell": [2.5e-3], "lam_star": [10.0],
                          "borrow_monthly": [2.5e-4], "trade_cost": [5e-4], "ok": [True],

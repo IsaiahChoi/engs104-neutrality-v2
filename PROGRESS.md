@@ -1833,3 +1833,6 @@ Then RUNBOOK's steps 1–5, under these rules:
 9. **spec_check.** Run it on the report in draft mode. proposal/proposal.tex is still the scaffold, so run its check in draft mode too, report the result, and don't count it as a failure.
 10. **Protected files.** Never edit proposal/proposal.tex, docs/CHECKS.md, experiments/configs/integer.yaml or experiments/configs/numerics.yaml.
 11. **Stop** at GATE R with RUNBOOK's list.
+
+## 2026-10-21 — S4 (Claude Code, Opus 5.5): step 0 of the S4 addendum done
+- Step 0, tests first (RED logs/test_s4_step0_red_20261021T033207Z.log: 11 failed; GREEN logs/test_s4_step0_green_20261021T033317Z.log). 0a: tools/make_facts.py gains Decision 49's P7 counting clause and "integer.yaml (approved at GATE DESIGN)", measured-effort lines for I1, I2, N1, N2, K29c, k29b_ext, s3b and n2_probe (from RUN_LOG and the run tables), and a software line from the newest full-suite log (logs/test_full_20261021T033550Z.log: 486 passed, 1 skipped, 2 xfailed). proposal/FACTS.md regenerated (150 lines; 134 (file, sha256) pairs, 44 files, 0 mismatches). 0b: tools/s3b_analysis.py items 4 and 5 raise on a missing id; s3b_analysis.json regenerated, equal to the committed file leaf by leaf (296 leaves, 0 changed, added or removed; CSVs byte-identical).

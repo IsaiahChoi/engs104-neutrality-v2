@@ -116,7 +116,16 @@ def item3(sup: pd.DataFrame, i1est: pd.DataFrame) -> tuple[dict, pd.DataFrame]:
     return rec, c
 
 
+def _require_ids(ids, present, what: str) -> None:
+    """Raise if any id has no stored rows (a missing id must not read as an empty support or
+    zero hedged names; S4 step 0b)."""
+    missing = sorted(set(ids) - set(present))
+    if missing:
+        raise ValueError(f"{what}: no stored rows for {len(missing)} id(s): {missing[:10]}")
+
+
 def item4(pts: pd.DataFrame, wts: pd.DataFrame) -> tuple[dict, pd.DataFrame]:
+    _require_ids(pts["id"], wts["id"], "item 4 weights")
     out, rows = {}, []
     for inst, g in pts.sort_values("bound").groupby("instance", sort=True):
         Be = A.b_eff(g["B"], g["V"])
@@ -134,6 +143,7 @@ def item4(pts: pd.DataFrame, wts: pd.DataFrame) -> tuple[dict, pd.DataFrame]:
 
 
 def item5(legs: pd.DataFrame, names: pd.DataFrame) -> tuple[dict, pd.DataFrame]:
+    _require_ids(legs["id"], names["id"], "item 5 names")
     hs = []
     for _, r in legs.sort_values("id").iterrows():
         n = names[names["id"] == r["id"]].sort_values("i")

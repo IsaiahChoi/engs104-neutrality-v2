@@ -267,8 +267,17 @@ def s2b_p6_facts(F: Facts, s2b: Path) -> None:
           "This is not the I1 set: the final I1 set is decided at GATE DESIGN (Decision 31)", s)
 
 
+def p7_i1_clause(projected_points: int, projected_solves: int, run_points: int, run_solves: int) -> str:
+    """Decision 49: P7 keeps its arithmetic; this clause says how it counted I1 against the run."""
+    return (f"P7 counted one shared b point per instance for I1 ({projected_points} points, "
+            f"{projected_solves} solves), while the I1 runner re-solved each case's own b "
+            f"({run_points} points, {run_solves} solves); P7 is a planning projection made before S3, "
+            "not a result (Decision 49)")
+
+
 def p7_fact(F: Facts, s2_summary: Path, s2b: Path) -> None:
-    """P7 projection (Decision 32): S2's measured Work/s and W* (P5), S2b's Work per solve."""
+    """P7 projection (Decision 32): S2's measured Work/s and W* (P5), S2b's Work per solve; with
+    Decision 49's counting clause against the I1 run's summary."""
     P5 = json.loads(s2_summary.read_text())["P5"]
     meta, p6s, p4s = s2b / "run_meta.json", s2b / "p6_solves.parquet", s2b / "p4_solves.parquet"
     icfg, ncfg = CONFIGS / "integer.yaml", CONFIGS / "numerics.yaml"
@@ -284,6 +293,12 @@ def p7_fact(F: Facts, s2_summary: Path, s2b: Path) -> None:
     t = p7_projection(rate, P5["W_star"], workers, pd.read_parquet(p6s)["work"],
                       pd.read_parquet(p4s)["work"], ic, nc).set_index("experiment")
     names = {"I1": "I1", "I2": "I2", "N1": "N1", "N2a": "N2(a)"}
+    srcs, clause, i1 = [s2_summary, p6s, p4s, icfg, ncfg], "", _latest("i1")
+    if i1 is not None:
+        S1 = json.loads((i1 / "summary.json").read_text())
+        clause = ". " + p7_i1_clause(int(t.loc["I1", "n_points"]), int(t.loc["I1", "n_miqp_solves"]),
+                                     S1["points"]["n_points"], S1["solves"]["n"])
+        srcs.append(i1 / "summary.json")
     F.add(f"P7 projection (arithmetic, no solves; replaces S2's P7): at {workers} workers and "
           f"{g(rate)} Work/s (S2 P5 median), expected / WorkLimit worst case, hours: " + "; ".join(
               f"{names[e]} {int(r.n_miqp_solves)} solves ({int(r.n_points)} {per[e]}; WorkLimit "
@@ -294,8 +309,8 @@ def p7_fact(F: Facts, s2_summary: Path, s2b: Path) -> None:
           f"{g(t.loc['I1', 'work_per_solve_expected'])} for I1/I2, of S2b's P4 solves (three arms, "
           f"MIPGap {cfg['p4']['mip_gap']:g}, N = {cfg['p4']['N']}) "
           f"{g(t.loc['N1', 'work_per_solve_expected'])} for N1/N2(a); N1's "
-          f"other N use the N = {cfg['p4']['N']} Work; I1 counts the constraints in the proposed "
-          "integer.yaml", s2_summary, p6s, p4s, icfg, ncfg)
+          f"other N use the N = {cfg['p4']['N']} Work; I1 counts the constraints in integer.yaml "
+          "(approved at GATE DESIGN)" + clause, *srcs)
 
 
 def c1_facts(F: Facts, c1: Path) -> None:
@@ -373,10 +388,32 @@ def software_facts(F: Facts, run: Path) -> None:
     p = json.loads(meta.read_text())["provenance"]
     F.add(f"Python {p['python']}; gurobipy {p['gurobipy']}; Clarabel {p['clarabel']}; CVXPY "
           f"{p['cvxpy']}; NumPy {p['numpy']}; SciPy {p['scipy']}; pandas {p['pandas']}", meta)
-    logs = sorted((ROOT / "logs").glob("make_c*.log"), key=lambda f: f.stat().st_mtime)
-    m = re.search(r"(\d+) passed(?:, (\d+) xfailed)?", logs[-1].read_text())
-    F.add(f"Test suite before the newest C run: {m[1]} passed, {m[2] or 0} strict expected "
-          "failures", logs[-1])
+    f, c = full_suite_log(ROOT / "logs")
+    F.add(f"Full test suite (newest full-suite log): {c.get('passed', 0)} passed, "
+          f"{c.get('skipped', 0)} skipped, {c.get('xfailed', 0)} expected failures (xfail), "
+          f"{c.get('failed', 0)} failed", f)
+
+
+FULL_SUITE_GLOBS = ("test_full_*.log", "make_*.out", "make_*.log")
+_PYTEST_COUNT = re.compile(r"(\d+) (passed|failed|skipped|xfailed|xpassed|errors?)\b")
+
+
+def full_suite_log(logs: Path) -> tuple[Path, dict]:
+    """The newest full-suite pytest log by the UTC stamp in its name, among `make <target>` logs
+    (make runs the whole suite before a runner) and `test_full_*` logs; logs without a pytest
+    summary line (e.g. `make figures`) are not candidates. Returns (file, counts)."""
+    found = []
+    for pat in FULL_SUITE_GLOBS:
+        for f in Path(logs).glob(pat):
+            m = re.search(r"_(\d{8}T\d{6}Z)\.", f.name)
+            lines = [ln for ln in f.read_text(errors="replace").splitlines()
+                     if re.search(r"\d+ passed", ln) and re.search(r" in [\d.]+s", ln)]
+            if m and lines:
+                found.append((m[1], f, lines[-1]))
+    if not found:
+        raise ValueError(f"no full-suite pytest log with a summary line in {logs}")
+    _, f, line = max(found, key=lambda x: (x[0], x[1].name))
+    return f, {k if k != "error" else "errors": int(n) for n, k in _PYTEST_COUNT.findall(line)}
 
 
 def refs(F: Facts) -> None:
@@ -556,6 +593,85 @@ def s3b_texts(js: dict) -> list[tuple[str, str]]:
     return out
 
 
+EFFORT_RUNS = [  # (runner, label, [(table, status column or None, what, has Gurobi Work)])
+    ("i1", "I1", [("i1_solves", "status", "MIQP solves", True),
+                  ("i1_slope_points", "clarabel_status", "Clarabel perspective relaxations", False)]),
+    ("i2", "I2", [("i2_solves", "status", "MIQP solves", True),
+                  ("i2_slope_points", "clarabel_status", "Clarabel perspective relaxations", False)]),
+    ("n1", "N1", [("n1_solves", "status", "MIQP solves", True),
+                  ("n1_relax", "perspective_clarabel_status", "Clarabel perspective relaxations", False)]),
+    ("n2", "N2", [("n2_miqp", "status", "MIQP solves", True),
+                  ("n2_convex", "status", "convex QCQP solves", False)]),
+    ("k29c", "K29c", [("k29c_toy_points", "clarabel_status", "Clarabel toy relaxations", False),
+                      ("k29c_k8_points", "clarabel_status", "Clarabel K8 relaxations", False)]),
+    ("k29b_ext", "k29b_ext", [("k29b_ext_points", "clarabel_status", "Clarabel perspective relaxations", False)]),
+    ("s3b", "s3b", [("s3b_support", None, "fixed-integer QP re-solves (dual simplex; status not stored)", False),
+                    ("s3b_legs", "status", "Clarabel perspective relaxations", False)]),
+    ("n2_probe", "n2_probe", [("n2_probe", "status", "Gurobi barrier QCQP solves", False)]),
+]
+RUN_LOG = ROOT / "results" / "RUN_LOG.csv"
+
+
+def run_log_window(log: pd.DataFrame, output_path: str) -> dict:
+    """Start (the row's timestamp), end (the "ok <UTC>" stamp in its notes), seconds between them
+    and commit, for the one RUN_LOG row with this output_path and status ok; raises otherwise."""
+    r = log[(log["output_path"] == output_path) & (log["status"] == "ok")]
+    if len(r) != 1:
+        raise ValueError(f"RUN_LOG: {len(r)} ok rows for {output_path}")
+    r = r.iloc[0]
+    m = re.search(r"\bok (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)", str(r["notes"]))
+    if m is None:
+        raise ValueError(f"RUN_LOG: no ok end stamp for {output_path}")
+    sec = (pd.Timestamp(m[1]) - pd.Timestamp(r["timestamp"])).total_seconds()
+    return {"start": r["timestamp"], "end": m[1], "seconds": float(sec), "commit": r["git_commit"]}
+
+
+def run_effort(frames: dict, spec: list) -> list[dict]:
+    """Per (table, status column, what, has_work): row count, status counts (sorted by status),
+    DESIGN §6 failures where an `ok` column exists, total and median Gurobi Work where recorded,
+    and the K25 reruns where a `rerun` column exists."""
+    out = []
+    for table, col, what, has_work in spec:
+        df = frames[table]
+        ok = next((c for c in ("ok", "perspective_ok") if c in df), None)
+        out.append({"table": table, "what": what, "n": len(df),
+                    "statuses": (None if col is None else
+                                 {str(k): int(v) for k, v in sorted(df[col].value_counts().items())}),
+                    "failed": int((~df[ok].astype(bool)).sum()) if ok else None,
+                    "reruns": int(df["rerun"].astype(bool).sum()) if "rerun" in df else None,
+                    "work_total": float(df["work"].sum()) if has_work else None,
+                    "work_median": float(df["work"].median()) if has_work else None})
+    return out
+
+
+def _effort_text(e: dict) -> str:
+    t = f"{e['n']} {e['what']}" + (f" including {e['reruns']} K25 reruns" if e["reruns"] else "")
+    if e["statuses"] is not None:
+        t += " (" + ", ".join(f"{k} {v}" for k, v in e["statuses"].items())
+        t += f"; {e['failed']} failed under DESIGN §6)" if e["failed"] is not None else ")"
+    if e["work_total"] is not None:
+        wt = e["work_total"]
+        t += f", Work total {wt:.0f}" if wt >= 100 else f", Work total {g(wt)}"
+        t += f", median {g(e['work_median'])}"
+    return t
+
+
+def effort_facts(F: Facts) -> None:
+    """Decision 49: the measured effort of each current S3 and S3b run; the proposal cites these,
+    not P7. Wall-clock is RUN_LOG's start to its ok stamp (secondary to Work, DESIGN §6)."""
+    F.head("Measured effort of the S3 and S3b runs (Decision 49; cite these, not P7)")
+    log = pd.read_csv(RUN_LOG)
+    for name, label, spec in EFFORT_RUNS:
+        run = latest_done(name)
+        files = {t: run / f"{t}.parquet" for t, *_ in spec}
+        eff = run_effort({t: pd.read_parquet(f) for t, f in files.items()}, spec)
+        w = run_log_window(log, rel(run))
+        F.add(f"Measured effort, {label} (`{rel(run)}`, commit {w['commit'][:7]}): "
+              + "; ".join(_effort_text(e) for e in eff)
+              + f"; wall-clock {g(w['seconds'])} s ({w['start']} to {w['end']}, RUN_LOG)",
+              *files.values(), RUN_LOG)
+
+
 def s3_facts(F: Facts, d: Path = S3_DIR) -> None:
     F.head("S3: I1, I2, N1, N2 (results/s3_analysis)")
     for text, src in s3_texts(load_s3(d)):
@@ -598,6 +714,8 @@ def build(out: Path = OUT) -> list[str]:
         s3_facts(F)
     if (S3B_DIR / "s3b_analysis.json").exists():
         s3b_facts(F)
+    if _latest("i1") is not None:
+        effort_facts(F)
     software_facts(F, c1)
     refs(F)
     Path(out).write_text("\n".join(F.lines) + "\n")

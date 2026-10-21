@@ -1,0 +1,9 @@
+............................                                             [100%]
+=============================== warnings summary ===============================
+tests/test_s3b_tool.py::test_item3_classes_predictions_and_spearman
+tests/test_s3b_tool.py::test_item3_p1_miss_is_reported_not_raised
+  /Users/isaiahchoi/Desktop/engs_104_final_project/engs104-neutrality-v2/src/analysis/s3b.py:104: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+    return float(spearmanr(np.asarray(x, float), np.asarray(y, float)).statistic)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+28 passed, 2 warnings in 2.08s
