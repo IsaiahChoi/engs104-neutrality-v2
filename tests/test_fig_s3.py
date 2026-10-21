@@ -19,3 +19,47 @@ def test_registry_and_final_names():
     assert names[:4] == ["fig1_cost_curves", "fig2_alignment", "fig3_attribution", "fig_c3_summary"]
     assert names[4:] == ["fig4_value_functions", "fig5_formulations", "table2_i1", "table3_n2"]
     assert fig_c.TAG == ""
+
+
+# ----- S4: Figs. 4-5 and Tables II-III to DESIGN §10 as amended at GATE I (tests first) -----
+
+import pandas as pd  # noqa: E402
+import pytest  # noqa: E402
+
+
+def test_grid_secants_mark_the_pairs_beside_a_certified_triple():
+    pts = pd.DataFrame({"instance": "x", "bound": [0.0, 1.0, 2.0, 3.0], "V": [0.0, 1.0, 3.0, 4.0]})
+    tri = pd.DataFrame({"instance": "x", "bound": [1.0, 2.0], "certified": [True, False]})
+    s = fig_s3.grid_secants(pts, tri)
+    assert s["mid"].tolist() == [0.5, 1.5, 2.5]
+    assert s["slope"].tolist() == [1.0, 2.0, 1.0]
+    assert s["beside_certified"].tolist() == [True, True, False]
+
+
+def test_fig5_legend_has_no_entry_for_markers_that_are_not_drawn():
+    labels = fig_s3.fig5_labels(n_censored_plotted=0)
+    assert not any("WorkLimit" in x for x in labels)
+    assert any("solver behaviour" in x for x in labels)
+    assert any("plain relaxation" in x and "big-M" in x for x in labels)
+    assert any("plain relaxation" in x and "perspective" in x for x in labels)
+    assert any("WorkLimit" in x for x in fig_s3.fig5_labels(n_censored_plotted=2))
+
+
+def test_fig5_reference_lines_are_median_plain_gaps_by_tightness():
+    rg = pd.DataFrame({"tightness": ["loose", "loose", "base", "tight", "tight", "tight"],
+                       "bigm_gap": [1.0, 3.0, 2.0, 5.0, 6.0, 7.0],
+                       "perspective_gap": [0.1, 0.3, 0.2, 0.5, 0.6, 0.7]})
+    ref = fig_s3.plain_gap_medians(rg)
+    assert ref["bigm"] == [2.0, 2.0, 6.0] and ref["perspective"] == pytest.approx([0.2, 0.2, 0.6])
+
+
+def test_table2_rows_carry_the_interval_width_and_the_delta10_baseline():
+    rows = fig_s3.table2_lines()
+    head = [r for r in rows if "estimator" in r][0]
+    assert "(H-L)/s" in head.replace(" ", "").replace("$", "").replace("\\", "")
+    assert any(r.startswith("convex baseline") and "& 24 &" in r for r in rows)
+
+
+def test_table3_labels_the_gap_as_beff_based_and_floored():
+    text = fig_s3.table3_n2().read_text()
+    assert "B_{\\mathrm{eff}}" in text and "10^{-6}" in text and "floored" in text

@@ -17,6 +17,7 @@ import yaml
 
 from src.figures.fig_c import FIGURES as C_FIGURES
 from src.figures.fig_s3 import FIGURES as S3_FIGURES
+from src.figures.numbers import result_macros, table1_mandate
 from src.utils import ROOT
 
 NUMBERS = ROOT / "report" / "numbers.tex"
@@ -24,6 +25,7 @@ BASE_MANDATE = "experiments/configs/base_mandate.yaml"
 INSTANCES = "experiments/instances.py"
 FIGURES: list = [*C_FIGURES, *S3_FIGURES]   # (name, function) pairs: Figs. 1-3 and the C3 summary (S2);
                                              # Figs. 4-5 and Tables II-III (S3)
+REPORT_TABLES: list = [("table1_mandate", table1_mandate)]   # Table I, from the configs (S4)
 
 
 def sha256(rel: str) -> str:
@@ -80,7 +82,7 @@ def design_constants() -> list[tuple[str, str, str]]:
 
 
 def write_numbers(path: Path = NUMBERS) -> Path:
-    rows = design_constants()
+    rows = design_constants() + result_macros()        # result macros: src/figures/numbers.py (S4)
     names = [r[0] for r in rows]
     if len(set(names)) != len(names):
         raise ValueError("duplicate macro names")
@@ -95,7 +97,7 @@ def write_numbers(path: Path = NUMBERS) -> Path:
 
 
 def main() -> int:
-    for name, fn in FIGURES:
+    for name, fn in FIGURES + REPORT_TABLES:
         fn()
         print(f"figure {name}", flush=True)
     print(f"wrote {write_numbers().relative_to(ROOT)}")

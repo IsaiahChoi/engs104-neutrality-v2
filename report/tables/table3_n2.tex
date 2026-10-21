@@ -16,7 +16,7 @@ SCS (no, yes) & $2.7\times10^{-6}$ & $2.9\times10^{-5}$ & $1.0\times10^{-4}$ & 5
 SCS (yes, no) & $3.6\times10^{-6}$ & $5.6\times10^{-4}$ & $2.4\times10^{-3}$ & 5/5 \\
 SCS (yes, yes) & $2.6\times10^{-6}$ & $1.5\times10^{-5}$ & $9.1\times10^{-5}$ & 5/5 \\
 \hline
-MIQP arm, $s_{\mathrm{obj}}$ & median $(B_{\mathrm{eff}}-V)/|V|$ & max cone effect & $V$ above other $B_{\mathrm{eff}}$ & $B_{\mathrm{eff}}$ below other $V$ \\
+MIQP arm, $s_{\mathrm{obj}}$ & median $(B_{\mathrm{eff}}-V)/|V|$\textsuperscript{a} & max cone effect & $V$ above other $B_{\mathrm{eff}}$ & $B_{\mathrm{eff}}$ below other $V$ \\
 \hline
 big-M, 1 & $2.0\times10^{-3}$ & -- & 1 & 0 \\
 big-M, 10000 & $9.4\times10^{-5}$ & -- & 0 & 0 \\
@@ -25,4 +25,5 @@ perspective (default scaling), 10000 & $1.2\times10^{-3}$ & $4.8\times10^{-3}$ &
 perspective (rescaled), 1 & $1.0\times10^{-6}$ & $0$ & 0 & 1 \\
 perspective (rescaled), 10000 & $9.0\times10^{-5}$ & $8.2\times10^{-18}$ & 0 & 0 \\
 \hline
+\multicolumn{5}{l}{\textsuperscript{a}$B_{\mathrm{eff}}=\max(B,V)+10^{-6}|V|$-based, so floored at $10^{-6}$.} \\
 \end{tabular}
