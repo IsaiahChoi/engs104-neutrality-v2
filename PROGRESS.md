@@ -1458,3 +1458,58 @@ index 4561d89..e8e5367 100644
   - 64 flagged points (A(b) recomputed, max |Δ| vs stored 0). All 64 are "near 0.1": |F − B|(0.1%)/|F − B|(1%) ranges 0.0899–0.1108, median 0.09999. None is near 1.
   - The 35 active-set-change points ("kink", Decision 34) and the 29 curvature flags are all near 0.1. At this resolution A*(b) is differentiable at every flagged point, as DESIGN §9 A5 (edited) predicts for nondegenerate active-set changes. The K15 flags measure curvature over the 1% stencil, not slope breaks.
   - Source: results/c1_ratio/run_20261021T003435Z/summary.json, c1_ratio.parquet.
+
+## 2026-10-21 — S3 closing entry (Claude Code, Opus 5.5): CHECK INT round 2 PASS; stopped at GATE I
+- **CHECK INT:**
+  - Round 1: FAIL on K29b's recording clause only (results/checks/INT_20261021T000733Z.md).
+  - Round 2: **PASS**, all ten checks K22–K29c (results/checks/INT_20261021T004136Z.md). The checker recomputed everything from the frames and its own solves, and found the reruns bit-identical to the superseded runs.
+  - python-reviewer: no CRITICAL or HIGH findings (results/checks/code_review_S3_20261020T235435Z.md).
+- **Current runs** (all at 120ea56 unless stated): I1 results/i1/run_20261021T001423Z; I2 results/i2/run_20261021T001657Z; N1 results/n1/run_20261021T001914Z; N2 results/n2/run_20261021T002729Z; K29c results/k29c/run_20261020T225805Z (4020dba); optional C1 ratio results/c1_ratio/run_20261021T003435Z (8bd53a3). Every number below is from results/s3_analysis/s3_analysis.json and its CSVs unless a file is named.
+
+### Headlines (n and source)
+- **I1, Q2.** 36 cases at δ = 10% (3 dates × 3 f × 4 constraints), 23 binding (L > 0): sector 9, Mom@0.025 6, dollar 5, style 3. Relative error |μ̂ − s|/|s| over the 23 binding cases (i1_errors_by_f.csv, Table II):
+  - perspective relaxation slope: median 1.3%, IQR 0.7–4.0%, max 82%;
+  - fixed-integer dual: median 2.3%, IQR 0.4–6.8%, max 82%;
+  - big-M relaxation dual: median 7.3%, IQR 2.3–28%, max 421%.
+  - Errors fall as K/S rises. Median by f = 0.25 / 0.5 / 0.75, n = 7 / 8 / 8: big-M 26% / 14% / 1.9%; perspective 4.5% / 0.8% / 0.8%; fixed 4.8% / 6.0% / 0.5%.
+  - In [L, H]: 0, 0 and 4 of 23. At MIPGap 1e-6 the certified intervals are nearly points (H − L ≤ about 1e-6 of s), so the bracket is a point test.
+  - Non-binding cases: 13 at δ = 10% and 1 at 5%; every estimator is zero in all of them.
+  - Failed perspective relaxations 0 of 300; kink flags 0; concavity failures 0.
+- **I1, δ robustness (2017-12, n = 11 binding):** median error at δ = 5% / 10%: big-M 24% / 7.3%, perspective 5.2% / 1.6%, fixed 1.4% / 2.3% (i1_errors_by_delta.csv).
+- **I1, convex baseline (K27).** Envelope: 36 of 36 binding cases within 1% (max 1.1e-5). Dual against the δ = 10% secant: median 3.0e-4, max 4.2e-3 (n = 36). So the integer estimator errors are 1–2 orders of magnitude larger than the convex reference.
+- **I2 (sector@0.02; 2017-12 K67 and 2020-03 K79; 82 points).** At 0.5b, b, 1.5b (n = 6, all binding), median / max error: big-M 32% / 181%, perspective 7.8% / 15%, fixed 5.9% / 17%. Baseline envelope: 80 of 80 within 1% (max 4.8e-4). Fig. 4.
+- **Certification.** K23: 0 violations; the largest combined (V − B)/|V| is 6.8e-7 in I1 and 5.6e-7 in I2, inside the 1e-6 slack. **V tied exactly between big-M and the rescaled perspective at all 144 I1 and 82 I2 points** (v_from = bigm by the tie rule). B came from big-M 62 times and from the rescaled perspective 82 times in I1; 40 and 42 in I2.
+- **N1, Q3** (144 solves + 3 reruns, 36 relaxations; median over 12 instances per cell, default presolve):
+  - root gap against the best known value:
+    - big-M 4.7e-4 / 4.4e-4 / 1.1e-3 (loose / base / tight);
+    - rescaled perspective 4.1e-4 / 3.3e-4 / 1.3e-3;
+    - default-scaling perspective 1.1e-2 / 1.5e-2 / 2.2e-2 (Gurobi's unconverged outer approximation; Decision 37).
+  - Median Work 1.0–1.1 (big-M), 0.66–0.77 (rescaled), 1.2–2.1 (default).
+  - Censored: 0 of 108 at default presolve. With presolve off, 6 of 12 big-M solves hit the WorkLimit (median Work 255); both perspective arms finished (median Work 1.9–2.3).
+  - Plain relaxations (K24, 36/36): the perspective is tighter than big-M by 1.8–29% of |V| (median 5.7%). Plain gaps: big-M median 5.5–6.3%, perspective 0.18–0.20%.
+  - K22: 144 pairs, 0 failures, worst |ΔV|/allowed 0.971 (default perspective). K25: 3/3 identical.
+  - Cone effect: default perspective median 4.0e-4·|V|, max 6.4e-3; rescaled ≤ 8.0e-9.
+  - Fig. 5.
+- **N2, Table III.**
+  - (a) MIQP at s_obj = 1 against 1e4. Big-M at s = 1 hit the WorkLimit at 2 of 4 (median Work 172 against 1.0; median certified gap 2.0e-3 against 9.4e-5). One incumbent beat another arm's bound, at s = 1: at 2017-12 K67, big-M's polished V (1.3637859e-3) exceeds the rescaled perspective's B_eff (1.3636623e-3). That arm's median certified gap at s = 1 is the 1e-6 floor, i.e. B ≤ V. 0 disagreements beyond the larger claimed gap.
+  - (b) Convex, max over 5 dates, against Clarabel at 1e-10. Gurobi barrier: |ΔA*|/A* 3.1e-5 unscaled vs 7.2e-7 scaled; binding-dual error 5.7e-2 vs 9.5e-3. SCS: 5.1e-4 vs 2.6e-6 (normalized and scaled). Clarabel: 4.3e-9 (normalized and scaled).
+- **Optional C1 ratio:** all 64 flagged C1 points near 0.1 (0.090–0.111). The 35 active-set-change points are differentiable at this resolution too; none is a genuine kink (results/c1_ratio/run_20261021T003435Z/summary.json).
+
+### Surprising (with the file)
+1. **The re-solve slope depends on δ by up to 4.5×.** At 2017-12, f = 0.25, sector@0.02, s = 5.53e-4 at δ = 10% and 1.23e-4 at δ = 5%. The fixed-integer dual (1.23e-4) equals the 5% secant: the support is unchanged within ±5%. The perspective slope (5.66e-4) is close to the 10% secant. This is A8's "secant across pieces". (results/i1/run_20261021T001423Z/i1_estimators.parquet)
+2. **Exact V ties at every I1/I2 point:** big-M and the rescaled perspective give the same polished V everywhere (same support). Estimator (b) therefore always uses the big-M incumbent, and "who supplied V" carries no information. (i1_points.parquet v_tie)
+3. **N2(a), s_obj = 1:** a perspective arm's bound below a feasible value (above), and big-M slowing by 170× in Work. (results/s3_analysis/n2_pairs.csv)
+4. **N2(b): Gurobi barrier is identical to 12 digits with and without risk-row normalization.** Hypothesis, not tested: CVXPY's SOC canonicalization puts the 1/σ_m factor on a linear row t ≤ σ_m, which Gurobi's presolve absorbs. (n2_convex.csv)
+5. **The perspective relaxation can hold w⁺ and w⁻ both positive on a name** in the full 2020-03 universes. The values are consistent with the relaxation's rows (checker note 6). The report should say the relaxation allows it.
+
+### Open questions for the Discussion and GATE I (Decisions needed)
+- 44. The I2 constraint was sector@0.02 by the rule (median s 1.364e-3 against Mom@0.025's 1.316e-3; the perspective-estimator order would flip). Keep it, or run I2 on Mom@0.025 as well?
+- 45. The 2017-12 style:Mom scale comparison is ungated (review M1). Its K29c stencil failed at s_obj, and K29b covers 2009-03 only. It complies with CHECKS as written. Extend K29b to one 2017-12 instance?
+- 46. Table II's in-[L, H] column is nearly vacuous at MIPGap 1e-6. Report it as is, or also bracket against a wider interval (e.g. δ = 10% versus 5%)?
+- 47. The N2(b) normalization null effect for Gurobi (Surprise 4): test the hypothesis by also passing the quadratic form (risk_form "quad"), or report it as observed?
+- 48. The default-scaling perspective's root gaps are reported as solver behaviour (Decision 37). Should Fig. 5 keep that arm or move it to an inset/diagnostic?
+- Known gaps (not gated): tools/s3_analysis.py glue untested (review M2); run_k29c's verdict does not fail on "unchecked" toy points (the run had 0); integer.yaml's I2 comment cites the superseded I1 run (the rerun is bit-identical, so the rule's choice is unchanged).
+- Writing mode stays B until the GATE I note.
+
+### Commits this session (S3)
+- 14e386a (0a DESIGN), 4020dba (0e slope rule and K29c runner), bdb4edd (K29c read), 2d45cee (configs and runners), 2850eb3 and 64eabe2 (I1 run; I2 constraint), 189d5ea (N1 fix; analysis and figure code), 9dd1639 (analysis and figures), 120ea56 (round-1 fixes), 1fe7abe (reruns; superseded), 8bd53a3 and 8a8641a (optional C1 ratio), and the commit containing this entry (round-2 report, PLAN ticks). Not pushed.

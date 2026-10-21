@@ -36,12 +36,12 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [ ] GATE DESIGN note: instructor feedback; integer.yaml / numerics.yaml approved or changed; run S3
 
 ## S3 — Integer sensitivity, formulations, numerics (Claude Code, Fri 10/23 – Sun 10/25)
-- [ ] 1. Finalize integer.yaml and numerics.yaml per the GATE DESIGN note (DESIGN edits proposed and approved first); commit
-- [ ] 2. I1, I2, N1 (+ presolve-off robustness), N2 (≤ 4 workers; Work is the effort metric)
-- [ ] 3. Analysis per DESIGN §7 (estimator errors with n, certified intervals, non-binding breakdown, convex baseline; root gaps and Work; numerics tables)
-- [ ] 4. Figs. 4–5, Tables II–III; finalize Figs. 1–3
-- [ ] 5. python-reviewer review of the S3 code saved under results/checks/
-- [ ] 6. **CHECK INT** (K22–K29); stop if K22 or K23 is BLOCKED
+- [x] 1. Finalize integer.yaml and numerics.yaml per the GATE DESIGN note (DESIGN edits applied verbatim at 0a, 14e386a; configs 2d45cee); K29c gate run PASS first (results/k29c/run_20261020T225805Z)
+- [x] 2. I1, I2, N1 (+ presolve-off robustness), N2 (≤ 4 workers; Work is the effort metric) — final runs at 120ea56 (PROGRESS 2026-10-21)
+- [x] 3. Analysis per DESIGN §7 (estimator errors with n, certified intervals, non-binding breakdown, convex baseline; root gaps and Work; numerics tables) — results/s3_analysis/
+- [x] 4. Figs. 4–5, Tables II–III; finalize Figs. 1–3
+- [x] 5. python-reviewer review of the S3 code saved under results/checks/ (code_review_S3_20261020T235435Z.md: no CRITICAL/HIGH)
+- [x] 6. **CHECK INT** (K22–K29c) — round 2 PASS (results/checks/INT_20261021T004136Z.md); round 1 FAIL on K29b's recording clause (INT_20261021T000733Z.md)
 - [ ] Stop at GATE I with headlines (n, source files), the verdict, surprises, open questions
 
 ## GATE I — Isaiah (Mon 10/26)
