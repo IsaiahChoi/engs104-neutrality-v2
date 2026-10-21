@@ -1661,3 +1661,83 @@ index 4561d89..e8e5367 100644
   - **Found, not fixed (pre-existing):** FACTS' P7 line projects I1 at 105 points / 210 solves (one shared b point per instance, tools/make_facts.p7_projection). The I1 runner solved 144 points / 288 solves, because each case re-solves its own b. The line also still says "the proposed integer.yaml", although that file is now the approved one; only its sha256s changed on regeneration.
   - P7 is a planning projection, not a report result, so I did not treat it as a rule-13 stop. It is open question 2 in the closing entry.
 - Next: item 10, the result-checker.
+
+## 2026-10-21 — S3b closing entry (Claude Code, Opus 5.5): CHECK S3B round 2 PASS; stopped (S4 not started)
+
+### Verdict
+- **CHECK S3B:**
+  - Round 1: **FAIL** (results/checks/S3B_20261021T030756Z.md), on item 1 only: two defined-pair filters in tools/s3_analysis.py (K22 in n1_analysis, N2(a) in n2_analysis) did not raise on zero rows. No number was affected (0 undefined pairs of 144 and 24).
+  - The fix was made test-first: test_k22_and_n2_pair_filters_raise_when_every_pair_is_undefined (RED/GREEN logs/test_s3b_round2_*). N2 now reports n_undefined.
+  - Round 2: **PASS** (results/checks/S3B_20261021T031420Z.md). The checker states that it used the GATE I note's S3b criteria as its checklist, because its instructions name CHECKS phases. Full suite: 475 passed, 1 skipped, 2 xfailed.
+- **Failed predictions:** none (item 3: P1, P2 and the in-[L, H] prediction hold; item 5 holds). No FINDINGs.
+- **Item 2:** no miss.
+
+### Items (n and source)
+0. **DESIGN edits 1–4** applied verbatim (4310a54; diff in the step-0 entry above).
+1. **Analysis hardening** (e631c69, c166571, then the round-2 fix and regeneration).
+   - Code: tools/s3_analysis.py: every population filter raises on zero rows; L1 split; L4 encoder (`dumps`); `k27_baseline_by_delta`; `n1.presolve_N250`; `n2.miqp.n_undefined`. run_k29c.verdict fails on "unchecked" (the logged run: 0 unchecked, still passes). run_i1.check_k29b_coverage (L3).
+   - Tests: tests/test_s3b_hardening.py (18).
+   - s3_analysis.json against the pre-S3b file: 782 old leaves, 0 changed, 4 removed (old L1: n 34, median 1.18e-8, min 1.19e-10, max 2.84e-4), 75 added. New L1: usable n = 23 (median 7.22e-9, max 2.84e-4), unusable n = 0.
+   - Table II's convex row: confirmed as the δ = 10% subset, n = 24, median 3.67e-4, max 4.23e-3 (fig_s3.table2_i1 filters rel_delta == 0.10). The δ = 5% subset: n = 12, median 2.34e-4, max 1.94e-3.
+2. **K29b-ext** (results/k29b_ext/run_20261021T023737Z; config k29b_ext.yaml).
+   - 36 of 36 cases within |ŝ(10·s_obj) − ŝ(s_obj)| ≤ 1e-5·|ŝ| + 2N; max diff/tol 2.66e-4.
+   - Binding cases: n = 25, max relative difference 2.57e-7.
+   - 0 of 360 relaxations failed; 0 kinks.
+   - ŝ(s_obj) equals I1's slope bit for bit (36/36); the δ = 5% cases repeat their δ = 10% twins exactly.
+3. **Support stability** (results/s3b/run_20261021T024408Z; results/s3b_analysis/s3b_analysis.json item3; item3_cases.csv).
+   - The fixed-integer QP was re-solved at z rebuilt from V's weights and reproduces V and w exactly (144/144 points).
+   - Binding cases 34 of 48. Classes: δ = 10%: P1 3, P2 2, P3 18; δ = 5%: P1 4, P2 1, P3 6. All 14 non-binding cases are P1.
+   - P1 (n = 7): max |μ_fixed − s|/s 6.71e-12 against 1e-6, **holds**.
+   - P2 (n = 3): max 2.90e-4 against 4.2e-3, **holds**.
+   - P3 (n = 24): fixed-integer error median 0.056, max 0.82.
+   - Fixed-integer in-[L, H] cases in P1 or P2: 4 of 4 (δ = 10%) and 5 of 5 (δ = 5%), **holds**.
+   - Errors per class are in item3.errors_per_class_binding. Example at δ = 10%: perspective median 0.011 in P1 (n = 3) against 0.014 in P3 (n = 18); fixed ≤ 1.1e-12 in P1 against 0.051 in P3.
+   - Spearman at δ = 10% (n = 23), with average ranks: perspective 0.640, big-M 0.503. The checker reproduces the chat's 0.65 and 0.47 with ordinal tie-breaking (0.645, 0.472). The big-M gap has 8 ties, because the dollar, sector and style cases share the base mandate at b.
+4. **I2 grid shape** (item4; item4_i2_triples.csv). 2017-12 K67: 12 of 39 triples certified nonconcave (uncertified 12), support changes in 16 of 40 neighbour pairs (2–4 names each). 2020-03 K79: 9 of 39 (9), 17 of 40.
+5. **Hedged legs** (results/s3b/run_20261021T024408Z; item5; item5_hedged_names.csv).
+   - 45 relaxations (36 N1 plain + 9 I1 at the base bound), 0 failed; values equal the source runs' exactly.
+   - 11 hedged names in 7 relaxations: 2020-03 full f0.25 (1 per tightness), 2020-03 full f0.5 (2 per tightness), and the I1 2009-03 f0.75 instance (2).
+   - The prediction holds for **11 of 11**.
+   - Largest min(w⁺, w⁻): 1.44e-4. 2λ*·dᵢ·ℓ/(c + 2κ) ranges 2.35–7.87, so it is > 1 for all 11. The formulation is unchanged.
+6. **V ties:** both arms' z are **not stored** at the I1/I2 points; i1/i2_weights hold V's weights only. Not rerun. The polished V tied at 144/144 (I1) and 82/82 (I2), so the report should say only that the polished values were identical.
+7. **N1 presolve, like for like** (s3_analysis.json n1.presolve_N250, n = 12 per arm and setting). Every number the chat computed recomputes:
+   - big-M: root gap 6.05e-4 / 5.73e-2; Work 1.09 / 255; censored 0 / 6.
+   - Rescaled perspective: root gap 4.86e-4 / 5.52e-4; Work 0.766 / 2.28.
+   - Default-scaling perspective: root gap 1.60e-2 / 1.63e-2; Work 2.05 / 1.89.
+   - Plain-relaxation gaps: big-M 6.03e-2, perspective 1.43e-3.
+8. **Optional N2(b) probe** (results/n2_probe/run_20261021T024926Z; exploratory, no prediction; an A9 diagnostic).
+   - The normalized and unnormalized LP files differ in exactly one line on all 10 date × scaling pairs: the linear row CVXPY puts on the cone's epigraph variable (`R6: 115.47 x ≤ 1` against `R6: x ≤ 0.00866`).
+   - A* is identical with and without normalization at default settings (10/10) and with ScaleFlag 0 (10/10).
+   - With Presolve 0 it differs (10/10, max |ΔA*|/A* 1.6e-5).
+   - So S3's hypothesis, that presolve absorbs the normalization row, is supported, not proven.
+9. **FACTS:** tools/make_facts.py gains S3 and S3b sections; tests/test_make_facts_s3.py. proposal/FACTS.md is regenerated (139 lines) and every (file, sha256) pair matches (checker: 28/28).
+10. **result-checker:** above.
+
+### Runs this session
+| Run | Commit | Outcome |
+|---|---|---|
+| results/k29b_ext/run_20261021T023737Z | 74be604 | ok |
+| results/s3b/run_20261021T024408Z | c4fe180 | ok |
+| results/n2_probe/run_20261021T024926Z | e437339 | ok |
+| k29b_ext refusal at 59c8c85 (no run directory) | 59c8c85 | failed: dirty tree |
+| results/s3b/run_20261021T024025Z | fc5927d | failed: chunk-id collision, fixed test-first |
+
+All have RUN_LOG rows, and outputs are hashed in outputs.json.
+
+### Commits (S3b)
+- 4310a54, e631c69, c166571, 59c8c85, 74be604, fc5927d, 24b1963, c4fe180, 91c48ee, 651fb4f, 3bcb808, e437339, e9f6b9a, 14e6793, d660485;
+- the round-1 report commit, the round-2 fix, ec8f21e;
+- the commit containing this entry (round-2 report).
+- Not pushed.
+
+### Open questions / Decisions needed
+- **49 (FACTS P7, concerns the proposal, not S4).** FACTS' P7 line (S2c's projection, Decision 32) projects I1 at 105 points / 210 MIQP solves, one shared b point per instance (tools/make_facts.p7_projection). The I1 runner solved 144 points / 288 solves, because each case re-solves its own b. The line also still says "the proposed integer.yaml"; that file is now the approved one, and regeneration changed only its sha256s.
+  - Found while regenerating FACTS (item 9); not fixed, because P7's arithmetic is Isaiah's Decision 32.
+  - Options: (a) leave it and cite I1's measured Work (results/i1/run_20261021T001423Z summary.json) instead of P7; (b) correct the point count and the wording. The proposal is due 10/22.
+  - Under the GATE I rule, S4 waits for a note while this is open. It can be closed as "does not block S4".
+- Advisory (checker round 2, not gated): two per-id lookups in tools/s3b_analysis.py (item 4 weights, item 5 names) would return nothing silently if an id were missing. Every id is present today (82/82, 45/45). Guard them in S4 if wanted.
+- For S4 (not decisions):
+  - Figs. 4–5 and Table II are not yet regenerated to the edited DESIGN §10 (edits 2–4: Fig. 4 slope panel, Fig. 5 reference lines, Table II interval-width column).
+  - The report should use average-rank Spearman values, or say the big-M gaps have ties.
+  - Item 8 is A9 material for the Discussion, if Isaiah wants it.
+- No report or proposal text was written; proposal.tex, CHECKS, integer.yaml and numerics.yaml are unchanged.
