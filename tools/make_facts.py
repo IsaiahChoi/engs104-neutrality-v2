@@ -390,6 +390,184 @@ def refs(F: Facts) -> None:
     F.lines.append("```")
 
 
+# ----- S3 and S3b (S3b item 9; Isaiah's GATE I note) -----
+
+S3_DIR = ROOT / "results" / "s3_analysis"
+S3B_DIR = ROOT / "results" / "s3b_analysis"
+S3_SOURCES = ("s3_analysis.json", "i1_errors_by_f.csv", "i1_errors_by_delta.csv", "i1_long.csv")
+EST_LABEL = {"bigm_relax": "big-M relaxation dual", "perspective": "perspective relaxation slope",
+             "fixed": "fixed-integer dual"}
+ARM_LABEL = {"bigm": "big-M", "perspective": "perspective (default scaling)",
+             "perspective_rescaled": "perspective (rescaled)"}
+
+
+def verdict_word(value: float, tol: float) -> str:
+    """A prediction "value ≤ tol" read from the stored value: "holds" or "fails"."""
+    return "holds" if value <= tol else "fails"
+
+
+def load_s3(d: Path = S3_DIR) -> dict:
+    return {"json": json.loads((d / "s3_analysis.json").read_text()),
+            "byf": pd.read_csv(d / "i1_errors_by_f.csv"), "bydelta": pd.read_csv(d / "i1_errors_by_delta.csv"),
+            "long": pd.read_csv(d / "i1_long.csv"), "dir": d}
+
+
+def _q3(q: dict) -> str:
+    return f"median {g(q['median'])} (range {g(q['min'])}–{g(q['max'])}, n = {q['n']})"
+
+
+def s3_texts(s3: dict) -> list[tuple[str, str]]:
+    """(text, source file name) for the S3 headlines: I1, I2, N1, N2 (s3_analysis.json and CSVs)."""
+    js, out = s3["json"], []
+    J = "s3_analysis.json"
+    i1 = js["i1"]
+    keys = ", ".join(f"{k} {v}" for k, v in sorted(i1["binding_by_key_main_delta"].items()))
+    out.append((f"I1 cases: {i1['n_cases']} ({i1['n_cases_main_delta']} at δ = 10%, "
+                f"{i1['n_cases'] - i1['n_cases_main_delta']} at δ = 5% on 2017-12); binding (L > 0) at "
+                f"δ = 10%: {i1['n_binding_main_delta']} ({keys})", J))
+    for r in i1["errors_all_f_main_delta"]:
+        out.append((f"I1 relative error |μ̂ − s|/|s| at δ = 10%, {EST_LABEL[r['estimator']]}: median "
+                    f"{g(r['median_rel_err'])}, IQR {g(r['q25_rel_err'])}–{g(r['q75_rel_err'])}, max "
+                    f"{g(r['max_rel_err'])} (n = {r['n_binding']} binding); in [L, H]: {r['n_in_interval']}", J))
+    byf = s3["byf"]
+    for name, lab in EST_LABEL.items():
+        x = byf[byf["estimator"] == name].sort_values("f")
+        out.append((f"I1 median error by f = " + " / ".join(f"{f:g}" for f in x["f"]) + f", {lab}: "
+                    + " / ".join(g(v) for v in x["median_rel_err"]) + " (n = "
+                    + " / ".join(str(int(n)) for n in x["n_binding"]) + ")", "i1_errors_by_f.csv"))
+    bd = s3["bydelta"]
+    for name, lab in EST_LABEL.items():
+        x = bd[bd["estimator"] == name].sort_values("rel_delta")
+        out.append((f"I1 at 2017-12, median error at δ = " + " / ".join(f"{d:g}" for d in x["rel_delta"])
+                    + f", {lab}: " + " / ".join(g(v) for v in x["median_rel_err"]) + " (n = "
+                    + " / ".join(str(int(n)) for n in x["n_binding"]) + ")", "i1_errors_by_delta.csv"))
+    L = s3["long"]
+    m = L[(L["rel_delta"] == 0.10) & L["binding"].astype(bool) & (L["estimator"] == "fixed")]
+    w = (m["H"] - m["L"]) / m["s"]
+    out.append((f"I1 interval width (H − L)/s at δ = 10% over binding cases: median {g(w.median(), 2)}, "
+                f"range {g(w.min(), 2)}–{g(w.max(), 2)} (n = {len(w)})", "i1_long.csv"))
+    nb = "; ".join(f"δ = {r['rel_delta']:g}: {r['n']} ({r['pattern']})" for r in i1["nonbinding_by_delta"])
+    out.append((f"I1 non-binding cases by δ, with which estimators are zero: {nb}", J))
+    pp = i1["perspective"]
+    out.append((f"I1 perspective relaxations: {pp['relaxations_failed']} of {pp['relaxations']} failed; "
+                f"kink flags {pp['kinks']}; concavity failures {pp['concavity_failures']}", J))
+    k = i1["k27_baseline"]
+    out.append((f"I1 convex baseline envelope (K27): {k['n_within']} of {k['n_binding']} binding cases within "
+                f"1% (max {g(k['max_rel_err'], 2)})", J))
+    for d, s in sorted(i1["k27_baseline_by_delta"].items(), key=lambda kv: -float(kv[0])):
+        out.append((f"I1 convex baseline dual against the secant at δ = {100 * float(d):g}%: median "
+                    f"{g(s['secant_rel_err_median'])}, max {g(s['secant_rel_err_max'])} (n = {s['n_secant']})", J))
+    k23, sup = i1["k23"], i1["suppliers"]
+    out.append((f"I1 certification (K23): {k23['violations']} violations over {k23['n_points']} points; V tied "
+                f"exactly between big-M and the rescaled perspective at {sup['v_tie']} of {k23['n_points']} points", J))
+    i2 = js["i2"]
+    est = "; ".join(f"{EST_LABEL[r['estimator']]} median {g(r['median_rel_err'])}, max {g(r['max_rel_err'])}"
+                    for r in i2["estimators"])
+    out.append((f"I2: {i2['constraint']}, instances {', '.join(i2['instances'])}, {i2['n_points']} points; "
+                f"errors at 0.5·b, b, 1.5·b (n = {i2['estimators'][0]['n_binding']}): {est}; baseline envelope "
+                f"{i2['k27_baseline_grid']['n_within']} of {i2['k27_baseline_grid']['n_binding']} within 1%", J))
+    n1 = js["n1"]
+    for arm in ARM_LABEL:
+        parts = [f"{tn} {g(n1['by_tightness_arm'][f'{tn}/{arm}']['root_gap']['median'], 2)}"
+                 for tn in ("loose", "base", "tight")]
+        wk = [g(n1["by_tightness_arm"][f"{tn}/{arm}"]["work"]["median"], 2) for tn in ("loose", "base", "tight")]
+        cz = sum(n1["by_tightness_arm"][f"{tn}/{arm}"]["censored"] for tn in ("loose", "base", "tight"))
+        n = n1["by_tightness_arm"][f"base/{arm}"]["n"]
+        out.append((f"N1 root gap against the best known value, {ARM_LABEL[arm]}, median by tightness: "
+                    + ", ".join(parts) + f"; median Work " + " / ".join(wk) + f"; censored {cz} (n = {n} per cell, "
+                    "default presolve)", J))
+    pr = n1["plain_relaxation_gaps"]
+    out.append(("N1 plain relaxations, median gap by tightness: " + "; ".join(
+        f"{tn} big-M {g(v['bigm']['median'], 2)}, perspective {g(v['perspective']['median'], 2)}"
+        for tn, v in sorted(pr.items())) + f"; K24 margin (big-M − perspective)/|V| median "
+        f"{g(n1['k24']['margin_rel_median'], 2)}, range {g(n1['k24']['margin_rel_min'], 2)}–"
+        f"{g(n1['k24']['margin_rel_max'], 2)}, {n1['k24']['violations']} violations (n = {n1['k24']['n']})", J))
+    k22 = n1["k22"]
+    out.append((f"N1 K22: {k22['n_pairs']} arm pairs, {k22['n_fail']} failures; worst |ΔV|/allowed "
+                + ", ".join(f"{p} {g(v['worst_ratio'])}" for p, v in sorted(k22["by_pair"].items()))
+                + f"; K25 {n1['k25']['identical']} of {n1['k25']['n']} reruns identical", J))
+    out.append(("N1 cone effect /|V| at the raw incumbent: " + "; ".join(
+        f"{ARM_LABEL[a]} median {g(q['median'], 2)}, max {g(q['max'], 2)}"
+        for a, q in sorted(n1["cone_effect_rel"].items()) if a != "bigm" and q.get("n")), J))
+    po = n1["presolve_off"]
+    out.append(("N1 presolve off at N = 250: " + "; ".join(
+        f"{ARM_LABEL[a]} censored {v['censored']} of {v['n']}, median Work {g(v['work']['median'], 3)}"
+        for a, v in sorted(po.items())), J))
+    n2 = js["n2"]
+    ar = n2["miqp"]["arms"]
+    out.append(("N2(a) MIQP at s_obj = 1 and 1e4: " + "; ".join(
+        f"{ARM_LABEL[k.split('/')[0]]} at {k.split('/')[1]}: statuses {v['statuses']}, median Work "
+        f"{g(v['work']['median'], 3)}, median certified gap {g(v['gap_eff']['median'], 2)}"
+        for k, v in sorted(ar.items())) + f"; incumbents beating another arm's bound "
+        + ", ".join(f"{s} {v['beats']}" for s, v in sorted(n2["miqp"]["by_scale"].items())), J))
+    cv = n2["convex"]
+    out.append(("N2(b) convex, max over the dates against Clarabel at 1e-10, |ΔA*|/A* (binding-dual error): "
+                + "; ".join(f"{k} {g(v['A_rel_err']['max'], 2)} ({g(v['max_binding_dual_rel_err']['max'], 2)})"
+                            for k, v in sorted(cv.items())), J))
+    return out
+
+
+def s3b_texts(js: dict) -> list[tuple[str, str]]:
+    """(text, source) for the S3b items 2–7 (s3b_analysis.json)."""
+    J, out = "s3b_analysis.json", []
+    x = js["item2_k29b_ext"]
+    out.append((f"Item 2, K29b extended: {x['all']['n'] - x['all']['misses']} of {x['all']['n']} cases within "
+                f"1e-5·|ŝ| + 2N (max diff/tol {g(x['all']['max_ratio'], 2)}); binding cases {x['binding']['n']}, max "
+                f"relative difference {g(x['binding']['max_rel_diff'], 2)}; {x['all']['n_failed']} failed stencils; "
+                f"ŝ(s_obj) equal to I1's bit for bit in {x['slope_equals_i1_bitwise']} of {x['all']['n']}", J))
+    s = js["item3_support"]
+    cb = "; ".join(f"δ = {k[1:]}: " + ", ".join(f"{c} {n}" for c, n in sorted(v.items()))
+                   for k, v in sorted(s["counts_binding_by_delta"].items(), key=lambda kv: -float(kv[0][1:])))
+    out.append((f"Item 3, support classes over binding cases (n = {s['n_binding']} of {s['n_cases']}): {cb}", J))
+    pr = s["predictions"]
+    for P in ("P1", "P2"):
+        out.append((f"Item 3, prediction {P}: max |μ_fixed − s|/s {g(pr[P]['max_err'])} against "
+                    f"{g(pr[P]['tol'], 2)} (n = {pr[P]['n']}): {verdict_word(pr[P]['max_err'], pr[P]['tol'])}", J))
+    q = pr["P3"]["fixed_err"]
+    out.append((f"Item 3, class P3: fixed-integer dual error {_q3(q)}", J))
+    lh = pr["fixed_in_LH_in_P1_or_P2"]
+    out.append(("Item 3, fixed-integer in-[L, H] cases in P1 or P2: " + "; ".join(
+        f"δ = {k[1:]}: {v['in_P1_or_P2']} of {v['n']}" for k, v in sorted(lh.items(), key=lambda kv: -float(kv[0][1:]))), J))
+    sp = s["spearman_delta10"]
+    out.append((f"Item 3, Spearman at δ = 10% between relaxation gap at b and slope error (n = {sp['n']}): "
+                f"perspective {g(sp['perspective'], 2)}, big-M {g(sp['bigm_relax'], 2)}", J))
+    for inst, v in sorted(js["item4_i2_grid"].items()):
+        out.append((f"Item 4, I2 grid {inst}: certified nonconcave triples {v['certified_nonconcave']} of "
+                    f"{v['n_triples']} (uncertified {v['uncertified_nonconcave']}); support changes between "
+                    f"neighbours {v['support_changes']} of {v['neighbour_pairs']}", J))
+    h = js["item5_hedged_legs"]
+    r = h["two_lam_d_ell_over_c_plus_2kappa"]
+    out.append((f"Item 5, hedged legs: {h['hedged_names']} names in {h['n_with_hedged']} of {h['relaxations']} "
+                f"perspective relaxations; prediction holds for {h['prediction_holds']} of {h['hedged_names']}; "
+                f"largest min(w⁺, w⁻) {g(h['max_min_leg'], 2)}; 2λ*·dᵢ·ℓ/(c + 2κ) "
+                + (f"{g(r['min'], 2)}–{g(r['max'], 2)}" if r.get("n") else "n/a"), J))
+    v6 = js["item6_v_ties"]
+    out.append((f"Item 6, V ties: both arms' z stored at the I1/I2 points: {'yes' if v6['both_arms_z_stored'] else 'no'}"
+                f"; V tied at {v6['v_tie']['i1']} I1 and {v6['v_tie']['i2']} I2 points", J))
+    p7 = js["item7_presolve_N250"]
+    for arm, v in sorted(p7["arms"].items()):
+        out.append((f"Item 7, N1 presolve at N = {p7['N']}, {ARM_LABEL[arm]}, on / off: root gap median "
+                    f"{g(v['on']['root_gap']['median'], 3)} / {g(v['off']['root_gap']['median'], 3)}, median Work "
+                    f"{g(v['on']['work_median'], 3)} / {g(v['off']['work_median'], 3)}, censored {v['on']['censored']} / "
+                    f"{v['off']['censored']} of {v['on']['n']}", J))
+    pg = p7["plain_relaxation_gap"]
+    out.append((f"Item 7, N1 presolve at N = {p7['N']}, plain-relaxation gap median: big-M {g(pg['bigm']['median'], 2)}, "
+                f"perspective {g(pg['perspective']['median'], 2)}", J))
+    return out
+
+
+def s3_facts(F: Facts, d: Path = S3_DIR) -> None:
+    F.head("S3: I1, I2, N1, N2 (results/s3_analysis)")
+    for text, src in s3_texts(load_s3(d)):
+        F.add(text, d / src)
+
+
+def s3b_facts(F: Facts, d: Path = S3B_DIR) -> None:
+    F.head("S3b (GATE I scope): items 2–7 (results/s3b_analysis)")
+    for text, src in s3b_texts(json.loads((d / "s3b_analysis.json").read_text())):
+        F.add(text, d / src)
+
+
 def build(out: Path = OUT) -> list[str]:
     """Write FACTS to `out` from the newest finished runs; return its lines."""
     pilot, s2b = _latest("pilot", "pilot"), _latest("pilot_s2b", "pilot")
@@ -416,6 +594,10 @@ def build(out: Path = OUT) -> list[str]:
         c3_facts(F, c3)
     else:
         F.head("C3, time series — pending")
+    if (S3_DIR / "s3_analysis.json").exists():
+        s3_facts(F)
+    if (S3B_DIR / "s3b_analysis.json").exists():
+        s3b_facts(F)
     software_facts(F, c1)
     refs(F)
     Path(out).write_text("\n".join(F.lines) + "\n")
