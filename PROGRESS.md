@@ -1590,3 +1590,23 @@ index 4561d89..e8e5367 100644
     - Recompute items 2–7 independently against the criteria above, and write results/checks/S3B_<UTC stamp>.md ending in "VERDICT: PASS | FAIL | BLOCKED".
     - A failed prediction in item 3 or 5 is a finding, not a FAIL. FAIL means a number that does not recompute, or a criterion of item 1 or 2 that is not met.
     - Then write a PROGRESS closing entry giving every item's result with n and source file, and stop. This session writes no report or proposal text.
+
+## 2026-10-21 — S3b (Claude Code, Opus 5.5): step 0, the DESIGN edits approved at GATE I applied verbatim
+- Precondition: the GATE I note is present (heading "2026-10-20 — Isaiah: GATE I").
+- Applied by an exact-match script (results/scratch/apply_design_s3b.py; each old string asserted to occur once, each new string once afterwards), edits 1–4 of the note. No other DESIGN text changed.
+- Edit 4 sits inside the §10 "Table I … Table II … Table III" line; only the Table II sentence changed.
+- Diff (`git diff -U0 docs/DESIGN.md`):
+
+```diff
+@@ -219,3 +219,3 @@
+-- **Fig. 4** (I2): value functions of P-MI and the continuous baseline, with tangents from the three estimators.
+-- **Fig. 5** (N1): root gap and Work against tightness, big-M versus perspective, with censoring marked.
+-- **Table I:** notation and base mandate. **Table II** (I1): estimator errors with n binding, by K. **Table III** (N2): numerics.
++- **Fig. 4** (I2): for each instance, the value functions of P-MI and the continuous baseline (upper panel), and the slopes (lower panel): the secant slope of V between neighbouring grid points, the baseline's dual, and the three estimators at 0.5·b, b and 1.5·b beside the certified secant s and its interval. The y-axes say P-MI objective, not alpha. Two-column width is allowed for this figure.
++- **Fig. 5** (N1): root gap and Work against tightness for the three arms at default presolve, with the default-scaling perspective marked as solver behaviour (Decision 37). Thin reference lines mark the median plain-relaxation gaps of big-M and the perspective. Censored solves are marked only if any are plotted. The N = 250 presolve-on/off comparison is reported in the text.
++- **Table I:** notation and base mandate. **Table II** (I1): estimator errors with n binding, by K, at δ = 10%, with the in-[L, H] count and the median relative interval width (H − L)/s per row; the convex baseline row is at δ = 10%. **Table III** (N2): numerics.
+@@ -277 +277 @@
+-Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. Nobody but Isaiah writes text in `proposal/proposal.tex`.
++Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. The agent never edits text in `proposal/proposal.tex`; the proposal text was drafted with Claude (chat) and edited by Isaiah (docs/AI_USE.md).
+```
+- Figs. 4–5 and Table II are not regenerated to the edited spec in S3b: no item in the S3b scope asks for it, and they are S4 figure work. Noted for S4.

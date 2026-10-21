@@ -216,9 +216,9 @@ Isaiah derives each item by hand (RUNBOOK §5.3); the tests and checks confirm t
 - **Fig. 1** (C2): retained alpha A*(b)/A*(off) against the bound for each family, median and interquartile range over D12, α_mom; for factor families, α⊥ and α∥ dashed.
 - **Fig. 2** (C1): retained fraction under full factor neutrality against φ. The closed-form curve √(1 − φ), the numerical idealized points (three alphas × D12), and the realistic base-mandate points.
 - **Fig. 3** (C1): the Stubbs–Vandenbussche decomposition at λ*, stacked by constraint family over D12. Its total exceeds the fixed-risk loss A*_unconstrained(σ) − A*, because the unconstrained portfolio at λ* carries more than 3% risk; the caption says so. First candidate to cut.
-- **Fig. 4** (I2): value functions of P-MI and the continuous baseline, with tangents from the three estimators.
-- **Fig. 5** (N1): root gap and Work against tightness, big-M versus perspective, with censoring marked.
-- **Table I:** notation and base mandate. **Table II** (I1): estimator errors with n binding, by K. **Table III** (N2): numerics.
+- **Fig. 4** (I2): for each instance, the value functions of P-MI and the continuous baseline (upper panel), and the slopes (lower panel): the secant slope of V between neighbouring grid points, the baseline's dual, and the three estimators at 0.5·b, b and 1.5·b beside the certified secant s and its interval. The y-axes say P-MI objective, not alpha. Two-column width is allowed for this figure.
+- **Fig. 5** (N1): root gap and Work against tightness for the three arms at default presolve, with the default-scaling perspective marked as solver behaviour (Decision 37). Thin reference lines mark the median plain-relaxation gaps of big-M and the perspective. Censored solves are marked only if any are plotted. The N = 250 presolve-on/off comparison is reported in the text.
+- **Table I:** notation and base mandate. **Table II** (I1): estimator errors with n binding, by K, at δ = 10%, with the in-[L, H] count and the median relative interval width (H − L)/s per row; the convex baseline row is at δ = 10%. **Table III** (N2): numerics.
 - **Format:** single-column width (3.5 in) unless justified; text ≥ 8 pt at print size; colorblind-safe palette, with meaning never carried by color alone; vector PDF; deterministic metadata, so regeneration is byte-identical. Also export 300-dpi PNGs to `figures/png/` (for the talk).
 
 ## 11. Report
@@ -274,7 +274,7 @@ The mode is set by Isaiah's latest GATE note in PROGRESS.md; absent a note, Mode
 - **Mode A:** the agent drafts II–IV, marks each paragraph `% drafted-by-agent`, and writes red outlines for the rest.
 - **Mode B:** the agent writes no prose, captions, or displayed equations; only scaffolding, generated macros, tables, figures, and red `TODO(Isaiah)` claim→evidence outlines.
 
-Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. Nobody but Isaiah writes text in `proposal/proposal.tex`.
+Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. The agent never edits text in `proposal/proposal.tex`; the proposal text was drafted with Claude (chat) and edited by Isaiah (docs/AI_USE.md).
 
 ### 11.7 `tools/spec_check.py`
 
