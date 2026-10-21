@@ -1,0 +1,18 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_k22_and_n2_pair_filters_raise_when_every_pair_is_undefined ________
+
+    def test_k22_and_n2_pair_filters_raise_when_every_pair_is_undefined():
+        """CHECK S3B round 1 (results/checks/S3B_20261021T030756Z.md): the defined-pair filters of
+        n1_analysis (K22) and n2_analysis (N2(a)) must raise on zero rows; N2 reports n_undefined."""
+        f = _n1_frames()
+        f["n1_solves"] = f["n1_solves"].assign(V=np.nan)
+>       with pytest.raises(ValueError, match="0 rows"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: '0 rows'
+E         Actual message: 'K24: a usable instance has an undefined relaxation or best known value'
+
+tests/test_s3b_hardening.py:284: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_s3b_hardening.py::test_k22_and_n2_pair_filters_raise_when_every_pair_is_undefined
+1 failed, 15 deselected in 1.37s

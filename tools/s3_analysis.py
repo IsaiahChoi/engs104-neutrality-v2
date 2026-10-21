@@ -188,7 +188,7 @@ def n1_analysis(f: dict) -> tuple[dict, dict]:
     tab = A.n1_table(s)
     rg = A.relax_gaps(rel, s)
     pairs = A.k22_pairs(s)
-    dfn = pairs[~pairs["undefined"].astype(bool)]
+    dfn = _rows(pairs, ~A._flag(pairs, "undefined"), "n1 K22 defined pairs")
     by = {}
     on = _rows(tab, tab["presolve"] == -1, "n1 presolve == -1")
     off = _rows(tab, tab["presolve"] == 0, "n1 presolve == 0")
@@ -233,7 +233,7 @@ def presolve_like_for_like(on: pd.DataFrame, off: pd.DataFrame, rg: pd.DataFrame
 def n2_analysis(f: dict) -> tuple[dict, dict]:
     m, cv = f["n2_miqp"], f["n2_convex"]
     d = A.n2_disagreements(m)
-    dd = d[~d["undefined"].astype(bool)]
+    dd = _rows(d, ~A._flag(d, "undefined"), "n2 defined pairs")
     arms = {f"{arm}/s{s:g}": {"statuses": _counts(g["status"]), "gap_eff": _q(g["gap_eff"]),
                               "cone_effect_rel": _q(g["cone_effect_rel"]), "work": _q(g["work"])}
             for (arm, s), g in m.groupby(["arm", "s_obj"])}
@@ -242,7 +242,7 @@ def n2_analysis(f: dict) -> tuple[dict, dict]:
                                              "max_binding_dual_rel_err": _q(g["max_binding_dual_rel_err"])}
             for (sol, nz, sc), g in _rows(cv, cv["solver"] != "reference", "n2 convex non-reference")
             .groupby(["solver", "normalize", "scaled"])}
-    out = {"miqp": {"n": len(m), "arms": arms, "n_pairs": len(d),
+    out = {"miqp": {"n": len(m), "arms": arms, "n_pairs": len(d), "n_undefined": len(d) - len(dd),
                     "incumbent_beats_other_bound": int(dd["incumbent_beats_other_bound"].sum()),
                     "beyond_claimed_gap": int(dd["beyond_claimed_gap"].sum()),
                     "by_scale": {f"s{s:g}": {"n": len(g), "beats": int(g["incumbent_beats_other_bound"].sum()),

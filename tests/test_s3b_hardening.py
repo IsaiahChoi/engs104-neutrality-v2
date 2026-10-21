@@ -274,3 +274,18 @@ def test_k29b_ids_must_occur_among_the_tasks():
     run_i1.check_k29b_coverage({"2009-03_N250_f0.25_K47"}, tasks)
     with pytest.raises(ValueError, match="2009-03_N250_f0.75_K141"):
         run_i1.check_k29b_coverage({"2009-03_N250_f0.25_K47", "2009-03_N250_f0.75_K141"}, tasks)
+
+
+def test_k22_and_n2_pair_filters_raise_when_every_pair_is_undefined():
+    """CHECK S3B round 1 (results/checks/S3B_20261021T030756Z.md): the defined-pair filters of
+    n1_analysis (K22) and n2_analysis (N2(a)) must raise on zero rows; N2 reports n_undefined."""
+    f = _n1_frames()
+    f["n1_solves"] = f["n1_solves"].assign(V=np.nan)
+    with pytest.raises(ValueError, match="0 rows"):
+        T.n1_analysis(f)
+    f = _n2_frames()
+    f["n2_miqp"] = f["n2_miqp"].assign(V=np.nan)
+    with pytest.raises(ValueError, match="0 rows"):
+        T.n2_analysis(f)
+    out, _ = T.n2_analysis(_n2_frames())
+    assert out["miqp"]["n_undefined"] == 0
