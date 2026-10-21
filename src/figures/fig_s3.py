@@ -92,7 +92,7 @@ def fig4_value_functions() -> Path:
         top.plot(g["bound"], 1e4 * g["V"], color=style.SERIES[0], marker="o", ms=2.5, lw=1.0,
                  label="P-MI value $V(b)$")
         top.plot(gb["bound"], 1e4 * gb["value"], color=style.INK_SECONDARY, ls="-", lw=0.8,
-                 label="continuous baseline $U(b)$")
+                 label="continuous baseline value")
         date, rest = inst.split("_N")
         top.set_title(f"{date}, N = {rest.split('_')[0]}, K = {inst.split('_K')[1]}", loc="left")
         s = sec[sec["instance"] == inst]
