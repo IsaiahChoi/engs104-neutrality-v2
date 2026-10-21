@@ -48,11 +48,11 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [x] GATE I note: AI-use policy answer and source; writing mode A or B
 
 ## S4 — Report build (Claude Code, Mon 10/26)
-- [ ] 1. Writing mode per DESIGN §11.6 (default B)
-- [ ] 2. report/main.tex per DESIGN §11 (sections, A1–A9, figures and tables, disclosures; outlines by mode)
-- [ ] 3. numbers.tex: every number a macro with source file and sha256; design constants from the configs
-- [ ] 4. `make figures && make report`; spec_check report (draft) and proposal (final)
-- [ ] 5. **CHECK REPORT** (K30–K39, draft mode); cold-reader saved to results/checks/cold_read_<UTC>.md
+- [x] 1. Writing mode per DESIGN §11.6 (default B) — Mode A (GATE I; Isaiah's S3b-read note)
+- [x] 2. report/main.tex per DESIGN §11 (sections, A1–A9, figures and tables, disclosures; outlines by mode) — II–IV drafted, outlines elsewhere; 9 pages, not cut (addendum item 8)
+- [x] 3. numbers.tex: every number a macro with source file and sha256; design constants from the configs (418 macros, src/figures/numbers.py)
+- [x] 4. `make figures && make report`; spec_check report (draft) and proposal (draft, addendum item 9) — report FAIL on RP-4 (9 pages) only
+- [ ] 5. **CHECK REPORT** (K30–K39, draft mode); cold-reader saved to results/checks/cold_read_<UTC>.md — 3 rounds, all FAIL (round 3: RP-4 and one sentence, main.tex:236); stopped per CLAUDE.md. Cold read saved (cold_read_20261021T062839Z.md)
 - [ ] Stop at GATE R with the spec_check table, verdict, cold-read top five, page count by section, open items
 
 ## GATE R — Isaiah (10/27 – 10/30)

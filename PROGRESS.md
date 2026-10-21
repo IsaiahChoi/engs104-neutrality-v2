@@ -1857,3 +1857,83 @@ Then RUNBOOK's steps 1–5, under these rules:
   - Gurobi's MIQCP method for the perspective model is not recorded per solve (left at default); DESIGN §11.3 asks for it to be recorded.
   - Tectonic substitutes fonts for IEEEtran's Times (TU/ptm warnings), as in the S1 scaffold builds.
 - Next: CHECK REPORT (K30–K39, draft mode) with the result-checker, then the cold-reader, then GATE R.
+
+## 2026-10-21 — S4 closing entry (Claude Code, Opus 5.5): CHECK REPORT FAIL after 3 rounds; cold read done; stopped at GATE R
+### Verdicts
+- **CHECK REPORT (K30–K39, draft mode): FAIL after the 3 allowed rounds**; stopped per CLAUDE.md.
+  - The checker's Write was refused each time, so I saved its reports verbatim from its messages.
+  - Round 1: REPORT_20261021T061516Z.md, FAIL. Causes: RP-4; five wrong drafted statements; K31 literals in math; n and δ gaps.
+  - Round 2: REPORT_20261021T062853Z.md, FAIL. Causes: RP-4, plus an RP-1 timestamp issue (PDF built before my last `make figures`).
+  - Round 3: REPORT_20261021T064114Z.md, FAIL on two items:
+    - RP-4 (9 pages; not cut, addendum item 8).
+    - One drafted sentence, report/main.tex:236: "The plain relaxations are the z∈[0,1] relaxations solved directly, without presolve or cuts." Presolve was left at the solver defaults (Gurobi and Clarabel); the values are unaffected. Checker's fix: "solved as continuous problems outside the MIP (big-M by Gurobi's dual simplex, the perspective by Clarabel), so without MIP presolve or root cuts".
+  - I did not fix the sentence after round 3, so the checked build and the record stay aligned. **Isaiah's item, 1 line.**
+  - Every other item PASSES in round 3: K31; K32 (418 macros, 39 source hashes, values recomputed independently); K33 (byte-identical, and identical to HEAD); K34 (1 unmapped claim, marked: P-MI volatility); K35–K39.
+- **Cold read:** results/checks/cold_read_20261021T062839Z.md, of the build at e0e9cd8 ("mostly self-contained").
+  - Its factual and definitional points in my drafted text were fixed in round 3 (efabeab): ζ and s′, the rescaling unit, A9's tolerance wording, ADV as a median, the γ/η/R overloads, the Fig. 3 caption, the K29b-ext n, the baseline definition, the "plain" and "solver behaviour" wording.
+  - K40 (not in this round) would need a cold read of the current build.
+- **spec_check (final build, efabeab):**
+  - Report (draft): RP-1–3, 6, 7, 9–11 PASS; **RP-4 FAIL (9 pages)**; RP-5 N/A (refs:start p. 8); RP-8 N/A.
+  - Proposal (draft; still the scaffold): PR-1–3 PASS after building proposal.pdf (moved to results/scratch/trash/ afterwards); PR-4 FAIL (no \cite); PR-5 N/A. Not counted (addendum item 9).
+
+### Cold-read top five (summarized; full text in the file)
+1. Experiment labels (C1–C3, I1/I2, N1/N2) are used in III before IV defines them, C3 is never defined, and Q1–Q3 are never stated in II–IV. The suggested fix is a short experiment map.
+2. Family-level duals and elasticities (for example θ through every u_i, or a sector family) are not defined. The "115 checks" sample is not identifiable.
+3. Perspective notation and rescaling unit: fixed in round 3. Still open: the Q3 mechanism. The default-scaling root gap is about 30× the cone effect and above its own plain gap, so the reader asks for direct evidence that the cone tolerance is the cause.
+4. Symbol overloads: B (loadings and final bound), N (names and noise; noise now η), V/U/U*, b_k, λ/μ, and "binds" with two definitions. Partly fixed.
+5. The Fig. 3 attribution (Stubbs–Vandenbussche) is not explained, and the Q1 outline wording omits trading costs (median share 0.30).
+
+### Page count (final build: 9 pages; DESIGN §11.1 budget in parentheses)
+- Measured per section in a scratch copy (zref positions; floats counted where they land):
+  - Abstract 0.14 (0.3); I 0.24 (0.8); II 1.25 (1.1); III 1.27 (1.3);
+  - IV 3.34 (2.5): A 0.90 (1.2), B 1.37 (0.7), C 1.07 (0.6);
+  - V 0.96 (1.0), which includes floats that land there; VI 0.11 (0.25); disclosures and AI use 0.53 (0.2) with floats; references about 0.5 (0.45).
+- My drafted IV is about 0.8 page over and II about 0.15. The outlined sections will grow by roughly 0.9 page when written.
+- **The cut order would remove** (not done, addendum item 8):
+  - Fig. 3, about 0.22 page;
+  - C3, 0 (not in the report);
+  - Table III to text, about 0.25 page net;
+  - Fig. 5 to one panel, about 0.12 page;
+  - related work to one paragraph (Intro is still an outline).
+  - About 0.6 page in all, which is not enough on its own. Shortening the IV-B/IV-C drafts is the larger lever, and it is Isaiah's call.
+
+### Commits (S4)
+7621d1f (step 0), 8d194f3 (disclosures runner), 04e0582 (disclosures run), fa3a1dc (FACTS after that run), adcdb52 (build), be85b97 (PROGRESS), e0e9cd8 (round 2), 1e83eb1 (cold read), efabeab (round 3), and the commit containing this entry (round-3 report, PLAN). Not pushed.
+
+### Runs this session
+results/disclosures/run_20261021T034238Z at 8d194f3: make exit 0, DONE, RUN_LOG "ok". It is the only run this session.
+
+### Open items for Isaiah, by section (target dates from RUNBOOK §1 and §5.4)
+- **GATE R (10/27–10/30):**
+  - derivations A1–A9 by hand: every paragraph is marked % verify-by-hand;
+  - decide the page plan (9 pages now; cut order or shortening IV);
+  - decide whether the main.tex:236 sentence takes the checker's wording.
+- **II (10/30):**
+  - revise the drafts;
+  - define family-level duals and elasticities, S_j, "eligible" and the jargon ("pod", "bp", GICS);
+  - B is still overloaded (loadings and final bound);
+  - Q1–Q3 are not stated in II–IV.
+- **III (11/4):**
+  - check A1–A9 against your derivations;
+  - an experiment map before Validation (cold read #1);
+  - the MIQCP method Gurobi actually used is not recorded (DESIGN §11.3 asks for it); I can only say the parameter was left at its default.
+- **I (11/4):** write from the outline; related work and contributions; replace the internal labels (DESIGN §, Decision 44, K29b-ext) with in-report evidence.
+- **IV (11/6):**
+  - revise; IV is over budget;
+  - the cold read's Q3 question (cone tolerance against Gurobi's MIQCP handling as the cause);
+  - Table III's default-scaling certified gap is above MIPGap (cone violation; unexplained in the text);
+  - P-MI ex-ante volatility not reported (DESIGN §3.4: "report it"); it needs a computation from the stored weights in a later session if wanted.
+- **V (11/8):** from the outline. It covers every §11.4 item and addendum item 6.
+- **Abstract, VI, disclosures and AI-use acknowledgment (11/10):**
+  - from the outlines;
+  - docs/AI_USE.md has no S3b or S4 rows yet;
+  - disclosure item 3 now has v2 numbers (max |z| 5.47).
+- **Proposal:**
+  - proposal/proposal.tex is still the scaffold (the 10/22 text was drafted in chat).
+  - RUNBOOK asks for a final-mode spec_check "against the submitted proposal", which needs the submitted text in the repo.
+- **References:** every refs.bib entry is still `% verified: no`.
+- **Advisory:** fonts. Tectonic substitutes for IEEEtran's Times (TU/ptm warnings).
+
+### Decisions needed
+- **50.** Page plan: the draft is 9 pages and Isaiah's sections will add about 0.9 page. Options: the cut order (about 0.6 page), shortening the IV-B/IV-C drafts, or both.
+- **51.** Should a later session compute the P-MI ex-ante volatility (DESIGN §3.4) and the MIQCP method actually used? The latter would need a logged rerun with that attribute recorded.
