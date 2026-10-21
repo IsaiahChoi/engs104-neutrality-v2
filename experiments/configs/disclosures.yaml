@@ -1,0 +1,5 @@
+# Disclosure facts (DESIGN §11.5 item 3; S4): the largest |z| left by one-pass winsorization of
+# the momentum z-score, over every risk-model month-end where α_mom is defined.
+# `make disclosures` → results/disclosures/run_<UTC>/.
+runner: disclosures
+status: "report disclosure (DESIGN §11.5 item 3), S4"
