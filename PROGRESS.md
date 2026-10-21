@@ -1836,3 +1836,24 @@ Then RUNBOOK's steps 1–5, under these rules:
 
 ## 2026-10-21 — S4 (Claude Code, Opus 5.5): step 0 of the S4 addendum done
 - Step 0, tests first (RED logs/test_s4_step0_red_20261021T033207Z.log: 11 failed; GREEN logs/test_s4_step0_green_20261021T033317Z.log). 0a: tools/make_facts.py gains Decision 49's P7 counting clause and "integer.yaml (approved at GATE DESIGN)", measured-effort lines for I1, I2, N1, N2, K29c, k29b_ext, s3b and n2_probe (from RUN_LOG and the run tables), and a software line from the newest full-suite log (logs/test_full_20261021T033550Z.log: 486 passed, 1 skipped, 2 xfailed). proposal/FACTS.md regenerated (150 lines; 134 (file, sha256) pairs, 44 files, 0 mismatches). 0b: tools/s3b_analysis.py items 4 and 5 raise on a missing id; s3b_analysis.json regenerated, equal to the committed file leaf by leaf (296 leaves, 0 changed, added or removed; CSVs byte-identical).
+
+## 2026-10-21 — S4 (Claude Code, Opus 5.5): report built (Mode A); before CHECK REPORT
+- Precondition met: Isaiah's note "S3b read; Decision 49; run S4" (with its S4 addendum) is present. Writing mode A (GATE I; unchanged in that note).
+- Step 0 committed on its own (7621d1f; entry above).
+- **Disclosure item 3 needed a v2 number that no run held**, so I added a small logged run, tests first: experiments/run_disclosures.py (config disclosures.yaml, `make disclosures`).
+  - Committed at 8d194f3, run results/disclosures/run_20261021T034238Z: make exit 0, DONE, RUN_LOG "ok".
+  - Result: max |z| after one-pass winsorization 5.47 (2024-04) over 240 month-ends (2005-12 skipped: lookback); names above 3 at 240 of 240 month-ends, 1,936 of 107,592 name-dates.
+  - Item 2's multi-session count (1) is read from results/data_report.md, the v2 offline rebuild at v2 start.
+  - FACTS was regenerated after this run (fa3a1dc), because its effort lines cite RUN_LOG.csv, whose sha256 changed. Only that hash and the test-suite line changed.
+- **Build (adcdb52), tests first** (logs/test_s4_{figs,numbers}_{red,green}_*):
+  - src/figures/numbers.py: 389 result and design macros, each with source file and sha256, design constants read from the configs and code. It also writes Table I (report/tables/table1_mandate.tex).
+  - src/analysis/cont.py: K17, recomputed from c2_points (312 sweeps, 1,728 pairs, 1,104 triples, 0 failures).
+  - fig_s3: Fig. 4 is two-column with slope panels and the certified-nonconcave secants marked; Fig. 5 has the plain-relaxation reference lines, the default arm labelled solver behaviour, and no empty legend entry; Table II has the (H − L)/s column and the δ = 10% convex row; Table III's gap is labelled B_eff-based and floored at 1e-6. Y-axes say "P-MI objective". Table I is in make_all.REPORT_TABLES, because the pre-existing test_registry_and_final_names pins FIGURES exactly; that test is unmodified.
+  - report/main.tex: II–IV drafted (every paragraph % drafted-by-agent; A1–A9 also % verify-by-hand), captions included. Abstract, I, V, VI, the disclosures and the AI-use acknowledgment are red claim → evidence outlines.
+  - `make figures` run twice is byte-identical (16 files). Full suite: 499 passed, 1 skipped, 2 xfailed.
+- **Page budget: the draft is 9 pages (> 8). Per the addendum I did not cut.** Per-section estimates (zref positions in a scratch copy; floats counted where they land): Abstract 0.14, I 0.24, II 1.21, III 1.26, IV 3.75 (A 1.31, B 1.13, C 1.31), V 0.71, VI 0.31, disclosures and AI use 0.33, references about 0.5. IV is about 1.25 pages over its 2.5-page budget, and the outlined sections are still below theirs.
+- **spec_check:** report (draft) FAIL on RP-4 only (9 pages); RP-5 and RP-8 are N/A in draft mode. Proposal (draft; still the scaffold): PR-4 FAIL (no \cite yet), PR-1–PR-3 PASS after building proposal.pdf; not counted as a failure (addendum item 9).
+- Open (recorded, not acted on):
+  - Gurobi's MIQCP method for the perspective model is not recorded per solve (left at default); DESIGN §11.3 asks for it to be recorded.
+  - Tectonic substitutes fonts for IEEEtran's Times (TU/ptm warnings), as in the S1 scaffold builds.
+- Next: CHECK REPORT (K30–K39, draft mode) with the result-checker, then the cold-reader, then GATE R.
