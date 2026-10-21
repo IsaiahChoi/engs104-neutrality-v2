@@ -1,0 +1,9 @@
+# S3b items 3 and 5 (Isaiah's GATE I note): recomputations the I1 and N1 runs did not store.
+# `make s3b` → results/s3b/run_<UTC>/. integer.yaml and numerics.yaml are read, unchanged.
+runner: s3b
+status: "S3b items 3 and 5 (GATE I)"
+source_configs: {integer: integer, numerics: numerics}
+i1_run: results/i1/run_20261021T001423Z    # the current I1 run (CHECK INT round 2)
+n1_run: results/n1/run_20261021T001914Z    # the current N1 run
+expected: {support_cases: 48, n1_relaxations: 36, i1_relaxations: 9}
+workers: 4
