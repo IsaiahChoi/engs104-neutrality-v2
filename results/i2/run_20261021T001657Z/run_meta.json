@@ -1,0 +1,161 @@
+{
+ "name": "i2",
+ "created_utc": "2026-10-21T00:16:57Z",
+ "git_commit": "120ea56e15f73bcd843ada9046da366e60331020",
+ "config_path": "experiments/configs/integer.yaml",
+ "config_sha256": "f6dce128d101fa0ac8de45e359c171fcd45f8b86efcf5dcd682665e45a74aa7c",
+ "config": {
+  "status": "approved at GATE DESIGN (2026-10-20)",
+  "workers": 4,
+  "s_obj": 10000.0,
+  "W_star": 340.0,
+  "mandate": {
+   "position": 0.06,
+   "min_position": 0.0025
+  },
+  "polish": {
+   "method": "dual_simplex",
+   "feasibility_tol": 1e-09,
+   "optimality_tol": 1e-09
+  },
+  "i1": {
+   "dates": [
+    "2009-03",
+    "2017-12",
+    "2020-03"
+   ],
+   "N": 250,
+   "f": [
+    0.25,
+    0.5,
+    0.75
+   ],
+   "K": {
+    "2009-03": {
+     "S": 188,
+     "K": [
+      47,
+      94,
+      141
+     ]
+    },
+    "2017-12": {
+     "S": 133,
+     "K": [
+      33,
+      67,
+      100
+     ]
+    },
+    "2020-03": {
+     "S": 158,
+     "K": [
+      40,
+      79,
+      119
+     ]
+    }
+   },
+   "certification": "combined",
+   "formulations": [
+    "bigm",
+    "perspective_rescaled"
+   ],
+   "constraints": [
+    {
+     "key": "sector",
+     "b": 0.02
+    },
+    {
+     "key": "dollar",
+     "b": 0.02
+    },
+    {
+     "key": "style",
+     "b": 0.1
+    },
+    {
+     "key": "style:Mom",
+     "b": 0.025
+    }
+   ],
+   "baseline_kinds": [
+    "fixed_lambda"
+   ],
+   "perspective_slope_method": "central",
+   "k29b": {
+    "n_instances": 3,
+    "scale_factor": 10.0
+   },
+   "rel_delta": 0.1,
+   "robustness": {
+    "date": "2017-12",
+    "rel_delta": 0.05
+   },
+   "perspective_fd_rel_step": 0.001,
+   "settings": {
+    "mip_gap": 1e-06,
+    "threads": 1,
+    "seed": 0,
+    "work_limit_factor": 2.0
+   }
+  },
+  "i2": {
+   "instances": [
+    {
+     "date": "2017-12",
+     "N": 250,
+     "K": 67
+    },
+    {
+     "date": "2020-03",
+     "N": 250,
+     "K": 79
+    }
+   ],
+   "constraint": {
+    "key": "sector",
+    "b": 0.02
+   },
+   "certification": "combined",
+   "formulations": [
+    "bigm",
+    "perspective_rescaled"
+   ],
+   "baseline_kinds": [
+    "fixed_lambda"
+   ],
+   "perspective_slope_method": "central",
+   "points": 41,
+   "settings": {
+    "mip_gap": 1e-06,
+    "threads": 1,
+    "seed": 0,
+    "work_limit_factor": 2.0
+   }
+  }
+ },
+ "finish_status": "ok",
+ "args": {},
+ "data": {
+  "panel_sha256_manifest": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "panel_sha256_build_meta": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "files": {
+   "data/processed/panel.parquet": "64bfa137742934c24328a9fabe7d54c3a33ffc827d3a80c9af9db0790f95081e",
+   "data/processed/factors_daily.parquet": "4c295060b1d7d9160fbccbe264b22507e716fde80815d73f025c2fb5134399cc",
+   "data/processed/risk/w252_loadings.parquet": "eab160341656cf72bec51fb4dd2ff7d0edb95ef774c3ec94bdabb617322eaceb",
+   "data/processed/risk/w252_factor_cov.parquet": "6202357042b1e20205d2361ae864b8e7401b33a84b5af571b05a16cfd4da1293"
+  }
+ },
+ "provenance": {
+  "python": "3.12.4",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.0.6",
+  "cvxpy": "1.9.3",
+  "clarabel": "0.11.1",
+  "gurobipy": "13.0.3"
+ }
+}

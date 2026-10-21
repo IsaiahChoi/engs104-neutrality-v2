@@ -64,6 +64,18 @@
    "violations": 0
   },
   "k29b": {
+   "binding_keys": {
+    "instances": [
+     "2009-03_N250_f0.25_K47",
+     "2009-03_N250_f0.5_K94",
+     "2009-03_N250_f0.75_K141"
+    ],
+    "max_ratio": 0.0011453266447519754,
+    "max_rel_diff": 3.244755292730338e-07,
+    "misses": 0,
+    "n": 9,
+    "n_failed": 0
+   },
    "instances": [
     "2009-03_N250_f0.25_K47",
     "2009-03_N250_f0.5_K94",
@@ -78,6 +90,18 @@
   "n_binding_main_delta": 23,
   "n_cases": 48,
   "n_cases_main_delta": 36,
+  "nonbinding_by_delta": [
+   {
+    "n": 1,
+    "pattern": "bigm_relax=0, perspective=0, fixed=0",
+    "rel_delta": 0.05
+   },
+   {
+    "n": 13,
+    "pattern": "bigm_relax=0, perspective=0, fixed=0",
+    "rel_delta": 0.1
+   }
+  ],
   "perspective": {
    "concavity_failures": 0,
    "fail_reasons": {},
@@ -1213,24 +1237,24 @@
  },
  "sources": {
   "i1": {
-   "commit": "2d45cee57bf742c97195f3de3f11d713adb29816",
-   "outputs_json_sha256": "6107b76862e596fbb21cbc02f5e00bce9f8b55375c1fed0dd8f1259e39e5ece9",
-   "run": "results/i1/run_20261020T231007Z"
+   "commit": "120ea56e15f73bcd843ada9046da366e60331020",
+   "outputs_json_sha256": "3fd5adffcb52244b76bca36105e125098d5cd9cc4958636ad752a2881e8c43b3",
+   "run": "results/i1/run_20261021T001423Z"
   },
   "i2": {
-   "commit": "64eabe2d821a516121ad7efb5c48ba620e571218",
-   "outputs_json_sha256": "1c09ab2ed4b27734c96aa46b548c18e311b247da338b6da7fb3a2f5a3d13e1c0",
-   "run": "results/i2/run_20261020T231806Z"
+   "commit": "120ea56e15f73bcd843ada9046da366e60331020",
+   "outputs_json_sha256": "3c492c70a0ac0b4be2641f6dbdbe3945e422dad64268d420772feebf1e650458",
+   "run": "results/i2/run_20261021T001657Z"
   },
   "n1": {
-   "commit": "189d5eabe8bd6e67a0c2fe26bfebe106a413b72c",
-   "outputs_json_sha256": "22d98dcffa4df43ba1b1b3ada2a76dd5bd39ba4c433f343c0c33e4611f44d8e4",
-   "run": "results/n1/run_20261020T233812Z"
+   "commit": "120ea56e15f73bcd843ada9046da366e60331020",
+   "outputs_json_sha256": "cda87856a0aed82838fd0f3a5849f95fd88634bbef24d13919d59c4c9488fd60",
+   "run": "results/n1/run_20261021T001914Z"
   },
   "n2": {
-   "commit": "64eabe2d821a516121ad7efb5c48ba620e571218",
-   "outputs_json_sha256": "7d32f7f6fce402113f398699c31d5fb22aa9e7242d225e59aba4505ce01692ca",
-   "run": "results/n2/run_20261020T232833Z"
+   "commit": "120ea56e15f73bcd843ada9046da366e60331020",
+   "outputs_json_sha256": "f626beeaea3120271757d7ed59f103248b713f24a77dc7f72af8ff79da5f4791",
+   "run": "results/n2/run_20261021T002729Z"
   }
  }
 }

@@ -1,0 +1,200 @@
+{
+ "name": "n2",
+ "created_utc": "2026-10-21T00:27:29Z",
+ "git_commit": "120ea56e15f73bcd843ada9046da366e60331020",
+ "config_path": "experiments/configs/numerics.yaml",
+ "config_sha256": "570a33a3c2079f3d74f580f897b536ddf225295cc9fddcd644dd84711bc430ce",
+ "config": {
+  "status": "approved at GATE DESIGN (2026-10-20)",
+  "workers": 4,
+  "s_obj": 10000.0,
+  "W_star": 340.0,
+  "polish": {
+   "method": "dual_simplex",
+   "feasibility_tol": 1e-09,
+   "optimality_tol": 1e-09
+  },
+  "cone_diagnostic": true,
+  "n1": {
+   "dates": [
+    "2017-12",
+    "2020-03"
+   ],
+   "N": [
+    100,
+    250,
+    "full"
+   ],
+   "f": [
+    0.25,
+    0.5
+   ],
+   "K": {
+    "2017-12": {
+     "100": {
+      "S": 50,
+      "K": [
+       13,
+       25
+      ]
+     },
+     "250": {
+      "S": 133,
+      "K": [
+       33,
+       67
+      ]
+     },
+     "full": {
+      "N": 466,
+      "S": 217,
+      "K": [
+       54,
+       109
+      ]
+     }
+    },
+    "2020-03": {
+     "100": {
+      "S": 61,
+      "K": [
+       15,
+       31
+      ]
+     },
+     "250": {
+      "S": 158,
+      "K": [
+       40,
+       79
+      ]
+     },
+     "full": {
+      "N": 477,
+      "S": 316,
+      "K": [
+       79,
+       158
+      ]
+     }
+    }
+   },
+   "tightness": {
+    "loose": {
+     "style": 0.4,
+     "beta": 0.2
+    },
+    "base": {
+     "style": 0.1,
+     "beta": 0.05
+    },
+    "tight": {
+     "style": 0.025,
+     "beta": 0.0125
+    }
+   },
+   "formulations": [
+    "bigm",
+    "perspective",
+    "perspective_rescaled"
+   ],
+   "plain_relaxations": true,
+   "determinism": [
+    {
+     "date": "2017-12",
+     "N": 250,
+     "f": 0.5,
+     "tightness": "base",
+     "arm": "bigm",
+     "presolve": -1
+    },
+    {
+     "date": "2020-03",
+     "N": 250,
+     "f": 0.5,
+     "tightness": "tight",
+     "arm": "perspective",
+     "presolve": -1
+    },
+    {
+     "date": "2020-03",
+     "N": "full",
+     "f": 0.25,
+     "tightness": "loose",
+     "arm": "perspective_rescaled",
+     "presolve": -1
+    }
+   ],
+   "settings": {
+    "mip_gap": 0.0001,
+    "threads": 1,
+    "seed": 0,
+    "work_limit_factor": 1.0,
+    "presolve": -1
+   },
+   "presolve_off": {
+    "N": 250,
+    "presolve": 0
+   }
+  },
+  "n2": {
+   "miqp": {
+    "N": 250,
+    "tightness": "base",
+    "s_obj": [
+     1.0,
+     10000.0
+    ],
+    "mip_gap": 0.0001,
+    "work_limit_factor": 1.0,
+    "formulations": [
+     "bigm",
+     "perspective",
+     "perspective_rescaled"
+    ]
+   },
+   "convex": {
+    "dates": [
+     "2008-10",
+     "2013-06",
+     "2017-12",
+     "2020-03",
+     "2025-04"
+    ],
+    "solvers": [
+     "GUROBI_BARRIER",
+     "CLARABEL",
+     "SCS"
+    ],
+    "reference": {
+     "solver": "CLARABEL",
+     "scaled": true,
+     "tol": 1e-10
+    }
+   }
+  }
+ },
+ "finish_status": "ok",
+ "args": {},
+ "data": {
+  "panel_sha256_manifest": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "panel_sha256_build_meta": "1c331f6590b3599788341f41fbf758caf49d9dc6d705632e70b5e6e9f52b3f94",
+  "files": {
+   "data/processed/panel.parquet": "64bfa137742934c24328a9fabe7d54c3a33ffc827d3a80c9af9db0790f95081e",
+   "data/processed/factors_daily.parquet": "4c295060b1d7d9160fbccbe264b22507e716fde80815d73f025c2fb5134399cc",
+   "data/processed/risk/w252_loadings.parquet": "eab160341656cf72bec51fb4dd2ff7d0edb95ef774c3ec94bdabb617322eaceb",
+   "data/processed/risk/w252_factor_cov.parquet": "6202357042b1e20205d2361ae864b8e7401b33a84b5af571b05a16cfd4da1293"
+  }
+ },
+ "provenance": {
+  "python": "3.12.4",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.0.6",
+  "cvxpy": "1.9.3",
+  "clarabel": "0.11.1",
+  "gurobipy": "13.0.3"
+ }
+}

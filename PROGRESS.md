@@ -1446,3 +1446,10 @@ index 4561d89..e8e5367 100644
   - No estimator, value or bound changes. The checker reran all 452 I1/I2 arm solves at HEAD and found them bit-for-bit identical.
 - **Suite:** 427 passed, 1 skipped, 2 xfailed in 85.45s (0:01:25) (logs/test_s3_round2_full_20261021T001123Z.log).
 - **Next:** rerun I1, I2 (constraint unchanged: sector@0.02, chosen by the rule from I1; the rerun reproduces I1, and I will confirm), N1 and N2 at the next commit. The four runs of 2026-10-20 23:10–23:38 are marked superseded once the reruns finish. Then CHECK INT round 2.
+
+## 2026-10-21 — S3: reruns for CHECK INT round 2 (at 120ea56); old runs superseded
+- I1 results/i1/run_20261021T001423Z; I2 results/i2/run_20261021T001657Z; N1 results/n1/run_20261021T001914Z; N2 results/n2/run_20261021T002729Z. All at 120ea56; make exit 0, DONE and RUN_LOG "ok" for each.
+- **Values identical** to the superseded runs: max |Δ| = 0 for V, B, L, H, s, every estimator, Work, nodes and root bounds, in I1, I2, N1 and N2. So the I2 constraint chosen from I1 (sector@0.02) stands, and Figs. 4–5 and Tables II–III regenerate byte-identically.
+- New: raw duals on all 300 I1 stencil relaxations (240 at s_obj, 60 at 10·s_obj), on I2's stencil points and on n1_relax; s_obj and workers on every solve.
+- **Superseded** (SUPERSEDED marker; RUN_LOG status set): results/i1/run_20261020T231007Z, results/i2/run_20261020T231806Z, results/n1/run_20261020T233812Z, results/n2/run_20261020T232833Z. results/s3_analysis/ now reads the new runs (sources in s3_analysis.json).
+- K29b on binding keys alone: 9 cases, max relative difference 3.2e-7. With the non-binding style key: 2.33 relative to ŝ ≈ 3e-13, inside the noise term (max diff/tol 1.1e-3). The δ = 5% non-binding case is now broken down: all three estimators zero.
