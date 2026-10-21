@@ -1454,3 +1454,7 @@ index 4561d89..e8e5367 100644
 - **Superseded** (SUPERSEDED marker; RUN_LOG status set): results/i1/run_20261020T231007Z, results/i2/run_20261020T231806Z, results/n1/run_20261020T233812Z, results/n2/run_20261020T232833Z. results/s3_analysis/ now reads the new runs (sources in s3_analysis.json).
 - K29b on binding keys alone: 9 cases, max relative difference 3.2e-7. With the non-binding style key: 2.33 relative to ŝ ≈ 3e-13, inside the noise term (max diff/tol 1.1e-3). The δ = 5% non-binding case is now broken down: all three estimators zero.
 - **Optional C1 ratio (GATE DESIGN addendum), code:** experiments/run_c1_ratio.py with config c1_ratio.yaml and `make c1_ratio`. tests/test_c1_ratio.py (3): RED logs/test_c1_ratio_red_* (no module); GREEN logs/test_c1_ratio_green_*. Bands: near 0.1 = [0.05, 0.2], near 1 = [0.5, 2], set before the run.
+- **Optional C1 ratio, result:** results/c1_ratio/run_20261021T003435Z at 8bd53a3. make exit 0, DONE, RUN_LOG "ok".
+  - 64 flagged points (A(b) recomputed, max |Δ| vs stored 0). All 64 are "near 0.1": |F − B|(0.1%)/|F − B|(1%) ranges 0.0899–0.1108, median 0.09999. None is near 1.
+  - The 35 active-set-change points ("kink", Decision 34) and the 29 curvature flags are all near 0.1. At this resolution A*(b) is differentiable at every flagged point, as DESIGN §9 A5 (edited) predicts for nondegenerate active-set changes. The K15 flags measure curvature over the 1% stencil, not slope breaks.
+  - Source: results/c1_ratio/run_20261021T003435Z/summary.json, c1_ratio.parquet.
