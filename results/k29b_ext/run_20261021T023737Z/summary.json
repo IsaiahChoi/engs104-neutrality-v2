@@ -1,0 +1,27 @@
+{
+ "n_cases": 36,
+ "verdict": {
+  "n": 36,
+  "n_failed": 0,
+  "misses": 0,
+  "max_ratio": 0.00026573305101604185,
+  "max_rel_diff": 90.6,
+  "instances": [
+   "2017-12_N250_f0.25_K33",
+   "2017-12_N250_f0.5_K67",
+   "2017-12_N250_f0.75_K100",
+   "2020-03_N250_f0.25_K40",
+   "2020-03_N250_f0.5_K79",
+   "2020-03_N250_f0.75_K119"
+  ],
+  "pass": true
+ },
+ "relaxations": 360,
+ "relaxations_failed": 0,
+ "kinks_s_obj": 0,
+ "kinks_scaled": 0,
+ "statuses": {
+  "optimal_inaccurate": 329,
+  "optimal": 31
+ }
+}
