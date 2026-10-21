@@ -137,6 +137,7 @@ def _config_macros(M: _M) -> None:
     M.add("NTwoConvexDates", ", ".join(nc["n2"]["convex"]["dates"]), npth)
     M.add("NTwoRefTol", pow10(nc["n2"]["convex"]["reference"]["tol"]), npth)
     M.add("NTwoMipGap", pow10(nc["n2"]["miqp"]["mip_gap"]), npth)
+    M.add("SObjUnit", num(min(nc["n2"]["miqp"]["s_obj"])), npth)
     M.add("DTwelve", ", ".join(cc["d12"]), cp)
     M.add("NDTwelve", i(len(cc["d12"])), cp)
     M.add("EnvStepPct", num(100 * cc["envelope_rel_step"]), cp)
@@ -238,6 +239,9 @@ def _q1_macros(M: _M) -> None:
     M.add("IdealFactorN", i(len(fac)), idf)
     M.add("IdealRetErr", sig((fac["retained_num"] - fac["sqrt_1_minus_phi"]).abs().max()), idf)
     M.add("IdealARelErr", sig((ide["A_num"] / ide["A_cf"] - 1)[nz].abs().max()), idf)
+    M.add("IdealNonzeroN", i(nz.sum()), idf)
+    M.add("IdealZeroN", i((~nz).sum()), idf)
+    M.add("IdealZeroAbs", sig((ide["A_num"] - ide["A_cf"])[~nz].abs().max()), idf)
     M.add("IdealRetMomMin", sig(fac[fac["alpha"] == "mom"]["retained_num"].min(), 3), idf)
     from tools.make_facts import attribution_shares
     af = c1 / "c1_attribution.parquet"
@@ -255,6 +259,9 @@ def _q1_macros(M: _M) -> None:
     kk = pd.read_parquet(C1_KINKS)
     M.add("KinkAS", i((kk["classification"] == "kink").sum()), C1_KINKS)
     M.add("KinkCurv", i((kk["classification"] == "curvature flag").sum()), C1_KINKS)
+    unf = kk[~kk["flagged"].astype(bool)]
+    M.add("Unflagged", i(len(unf)), C1_KINKS)
+    M.add("UnflaggedAS", i((unf["classification"] == "unflagged, active set changes").sum()), C1_KINKS)
     rs = latest_done("c1_ratio") / "summary.json"
     R = _json(rs)
     M.add("RatioNearTenth", i(R["counts"].get("near 0.1", 0)), rs)
@@ -320,6 +327,7 @@ def _q2_macros(M: _M) -> None:
     M.add("WidthMed", sig(w.median()), lf)
     M.add("WidthMin", sig(w.min()), lf)
     M.add("WidthMax", sig(w.max()), lf)
+    M.add("WidthN", i(len(w)), lf)
     k27 = i1["k27_baseline_by_delta"]["0.1"]
     M.add("BaseSecN", i(k27["n_secant"]), sf)
     M.add("BaseSecMed", sig(k27["secant_rel_err_median"]), sf)
@@ -335,6 +343,7 @@ def _q2_macros(M: _M) -> None:
     rd = pp["raw_dual_rel_err_binding"]["usable"]
     M.add("RawDualMed", sig(rd["median"]), sf)
     M.add("RawDualMax", sig(rd["max"]), sf)
+    M.add("RawDualN", i(rd["n"]), sf)
     M.add("KTwentyThreePoints", i(i1["k23"]["n_points"]), sf)
     M.add("KTwentyThreeViol", i(i1["k23"]["violations"]), sf)
     M.add("VTieIOne", i(i1["suppliers"]["v_tie"]), sf)
@@ -368,6 +377,20 @@ def _q2_macros(M: _M) -> None:
     ivf = latest_done("i2") / "i2_intervals.parquet"
     iv = pd.read_parquet(ivf)
     M.add("ITwoWidthMax", sig(((iv["H"] - iv["L"]) / iv["s"]).max()), ivf)
+    pts2 = pd.read_parquet(latest_done("i2") / "i2_points.parquet")
+    bb = float(pts2["b_base"].iloc[0])
+    fr = sorted(set(np.round(iv["e"] / bb, 10)))
+    M.add("ITwoFracLo", num(fr[0]), ivf)
+    M.add("ITwoFracHi", num(fr[-1]), ivf)
+    rd2 = (iv["delta"] / iv["e"]).to_numpy(float)
+    if not np.allclose(rd2, rd2[0]):
+        raise ValueError("I2 intervals use different relative steps")
+    M.add("ITwoDeltaPct", num(round(100 * rd2[0], 10)), ivf)
+    pf2 = latest_done("i2") / "i2_points.parquet"
+    M.add("ITwoGridMult", num(round(float(pts2["bound"].max()) / bb, 10)), pf2)
+    est_all = pd.read_parquet(latest_done("i1") / "i1_estimators.parquet")
+    nbx = est_all[~est_all["binding"].astype(bool)]
+    M.add("NonBindPerspMax", sig(nbx["persp_slope"].abs().max()), latest_done("i1") / "i1_estimators.parquet")
     ef = latest_done("i1") / "i1_estimators.parquet"
     e = pd.read_parquet(ef)
     e = e[e["rel_delta"] == 0.10]
@@ -468,10 +491,14 @@ def _q3_macros(M: _M) -> None:
     M.add("KTwentyTwoWorstResc", sig(k22["by_pair"]["bigm|perspective_rescaled"]["worst_ratio"]), sf)
     M.add("KTwentyFiveSame", i(n1["k25"]["identical"]), sf)
     M.add("KTwentyFiveN", i(len(n1["k25"]["rows"])), sf)
-    ce = n1["cone_effect_rel"]
-    M.add("ConeDefMed", sig(ce["perspective"]["median"]), sf)
-    M.add("ConeDefMax", sig(ce["perspective"]["max"]), sf)
-    M.add("ConeRescMax", sig(ce["perspective_rescaled"]["max"]), sf)
+    nf = latest_done("n1") / "n1_solves.parquet"
+    ns = pd.read_parquet(nf)
+    ns = ns[(ns["presolve"] == -1) & ~ns["rerun"].astype(bool)]
+    cd, cr = ns[ns["arm"] == "perspective"]["cone_effect_rel"], ns[ns["arm"] == "perspective_rescaled"]["cone_effect_rel"]
+    M.add("ConeDefMed", sig(cd.median()), nf)
+    M.add("ConeDefMax", sig(cd.max()), nf)
+    M.add("ConeRescMax", sig(cr.max()), nf)
+    M.add("ConeN", i(len(cd)), nf)
     ps = n1["presolve_N250"]
     for arm, an in ARMS:
         v = ps["arms"][arm]

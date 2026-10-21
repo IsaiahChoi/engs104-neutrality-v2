@@ -99,6 +99,8 @@
 \newcommand{\NTwoRefTol}{\ensuremath{10^{-10}}}
 % source: experiments/configs/numerics.yaml sha256=570a33a3c2079f3d74f580f897b536ddf225295cc9fddcd644dd84711bc430ce
 \newcommand{\NTwoMipGap}{\ensuremath{10^{-4}}}
+% source: experiments/configs/numerics.yaml sha256=570a33a3c2079f3d74f580f897b536ddf225295cc9fddcd644dd84711bc430ce
+\newcommand{\SObjUnit}{1}
 % source: experiments/configs/continuous.yaml sha256=3dfab818ab480443b7dbc5b496810e10f9452d41a9851f0c491dd4c7d6a34e84
 \newcommand{\DTwelve}{2008-10, 2009-03, 2011-08, 2013-06, 2015-08, 2017-12, 2018-12, 2020-03, 2020-11, 2022-06, 2023-03, 2025-04}
 % source: experiments/configs/continuous.yaml sha256=3dfab818ab480443b7dbc5b496810e10f9452d41a9851f0c491dd4c7d6a34e84
@@ -217,7 +219,7 @@
 \newcommand{\KTwentyNineCPairMisses}{0}
 % source: results/k29c/run_20261020T225805Z/summary.json sha256=2bb51f2dd573b3f9fb9da5011165dd767b831aa82e0cef77e946cedc96d75a76
 \newcommand{\KTwentyNineCFailedFrac}{\ensuremath{4.7\times10^{-5}}}
-% source: logs/test_full_20261021T040432Z.log sha256=9cf757f8b625dbc7b12d92650002a0e554f0d75bb28fdfb6a36d7c1ceceae5e7
+% source: logs/test_full_20261021T061932Z.log sha256=e3dd12619d738044c0e8b6c624e9634c15897c45c8d251cb5927a4e521b6b3a9
 \newcommand{\TestsPassed}{499}
 % source: results/c1/run_20261019T192500Z/c1_points.parquet sha256=ba7d6f940dda93997f6c54782fe83b427dc172ab01e2f6b8e819754dfaf6591b
 \newcommand{\AMomMedBp}{30.5}
@@ -284,6 +286,12 @@
 % source: results/c1/run_20261019T192500Z/c1_idealized.parquet sha256=a981e91f94f259dc064cff68c6563a47f1129ed28ce716a2289b9e58af67205c
 \newcommand{\IdealARelErr}{\ensuremath{1.6\times10^{-14}}}
 % source: results/c1/run_20261019T192500Z/c1_idealized.parquet sha256=a981e91f94f259dc064cff68c6563a47f1129ed28ce716a2289b9e58af67205c
+\newcommand{\IdealNonzeroN}{48}
+% source: results/c1/run_20261019T192500Z/c1_idealized.parquet sha256=a981e91f94f259dc064cff68c6563a47f1129ed28ce716a2289b9e58af67205c
+\newcommand{\IdealZeroN}{24}
+% source: results/c1/run_20261019T192500Z/c1_idealized.parquet sha256=a981e91f94f259dc064cff68c6563a47f1129ed28ce716a2289b9e58af67205c
+\newcommand{\IdealZeroAbs}{\ensuremath{3.6\times10^{-17}}}
+% source: results/c1/run_20261019T192500Z/c1_idealized.parquet sha256=a981e91f94f259dc064cff68c6563a47f1129ed28ce716a2289b9e58af67205c
 \newcommand{\IdealRetMomMin}{0.964}
 % source: results/c1/run_20261019T192500Z/c1_attribution.parquet sha256=aaa63ba048ccb5df821c40baf192c5b8b045680e13abef3bc90285827ffc8bce
 \newcommand{\AttPosMed}{0.44}
@@ -309,6 +317,10 @@
 \newcommand{\KinkAS}{35}
 % source: results/pilot_s2b/run_20261020T024318Z/c1_kinks.parquet sha256=1c6cca063c3fed6a325dbb0136376107406d39170b9557d662a6ab49ab57ce14
 \newcommand{\KinkCurv}{29}
+% source: results/pilot_s2b/run_20261020T024318Z/c1_kinks.parquet sha256=1c6cca063c3fed6a325dbb0136376107406d39170b9557d662a6ab49ab57ce14
+\newcommand{\Unflagged}{51}
+% source: results/pilot_s2b/run_20261020T024318Z/c1_kinks.parquet sha256=1c6cca063c3fed6a325dbb0136376107406d39170b9557d662a6ab49ab57ce14
+\newcommand{\UnflaggedAS}{21}
 % source: results/c1_ratio/run_20261021T003435Z/summary.json sha256=d6e3556b7c5816f689ed3c46076ce160fca0901d9dcd81e86d2f0eee5614f776
 \newcommand{\RatioNearTenth}{64}
 % source: results/c1_ratio/run_20261021T003435Z/summary.json sha256=d6e3556b7c5816f689ed3c46076ce160fca0901d9dcd81e86d2f0eee5614f776
@@ -413,6 +425,8 @@
 \newcommand{\WidthMin}{\ensuremath{1.2\times10^{-4}}}
 % source: results/s3_analysis/i1_long.csv sha256=77ad110b5c33a44d5f3071320136f9d97e083a9be4b9334a314e2148f21650ad
 \newcommand{\WidthMax}{0.020}
+% source: results/s3_analysis/i1_long.csv sha256=77ad110b5c33a44d5f3071320136f9d97e083a9be4b9334a314e2148f21650ad
+\newcommand{\WidthN}{23}
 % source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
 \newcommand{\BaseSecN}{24}
 % source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
@@ -435,6 +449,8 @@
 \newcommand{\RawDualMed}{\ensuremath{7.2\times10^{-9}}}
 % source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
 \newcommand{\RawDualMax}{\ensuremath{2.8\times10^{-4}}}
+% source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
+\newcommand{\RawDualN}{23}
 % source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
 \newcommand{\KTwentyThreePoints}{144}
 % source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
@@ -501,6 +517,16 @@
 \newcommand{\ITwoSecMax}{0.049}
 % source: results/i2/run_20261021T001657Z/i2_intervals.parquet sha256=d6bf67f6078be16dd05d6fbc87f965dd866de5d2aacd638cfedd12a2af88d9be
 \newcommand{\ITwoWidthMax}{\ensuremath{9.9\times10^{-4}}}
+% source: results/i2/run_20261021T001657Z/i2_intervals.parquet sha256=d6bf67f6078be16dd05d6fbc87f965dd866de5d2aacd638cfedd12a2af88d9be
+\newcommand{\ITwoFracLo}{0.5}
+% source: results/i2/run_20261021T001657Z/i2_intervals.parquet sha256=d6bf67f6078be16dd05d6fbc87f965dd866de5d2aacd638cfedd12a2af88d9be
+\newcommand{\ITwoFracHi}{1.5}
+% source: results/i2/run_20261021T001657Z/i2_intervals.parquet sha256=d6bf67f6078be16dd05d6fbc87f965dd866de5d2aacd638cfedd12a2af88d9be
+\newcommand{\ITwoDeltaPct}{10}
+% source: results/i2/run_20261021T001657Z/i2_points.parquet sha256=b7e2283730e8078270d2f04d6138c5c8f1e802c6497b8c1805075f6eb2ce4608
+\newcommand{\ITwoGridMult}{2}
+% source: results/i1/run_20261021T001423Z/i1_estimators.parquet sha256=d8e1297eba2ea1b16aadbf10cdb1882f1e239449af0d17c04a797817c8e0a940
+\newcommand{\NonBindPerspMax}{\ensuremath{1.4\times10^{-11}}}
 % source: results/i1/run_20261021T001423Z/i1_estimators.parquet sha256=d8e1297eba2ea1b16aadbf10cdb1882f1e239449af0d17c04a797817c8e0a940
 \newcommand{\NearTieSector}{\ensuremath{1.364\times10^{-3}}}
 % source: results/i1/run_20261021T001423Z/i1_estimators.parquet sha256=d8e1297eba2ea1b16aadbf10cdb1882f1e239449af0d17c04a797817c8e0a940
@@ -709,12 +735,14 @@
 \newcommand{\KTwentyFiveSame}{3}
 % source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
 \newcommand{\KTwentyFiveN}{3}
-% source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
-\newcommand{\ConeDefMed}{\ensuremath{4.0\times10^{-4}}}
-% source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
+% source: results/n1/run_20261021T001914Z/n1_solves.parquet sha256=5785e3115798f7167fc4528cd814d3cc7c343b0d1818383ad54e51ebc81131dd
+\newcommand{\ConeDefMed}{\ensuremath{4.6\times10^{-4}}}
+% source: results/n1/run_20261021T001914Z/n1_solves.parquet sha256=5785e3115798f7167fc4528cd814d3cc7c343b0d1818383ad54e51ebc81131dd
 \newcommand{\ConeDefMax}{\ensuremath{6.4\times10^{-3}}}
-% source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
-\newcommand{\ConeRescMax}{\ensuremath{8.0\times10^{-9}}}
+% source: results/n1/run_20261021T001914Z/n1_solves.parquet sha256=5785e3115798f7167fc4528cd814d3cc7c343b0d1818383ad54e51ebc81131dd
+\newcommand{\ConeRescMax}{\ensuremath{1.9\times10^{-11}}}
+% source: results/n1/run_20261021T001914Z/n1_solves.parquet sha256=5785e3115798f7167fc4528cd814d3cc7c343b0d1818383ad54e51ebc81131dd
+\newcommand{\ConeN}{36}
 % source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
 \newcommand{\PreBigMRootOn}{\ensuremath{6.0\times10^{-4}}}
 % source: results/s3_analysis/s3_analysis.json sha256=0e8677131e2ade998511e967827134cad84bd4a98d7e0f07da7ee80df615d0a5
