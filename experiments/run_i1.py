@@ -82,6 +82,14 @@ def k29b_instances(cfg: dict) -> set[str]:
     return set(instance_ids(cfg)[:n])
 
 
+def check_k29b_coverage(k29b: set[str], tasks: list[dict]) -> None:
+    """S3b item 1 (review L3): every selected K29b instance id occurs among the tasks (the config's
+    K table and the realized K could otherwise disagree and leave K29b with no rows)."""
+    missing = sorted(set(k29b) - {t["instance"] for t in tasks})
+    if missing:
+        raise ValueError(f"K29b instance ids not among the I1 tasks: {missing}")
+
+
 def make_task(cfg: dict, inst, con: dict, rel_delta: float, f: float,
               k29b_scale: float | None = None) -> dict:
     c = cfg["i1"]
@@ -223,6 +231,7 @@ def main(argv=None) -> int:
             iid = instance_id(p["date"], insts[k].N, p["f"], insts[k].K)
             sc = k29b_f if iid in k29b and p["rel_delta"] == main_rel else None
             tasks.append(make_task(cfg, insts[k], p, p["rel_delta"], p["f"], k29b_scale=sc))
+        check_k29b_coverage(k29b, tasks)
         out = pool_chunks(run, FRAMES, tasks, lambda t: t["id"], i1_task, s3.workers(cfg))
         summary = {"n_cases": len(out["i1_estimators"]), "solves": s3.solve_summary(out["i1_solves"]),
                    "baseline_checker_violations": int((out["i1_baseline"]["checker"] != "{}").sum()),

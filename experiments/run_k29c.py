@@ -179,11 +179,13 @@ def k8_pairs(df: pd.DataFrame, s_obj: float) -> pd.DataFrame:
 def verdict(toys: pd.DataFrame, pairs: pd.DataFrame, counts: dict) -> dict:
     checked = toys[toys["pass"].notna()]
     toy_fail = int((checked["pass"] == False).sum())                         # noqa: E712
+    unchecked = int((toys["kind"] == "unchecked").sum())     # S3b item 1 (review M4): never a pass
     g = pairs[pairs["gated"].astype(bool)] if len(pairs) else pairs
     pair_fail = int((~g["pass"].astype(bool)).sum()) if len(g) else 0
     frac = counts["failed"] / counts["relaxations"] if counts["relaxations"] else np.nan
-    ok = toy_fail == 0 and pair_fail == 0 and bool(frac <= FAIL_CAP)
+    ok = toy_fail == 0 and unchecked == 0 and pair_fail == 0 and bool(frac <= FAIL_CAP)
     return {"pass": bool(ok), "toy_points_checked": len(checked), "toy_misses": toy_fail,
+            "toy_unchecked": unchecked,
             "gated_pairs": len(g), "gated_pair_misses": pair_fail, "failed_fraction": frac,
             "failure_cap": FAIL_CAP}
 

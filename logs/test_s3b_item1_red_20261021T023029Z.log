@@ -1,0 +1,128 @@
+.FFF.F.FF.F.FFF                                                          [100%]
+=================================== FAILURES ===================================
+____________ test_i1_raw_dual_statistic_main_delta_split_by_usable _____________
+
+    def test_i1_raw_dual_statistic_main_delta_split_by_usable():
+        """L1: main δ only (n = 2 binding there), split by persp_raw_usable; an unusable case's
+        raw dual is the kept one (Decision 25)."""
+        out, _ = T.i1_analysis(_i1_frames())
+        r = out["perspective"]["raw_dual_rel_err_binding"]
+>       assert set(r) == {"usable", "unusable"}
+E       AssertionError: assert {'max', 'median', 'min', 'n'} == {'unusable', 'usable'}
+E         
+E         Extra items in the left set:
+E         'max'
+E         'n'
+E         'median'
+E         'min'
+E         Extra items in the right set:...
+E         
+E         ...Full output truncated (3 lines hidden), use '-vv' to show
+
+tests/test_s3b_hardening.py:84: AssertionError
+_________________________ test_i1_k27_secant_by_delta __________________________
+
+    def test_i1_k27_secant_by_delta():
+        """Correction (b): Table II's convex row is the δ = 10% subset; both δ are reported."""
+        out, _ = T.i1_analysis(_i1_frames())
+>       by = out["k27_baseline_by_delta"]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'k27_baseline_by_delta'
+
+tests/test_s3b_hardening.py:92: KeyError
+______________________ test_i1_filters_raise_on_zero_rows ______________________
+
+    def test_i1_filters_raise_on_zero_rows():
+        f = _i1_frames()
+        f["i1_estimators"] = f["i1_estimators"].assign(rel_delta=0.2)
+>       with pytest.raises(ValueError, match="0 rows"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_s3b_hardening.py:101: Failed
+______________________ test_i2_filters_raise_on_zero_rows ______________________
+
+    def test_i2_filters_raise_on_zero_rows():
+        f = _i2_frames()
+        f["i2_points"] = f["i2_points"].assign(estimator=False)
+        with pytest.raises(ValueError, match="0 rows|rows"):
+            T.i2_analysis(f)
+        f = _i2_frames()
+        f["i2_baseline"] = f["i2_baseline"].assign(bound=0.0)
+>       with pytest.raises(ValueError, match="0 rows"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_s3b_hardening.py:154: Failed
+____________________ test_n1_presolve_like_for_like_at_N250 ____________________
+
+    def test_n1_presolve_like_for_like_at_N250():
+        """Item 7: per arm at N = 250, presolve on and off: root gap (median, range), median Work,
+        censored count; beside the median plain-relaxation gaps at N = 250."""
+        out, _ = T.n1_analysis(_n1_frames())
+>       p = out["presolve_N250"]
+            ^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'presolve_N250'
+
+tests/test_s3b_hardening.py:199: KeyError
+______________________ test_n1_filters_raise_on_zero_rows ______________________
+
+    def test_n1_filters_raise_on_zero_rows():
+        f = _n1_frames()
+        f["n1_solves"] = f["n1_solves"][f["n1_solves"]["presolve"] == -1]
+>       with pytest.raises(ValueError, match="0 rows"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_s3b_hardening.py:212: Failed
+______________________ test_n2_filters_raise_on_zero_rows ______________________
+
+    def test_n2_filters_raise_on_zero_rows():
+        f = _n2_frames()
+        f["n2_convex"] = f["n2_convex"][f["n2_convex"]["solver"] == "reference"]
+>       with pytest.raises(ValueError, match="0 rows"):
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_s3b_hardening.py:240: Failed
+____________________ test_json_writer_keeps_bools_and_ints _____________________
+
+    def test_json_writer_keeps_bools_and_ints():
+>       s = T.dumps({"b": np.bool_(True), "i": np.int64(3), "x": np.float64(0.5), "l": [np.int32(1)]})
+            ^^^^^^^
+E       AttributeError: module 'tools.s3_analysis' has no attribute 'dumps'
+
+tests/test_s3b_hardening.py:255: AttributeError
+_________________ test_k29c_verdict_fails_on_unchecked_points __________________
+
+    def test_k29c_verdict_fails_on_unchecked_points():
+        toys = pd.DataFrame({"kind": ["central"] * 9 + ["unchecked"], "pass": [True] * 9 + [None]})
+        k8 = pd.DataFrame({"gated": [True], "pass": [True]})
+        v = run_k29c.verdict(toys, k8, {"relaxations": 1000, "failed": 0})
+>       assert not v["pass"] and v["toy_unchecked"] == 1
+E       assert (not True)
+
+tests/test_s3b_hardening.py:267: AssertionError
+___________________ test_k29b_ids_must_occur_among_the_tasks ___________________
+
+    def test_k29b_ids_must_occur_among_the_tasks():
+        tasks = [{"instance": "2009-03_N250_f0.25_K47"}, {"instance": "2009-03_N250_f0.5_K94"}]
+>       run_i1.check_k29b_coverage({"2009-03_N250_f0.25_K47"}, tasks)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'experiments.run_i1' has no attribute 'check_k29b_coverage'
+
+tests/test_s3b_hardening.py:274: AttributeError
+=============================== warnings summary ===============================
+tests/test_s3b_hardening.py::test_i2_filters_raise_on_zero_rows
+  /Users/isaiahchoi/Desktop/engs_104_final_project/engs104-neutrality-v2/tools/s3_analysis.py:136: RuntimeWarning: divide by zero encountered in scalar divide
+    "secant": (g.loc[i + 1, "value"] - g.loc[i - 1, "value"]) / (h1 + h2)})
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_s3b_hardening.py::test_i1_raw_dual_statistic_main_delta_split_by_usable
+FAILED tests/test_s3b_hardening.py::test_i1_k27_secant_by_delta - KeyError: '...
+FAILED tests/test_s3b_hardening.py::test_i1_filters_raise_on_zero_rows - Fail...
+FAILED tests/test_s3b_hardening.py::test_i2_filters_raise_on_zero_rows - Fail...
+FAILED tests/test_s3b_hardening.py::test_n1_presolve_like_for_like_at_N250 - ...
+FAILED tests/test_s3b_hardening.py::test_n1_filters_raise_on_zero_rows - Fail...
+FAILED tests/test_s3b_hardening.py::test_n2_filters_raise_on_zero_rows - Fail...
+FAILED tests/test_s3b_hardening.py::test_json_writer_keeps_bools_and_ints - A...
+FAILED tests/test_s3b_hardening.py::test_k29c_verdict_fails_on_unchecked_points
+FAILED tests/test_s3b_hardening.py::test_k29b_ids_must_occur_among_the_tasks
+10 failed, 5 passed, 1 warning in 2.53s
