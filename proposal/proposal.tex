@@ -1,45 +1,65 @@
-% Proposal scaffold (S1). Isaiah writes every word of this proposal (DESIGN §11.6; RUNBOOK §5.2).
+% ENGS 104 project proposal (individual). Text drafted with Claude (chat) on 2026-10-21 from
+% proposal/FACTS.md and docs/DESIGN.md and reviewed by Isaiah (docs/AI_USE.md). This supersedes the
+% S1 scaffold's note, as recorded in the GATE I note. Results trace to proposal/FACTS.md; design
+% constants trace to docs/DESIGN.md section 3.3.
 % Keep each `% SPEC-ELEMENT n` marker above its section: tools/spec_check.py (PR-3) looks for them.
-% Build: `make proposal` (1–2 pages; final-mode spec check: no TODO, no red text, >= 2 citations).
+% Build: `make proposal` (1-2 pages; final mode: no to-do markers, no red text, >= 2 citations).
 \documentclass[11pt]{article}
+\usepackage[margin=0.75in]{geometry}
 \usepackage{amsmath,amssymb}
-\usepackage{xcolor}
+\usepackage[compact]{titlesec}
 \usepackage{cite}
+\titleformat*{\section}{\large\bfseries}
+\titlespacing*{\section}{0pt}{0.8ex plus .2ex}{0.4ex}
 
-\newcommand{\todo}[1]{\textcolor{red}{TODO(Isaiah): #1}}
+\newcommand{\T}{^{\top}}
+\let\oldthebibliography\thebibliography
+\renewcommand\thebibliography[1]{\oldthebibliography{#1}\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 
-\title{\todo{title}}
-\author{\todo{author}}
-\date{}
+\title{\vspace{-2.5em}\Large The Shadow Price of Neutrality: Constraint Costs and Integer Sensitivity\\ in Market-Neutral Portfolio Construction}
+\author{Isaiah Choi \quad{\small ENGS 104 project proposal (individual project), October 22, 2026}}
+\date{\vspace{-3em}}
 
 \begin{document}
 \maketitle
 
 % SPEC-ELEMENT 1
 \section{Decision Problem and Motivation}
-\todo{element 1 (RUNBOOK §5.2)}
+A long/short equity pod at a multi-manager platform receives a monthly forecast of each stock's alpha (its expected return beyond its factor exposures) and chooses portfolio weights. The platform caps the pod's ex-ante volatility and imposes a neutrality mandate so that its risk does not pile onto other books. Every rule costs the pod expected alpha, and platforms read each constraint's dual variable as that cost. The reading is exact for a convex program, but not once the book also limits how many names it holds and how small a position may be, and a misread dual can lead a platform to loosen the wrong rule. \textbf{Q1:} at a fixed risk budget, which constraints bind, what does each cost, and why? \textbf{Q2:} with a cardinality limit and minimum positions, how well do continuous sensitivity tools predict a constraint's true marginal cost? \textbf{Q3:} how do big-M and perspective formulations compare as the mandate tightens, and how do solver tolerances interact with scaling?
 
 % SPEC-ELEMENT 2
-\section{Formulation}
-\todo{element 2 (RUNBOOK §5.2)}
+\section{Objectives and Constraints}
+The decision is the weight vector $w=w^+-w^-$ ($w^\pm\ge0$, fractions of \$1B) on $N$ stocks. The data are the monthly alpha $\alpha$, the loadings $B$ on six factors (Fama--French five and momentum), the covariance $\Sigma=BFB\T+\mathrm{diag}(d)$ (factor covariance $F$, residual variances $d$), sector indicators $S_j$, and caps $u_i=\min(u,\theta\,\mathrm{ADV}_i/\mathrm{AUM})$ that limit each position to a fraction $\theta$ of its daily dollar volume. With risk budget $\sigma_m$, the continuous problem is
+\begin{equation*}
+\begin{aligned}
+\text{(P-RB)}\quad \max\ \ & \alpha\T w-c\,1\T w^- -\kappa\,1\T(w^++w^-)\\
+\text{s.t.}\ \ & w\T\Sigma w\le\sigma_m^2,\quad |1\T w|\le\varepsilon_{\mathrm{net}},\quad |(B\T w)_{\mathrm{mkt}}|\le\varepsilon_\beta,\quad |(B\T w)_k|\le b_k\ \ (k\ne\mathrm{mkt}),\\
+& |S_j\T w|\le s_j,\quad 1\T(w^++w^-)\le G,\quad w_i^\pm\le u_i .
+\end{aligned}
+\end{equation*}
+The base mandate is $\sigma_m=3\%$/yr, $G=2$, $\varepsilon_{\mathrm{net}}=2\%$, $\varepsilon_\beta=0.05$, $b_k=0.10$, $s_j=2\%$, $u=3\%$, $\theta=5\%$, borrow $c=30$\,bp/yr and trading cost $\kappa=5$\,bp. Fixing the risk budget compares constraint costs at equal risk; duality recovers mean-variance at $\lambda^*$, the risk row's multiplier. The integer problem (P-MI) moves the risk row into the objective at $\lambda^*$, sets $u=6\%$, and adds binaries with $\ell z_i^\pm\le w_i^\pm\le u_iz_i^\pm$, $z_i^++z_i^-\le1$ and $\sum_i(z_i^++z_i^-)\le K$, where $\ell=0.25\%$. Big-M keeps $\sum_id_iw_i^2$; the perspective formulation uses $\sum_id_is_i$ with rotated cones $w_i^2\le s_i(z_i^++z_i^-)$. These are a convex QCQP, a convex MIQP and a mixed-integer SOCP. I assume one period from cash, linear costs, a six-factor 252-day risk model, 12-1 momentum as a given signal, and the current S\&P~500 constituents (survivorship disclosed).
 
 % SPEC-ELEMENT 3
-\section{Approach}
-\todo{element 3 (RUNBOOK §5.2)}
+\section{Proposed Solution Approach}
+P-RB is solved exactly as a mean-variance QP at a root-found $\lambda$ (Gurobi's dual simplex gives exact active sets and duals) and cross-checked with Clarabel on the explicit cone form. I derive closed forms, including an alignment lemma: under full factor neutrality the pod keeps $\sqrt{1-\varphi}$ of its alpha, where $\varphi$ is the factors' share of $\alpha\T\Sigma^{-1}\alpha$. Gurobi's branch and bound solves P-MI in big-M and perspective form (default and rescaled weights). Three estimators of a constraint's marginal cost (the big-M relaxation dual, the perspective relaxation's slope, and the dual with the integers fixed) are scored against a certified secant over $b\pm\delta$: with $V$ a polished incumbent value and $\bar B$ the solver's bound plus a tolerance slack, $L=(V_+-\bar B_-)/(2\delta)\le(U^*_+-U^*_-)/(2\delta)\le(\bar B_+-V_-)/(2\delta)=H$, so solver error cannot pass for estimator error. Scaling, presolve and solver experiments complete Q3.
 
 % SPEC-ELEMENT 4
 \section{Expected Output and Analysis}
-\todo{element 4 (RUNBOOK §5.2)}
+The outputs are cost curves and dual-based elasticities from one-family sweeps (Q1), each estimator's error $|\hat\mu-s|/|s|$ with $n$ and whether $\hat\mu\in[L,H]$ (Q2), and root gaps and Gurobi's deterministic Work across formulations, tightness, scaling and presolve (Q3). Preliminary results: \emph{Q1} (12 dates, 2008--2025): the median net alpha is 30.5\,bp/month; the liquidity cap and the sector bounds bind at all 12 dates (median elasticities 0.16 and 0.014); momentum's alignment share is only 0.011--0.07, so full factor neutrality alone keeps at least 96\% of its alpha, as the closed form predicts (to $7.5\times10^{-8}$). \emph{Q2} (23 binding cases at $\delta=10\%$ of the bound): the median errors are 0.013 (perspective slope), 0.023 (fixed-integer dual) and 0.073 (big-M dual), with maxima up to 4.2. Over both step sizes, the fixed-integer dual is exact (error at most $6.7\times10^{-12}$, $n=7$) when the support and active set stay fixed across the step, and errs by a median 0.056 ($n=24$) when the support changes. \emph{Q3} (12 instances per formulation, base tightness): the plain perspective relaxation is much tighter (median gap 0.0018 against 0.059), but after presolve and root cuts the root gaps are close ($3.3\times10^{-4}$ against $4.4\times10^{-4}$); with presolve off (250 names), big-M's median root gap is 0.057 and 6 of 12 solves hit the work limit. The default-scaling perspective's root gap (0.015) is a solver effect I am isolating. This evidence bears on costs at equal risk and on when sensitivity estimates can be trusted, for one universe, period and risk model; there is no backtest and no performance claim.
 
 % SPEC-ELEMENT 5
-\section{Prior Work}
-\todo{element 5 (RUNBOOK §5.2)}
+\section{Relationship to Prior Work}
+Lee and Stefek \cite{lee2008risk} show that misaligned risk and alpha factors distort optimized portfolios, and Ceria, Saxena and Stubbs \cite{ceria2012factor} frame such factor alignment problems; I add a fixed-risk closed form and measure a realistic mandate against it. Clarke, de Silva and Thorley \cite{clarke2002portfolio} extend the fundamental law of active management with a transfer coefficient that measures how constraints dilute a forecast, and Stubbs and Vandenbussche \cite{stubbs2010constraint} attribute a portfolio to its constraints through their duals; I price constraints at equal risk and test whether dual-based costs survive integrality. Frangioni and Gentile \cite{frangioni2006perspective} derive perspective cuts and apply them to mean-variance portfolios, and G\"unl\"uk and Linderoth \cite{gunluk2010perspective} give conic perspective reformulations, including portfolios with buy-in thresholds; I compare the formulations as a neutrality mandate tightens and as scaling changes. Geoffrion and Nauss \cite{geoffrion1977parametric} survey postoptimality analysis in integer programming, and Wolsey \cite{wolsey1981integer} shows that integer duality needs price functions rather than prices; I measure how far the usual continuous estimators drift.
 
 % SPEC-ELEMENT 6
-\section{Contribution}
-\todo{element 6 and the status and AI-use statement (RUNBOOK §5.2)}
+\section{Project Contribution}
+This problem-formulation project is not new research; it contributes (i) an equal-risk account of what a neutrality mandate costs and why factor neutrality is cheap for a weakly aligned alpha; (ii) certified intervals that test integer sensitivity estimators against solver error, with a support-stability account of when the fixed-integer dual is exact; and (iii) evidence on formulation strength, presolve and scaling for mixed-integer conic portfolio programs.
+\textbf{Status.} I fixed the design on October 20, before this discussion. The planned experiments are complete and independently checked, and a draft report exists; changes after the discussion will be recorded as made after these results.
+\textbf{AI use.} The course allows AI use with disclosure. An AI coding agent (Claude Code) wrote and ran the code under specifications and checks I set, with separate AI checkers recomputing the results; Claude (chat) proposed most design decisions, each made or approved by me at a documented checkpoint, and drafted this proposal, which I reviewed and am responsible for. All AI use is logged in the repository.
 
+{\footnotesize
 \bibliographystyle{IEEEtran}
 \bibliography{../report/refs}
+}
 
 \end{document}
