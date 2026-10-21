@@ -1,0 +1,8 @@
+# Optional C1 analysis (GATE DESIGN addendum; not gated): for each flagged C1 envelope point, the
+# ratio of |F − B| at δ = 0.1% to that at δ = 1%. `make c1_ratio` → results/c1_ratio/run_<UTC>/.
+runner: c1_ratio
+status: "optional analysis (GATE DESIGN addendum), S3"
+rel_fine: 0.001                    # δ = 0.1% of the bound (the stored C1 stencil is 1%)
+expected_flagged: 64               # PROGRESS (S2b closing entry): 64 of 115 C1 envelope points flagged
+s2b_kinks: results/pilot_s2b/run_20261020T024318Z/c1_kinks.parquet   # Decision 34 classification per point
+workers: 4
