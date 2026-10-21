@@ -1610,3 +1610,54 @@ index 4561d89..e8e5367 100644
 +Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. The agent never edits text in `proposal/proposal.tex`; the proposal text was drafted with Claude (chat) and edited by Isaiah (docs/AI_USE.md).
 ```
 - Figs. 4–5 and Table II are not regenerated to the edited spec in S3b: no item in the S3b scope asks for it, and they are S4 figure work. Noted for S4.
+
+## 2026-10-21 — S3b (Claude Code, Opus 5.5): items 1–9 done; my own read against the GATE I note's criteria, before the result-checker (item 10)
+- Commits: 4310a54 (step 0) … 14e6793 (item 9); listed in the closing entry. No kept-core file changed (src/opt, src/data, src/risk, src/alpha untouched), so rule 14 is not triggered. integer.yaml, numerics.yaml, CHECKS and proposal.tex are unchanged; new configs are k29b_ext.yaml, s3b.yaml and n2_probe.yaml.
+- Runs (each at a clean commit; make exit 0, DONE and RUN_LOG "ok" agree; outputs hashed in outputs.json):
+  - results/k29b_ext/run_20261021T023737Z (74be604);
+  - results/s3b/run_20261021T024408Z (c4fe180);
+  - results/n2_probe/run_20261021T024926Z (e437339).
+- Failed or refused (kept; RUN_LOG rows present):
+  - k29b_ext at 59c8c85 refused to start: the tree was dirty, because I had written a new test file during `make`'s test phase. Rule 6 working; no run directory.
+  - results/s3b/run_20261021T024025Z (fc5927d) failed writing chunks (FileExistsError). The I1 base-bound relaxation ids equal N1's relax ids for the 4 shared N = 250 instances. It can only raise, never produce a value, so rule 13 is not triggered. Fixed test-first (test_s3b.py::test_leg_task_ids_are_unique_across_sources; RED/GREEN logs/test_s3b_legid_*), then rerun.
+- TDD logs (RED then GREEN, logs/):
+  - test_s3b_item1_*;
+  - test_s3b_k29b_ext_*;
+  - test_s3b_items35_*;
+  - test_s3b_legid_*;
+  - test_s3b_items34_analysis_*;
+  - test_s3b_tool_*;
+  - test_s3b_n2probe_*;
+  - test_s3b_facts_*.
+  - (test_s3b_item1_red_20261021T022931Z is a "file not found" run made before the test file existed; the valid RED is 20261021T023029Z: 10 failed, 5 passed.)
+  - In test_make_facts_s3.py I simplified one of my own new assertions after RED and before GREEN (a convoluted heading check, made a prefix check); in test_s3b.py the leg-id prefix changed from "i1:" to "i1-" (a colon in a chunk file name).
+
+### Read against the note's criteria (items 1–7)
+| Item | Criterion (GATE I note) | Measured (n, source) | Miss? |
+|---|---|---|---|
+| 1 | synthetic-frame test per *_analysis; filters raise on 0 rows | tests/test_s3b_hardening.py (17 tests): i1, i2, n1, n2, k26; zero-row raises for each | no |
+| 1 | run_k29c verdict fails on "unchecked" | verdict gains toy_unchecked; the logged K29c run has 0 unchecked (8399 checked) and still passes | no |
+| 1 | L1 at main δ, split by persp_raw_usable | usable n = 23 (median 7.2e-9, max 2.8e-4), unusable n = 0 (s3_analysis.json i1.perspective.raw_dual_rel_err_binding) | no |
+| 1 | L3 every K29b id occurs | run_i1.check_k29b_coverage, called before the pool | no |
+| 1 | L4 encoder keeps bools and ints | tools.s3_analysis.dumps | no |
+| 1 | Table II convex-row subset | δ = 10%: n = 24, median 3.67e-4, max 4.23e-3; δ = 5%: n = 12, median 2.34e-4, max 1.94e-3 (i1.k27_baseline_by_delta). The pooled S3 figure (n = 36, median 3.0e-4) mixed the two; correction (b) confirmed | no |
+| 1 | regenerated s3_analysis.json equals the old leaf by leaf except L1 and new keys | 782 old leaves: 0 changed (value and type), 4 removed (the old L1 statistic: n 34, min 1.19e-10, median 1.18e-8, max 2.84e-4), 74 added (L1 split, k27_baseline_by_delta, n1.presolve_N250) | no |
+| 2 | 36 cases; \|ŝ(10·s_obj) − ŝ(s_obj)\| ≤ 1e-5·\|ŝ\| + 2N, N at s_obj | 36 of 36 (24 at δ = 10%, 12 at δ = 5%); max diff/tol 2.66e-4; binding n = 25, max rel diff 2.57e-7; 0 of 360 relaxations failed; 0 kinks; ŝ(s_obj) equal to I1's bit for bit 36/36; the 12 δ = 5% twins identical at both scales (s3b_analysis.json item2) | **no miss** |
+| 3 | P1: \|μ_fixed − s\|/s ≤ 1e-6 | binding P1 n = 7 (3 at δ = 10%, 4 at 5%): max 6.71e-12 | holds |
+| 3 | P2: ≤ 4.2e-3 | binding P2 n = 3: max 2.90e-4 | holds |
+| 3 | fixed-integer in-[L, H] cases in P1 or P2 | δ = 10%: 4 of 4; δ = 5%: 5 of 5 (counts equal the note's) | holds |
+| 3 | P3 descriptive; Spearman descriptive | P3 n = 24 binding, fixed error median 0.056, max 0.82; Spearman (n = 23): perspective 0.640, big-M 0.503 | — (see note) |
+| 4 | descriptive | 2017-12 K67: 12 of 39 triples certified nonconcave (uncertified 12), 16 of 40 neighbour support changes; 2020-03 K79: 9 of 39 (9), 17 of 40 | — |
+| 5 | every name with both legs > 1e-6: \|w⁺ − w⁻\| < ℓ and z⁺ + z⁻ > \|w⁺ − w⁻\|/ℓ | 11 names in 7 of 45 relaxations (all 2020-03 full, plus i1-2009-03 f0.75 with 2); 11 of 11 hold; max min(w⁺, w⁻) 1.44e-4; 2λ*·dᵢ·ℓ/(c + 2κ) 2.35–7.87 (> 1 for all 11) | holds |
+| 6 | if both arms' z stored, compare | not stored (i1/i2_solves have no z columns; i1/i2_weights hold V's weights only); not rerun. V tied 144/144 and 82/82 | — |
+| 7 | the chat's numbers, for the checker | all recompute: big-M root gap 6.05e-4 / 5.73e-2, plain 6.03e-2, Work 1.09 / 255, censored 0 / 6 of 12; rescaled 4.86e-4 / 5.52e-4, Work 0.766 / 2.28; default 1.60e-2 / 1.63e-2, Work 2.05 / 1.89; plain perspective gap 1.43e-3 (s3_analysis.json n1.presolve_N250) | no |
+
+- **Misses: none** against the note's criteria. One descriptive number differs from the chat's (item 3): the chat's Spearman correlations were 0.65 (perspective) and 0.47 (big-M); mine are 0.640 and 0.503 with gap = (relaxation value at b − V)/|V|, relaxation values U_bigm_relax and persp_V of i1_estimators, over the 23 binding δ = 10% cases. Not a criterion; listed for the checker and Isaiah.
+- **Item 8 (optional, exploratory):** results/n2_probe/run_20261021T024926Z.
+  - The normalized and unnormalized LP files differ in one line on all 10 date × scaling pairs: CVXPY's linear row on the cone's epigraph variable (`R6: 115.47 x ≤ 1` against `R6: x ≤ 0.00866`).
+  - Gurobi's A* is identical normalized and unnormalized at default settings (10/10) and with ScaleFlag 0 (10/10).
+  - With Presolve 0 it differs in 10/10, max \|ΔA*\|/A* 1.6e-5.
+- **Item 9:** proposal/FACTS.md regenerated (139 lines; S3 and S3b sections, each line with source file and sha256).
+  - **Found, not fixed (pre-existing):** FACTS' P7 line projects I1 at 105 points / 210 solves (one shared b point per instance, tools/make_facts.p7_projection). The I1 runner solved 144 points / 288 solves, because each case re-solves its own b. The line also still says "the proposed integer.yaml", although that file is now the approved one; only its sha256s changed on regeneration.
+  - P7 is a planning projection, not a report result, so I did not treat it as a rule-13 stop. It is open question 2 in the closing entry.
+- Next: item 10, the result-checker.
