@@ -1,7 +1,7 @@
 # AI use log (supports disclosure in the proposal and report)
 
 ENGS 104 AI policy (quote or link it here): AI use is fine for this course, with disclosure (recorded by Isaiah on 2026-10-20). Source: ____ (who said it, how and when; quote it if it was written).
-Discussed with Prof. Fügenschuh on: ____  Notes: ____
+Discussed with instructors on: not yet (no Fugenschuh meeting; class discussion 10/23)  Notes: ____
 
 Tools: Claude (claude.ai chat) for planning; Claude Code for implementation.
 
