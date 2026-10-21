@@ -1741,3 +1741,95 @@ All have RUN_LOG rows, and outputs are hashed in outputs.json.
   - The report should use average-rank Spearman values, or say the big-M gaps have ties.
   - Item 8 is A9 material for the Discussion, if Isaiah wants it.
 - No report or proposal text was written; proposal.tex, CHECKS, integer.yaml and numerics.yaml are unchanged.
+
+## 2026-10-20 — Isaiah: S3b read; Decision 49; run S4
+- Signed on 2026-10-20, after reading S3b and before the instructor discussions (Prof. Fügenschuh 10/21; class 10/23). Any change that comes from them is recorded as made after the S3 and S3b results.
+- Read: PROGRESS from the S3b step 0 entry to the S3b closing entry; results/checks/S3B_20261021T031420Z.md (round 2: PASS) and results/checks/S3B_20261021T030756Z.md (round 1: FAIL on two zero-row filters, fixed test-first in 6d3f736). Pushed at 9ce313e.
+- Verified at 9ce313e:
+  - Since db4e659 the only commit touching DESIGN, CHECKS, integer.yaml, numerics.yaml or proposal.tex is 4310a54. Its DESIGN diff is exactly GATE I edits 1–4.
+  - No test file was modified and no test line removed. No kept-core file changed.
+  - RUN_LOG records as failed the k29b_ext refusal at 59c8c85 (dirty tree) and the s3b run at fc5927d (chunk-id collision). It records as ok the k29b_ext, s3b and n2_probe runs.
+- No prediction failed (items 3 and 5), and K29b-ext had no miss (36 of 36).
+- The report uses the average-rank Spearman values: perspective 0.640, big-M 0.503 (n = 23). The chat's 0.65 and 0.47 used ordinal ranks and are superseded.
+- Dates: Claude Code's PROGRESS headings are UTC and Isaiah's are US Eastern. That is why "Isaiah: GATE I" carries 2026-10-20 after the 2026-10-21 S3 entries.
+
+### Decision 49 (FACTS P7)
+- P7 keeps its arithmetic (Decision 32). It is a planning projection made before S3, not a result, and the report does not cite it.
+- FACTS corrections (S4 step 0):
+  - The P7 line says it counted one shared b point per instance (I1: 105 points, 210 solves), while the I1 runner re-solved each case's own b (144 points, 288 solves).
+  - "the proposed integer.yaml" becomes "integer.yaml (approved at GATE DESIGN)".
+- New FACTS lines give the measured effort of each current S3 and S3b run (I1, I2, N1, N2, K29c, k29b_ext, s3b, n2_probe): solves and statuses, total and median Work, and wall-clock from RUN_LOG's start and end. The proposal cites these, not P7.
+- Does not block S4.
+
+### Decisions
+- Writing mode: A, unchanged (GATE I; DESIGN §11.6 as amended).
+- The advisory on tools/s3b_analysis.py (two per-id lookups that would go silent) is fixed in S4 step 0.
+- Run S4: YES, in a fresh session, following the addendum below.
+
+### S4 addendum (amends RUNBOOK §4's S4 steps for this session; it conflicts with neither CHECKS nor DESIGN)
+Step 0 comes before any report work. Commit it on its own, with a one-line PROGRESS entry, so Isaiah can use FACTS while S4 continues.
+- 0a. tools/make_facts.py, tests first:
+  - the Decision 49 P7 wording and counting clause;
+  - the measured-effort lines;
+  - the "Software and tests" line, from the latest full-suite log (it still says 258 passed).
+  - Regenerate proposal/FACTS.md. Every (file, sha256) pair must match.
+- 0b. tools/s3b_analysis.py, tests first: the two per-id lookups (item 4 weights, item 5 names) raise when an id is missing. The regenerated s3b_analysis.json must equal the current one leaf by leaf; list any difference.
+
+Then RUNBOOK's steps 1–5, under these rules:
+
+1. **Mode A.**
+   - Draft Sections II–IV, captions included, marking each paragraph % drafted-by-agent.
+   - For the Abstract, I, V, VI and the AI-use acknowledgment, write red claim→evidence outlines (TODO(Isaiah)), each claim pointing to its macro, figure, table or result file.
+2. **Content.**
+   - **II:** DESIGN §2–§5; Table I; the problem classes (§3.5); the definitions listed in §11.3 for II.
+   - **III:**
+     - the algorithm sentence of §11.3 III;
+     - A1–A9 compactly, each derivation paragraph also marked % verify-by-hand (GATE R);
+     - the certified interval and B_eff, and the finite-difference noise term N;
+     - the validation tests with their negative controls.
+   - **IV-A (Q1):**
+     - Figs. 1–3, and C3 only if space allows;
+     - K15 and K17;
+     - the C1 ratio result: all 64 flagged points are differentiable at the 0.1% resolution, reported as "active-set change within the stencil" (Decision 34).
+   - **IV-B (Q2):**
+     - Table II and Fig. 4;
+     - the 2017-12 δ robustness;
+     - S3b item 3: classes P1–P3 with counts and per-class errors, and that every fixed-integer in-[L, H] case is P1 or P2;
+     - S3b item 4: certified nonconcavity and support changes on the I2 grids;
+     - the non-binding counts per δ;
+     - one sentence on the scale evidence (K29b, K29b-ext).
+   - **IV-C (Q3):**
+     - Fig. 5; the K24 plain-relaxation margins; the N = 250 presolve on/off comparison (S3b item 7); K22 and the cone effect.
+     - Table III. Read N2(a) as objective scaling against weight scaling, including the s_obj = 1 certificate at 2017-12 K67: the rescaled arm reported a closed gap while its B_eff lay 9.1e-5·|V| below big-M's polished V.
+     - N2(b) with the item-8 probe: one LP row differs, and A* is identical unless Presolve is 0 (then it differs by up to 1.6e-5).
+     - The hedged-leg relaxation property (S3b item 5) in one sentence. Per-leg cones go only in the Discussion outline.
+3. **Carried over from GATE I.**
+   - Use corrections (a)–(d).
+   - Every Q2 statement names its δ.
+   - Never call the certified intervals points; give their width.
+   - Spearman at average ranks.
+   - No claim that the formulations found identical solutions (S3b item 6): say only that the polished values were identical.
+   - The default-scaling perspective arm is solver behaviour (Decision 37).
+   - Never cite P7 as a result, and never report a v1 number.
+4. **Figures and tables per DESIGN §10 as amended at GATE I.**
+   - Fig. 4: slope panels, with the certified-nonconcave grid secants marked (results/s3b_analysis/item4_i2_triples.csv); two-column width allowed.
+   - Fig. 5: the plain-relaxation reference lines, and no empty legend entry.
+   - Table II: the width column and the δ = 10% convex row.
+   - Table III: label its gaps as B_eff-based, floored at 1e-6 (review L2).
+   - All y-axes say "P-MI objective".
+   - `make figures` run twice must give byte-identical output. Export the 300-dpi PNGs.
+5. **numbers.tex.** Every number in II–IV, the captions and the tables is a macro carrying its source file and sha256, including S3b's.
+6. **Discussion outline.** Every item of DESIGN §11.4, plus:
+   - what each estimator measures (A8), and the δ-dependence;
+   - the two failure modes: a support change within the step for the fixed-integer dual, and relaxation looseness for the relaxation slopes, with the item-3 per-class errors and the Spearman values;
+   - the I2 near-tie and the flipped perspective order (Decision 44);
+   - presolve doing big-M's root work;
+   - the false certificate at s_obj = 1;
+   - the normalization result (item 8);
+   - the hedged legs, with per-leg cones as an extension;
+   - the K29b-ext result.
+7. **Disclosures.** Every item of DESIGN §11.5; item 7 comes from docs/AI_USE.md's v2 log.
+8. **Page budget.** Give per-section estimates against DESIGN §11.1. If the draft exceeds 8 pages, list what the cut order would remove and stop. Do not cut.
+9. **spec_check.** Run it on the report in draft mode. proposal/proposal.tex is still the scaffold, so run its check in draft mode too, report the result, and don't count it as a failure.
+10. **Protected files.** Never edit proposal/proposal.tex, docs/CHECKS.md, experiments/configs/integer.yaml or experiments/configs/numerics.yaml.
+11. **Stop** at GATE R with RUNBOOK's list.
