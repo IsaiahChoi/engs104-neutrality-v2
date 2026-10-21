@@ -1937,3 +1937,202 @@ results/disclosures/run_20261021T034238Z at 8d194f3: make exit 0, DONE, RUN_LOG 
 ### Decisions needed
 - **50.** Page plan: the draft is 9 pages and Isaiah's sections will add about 0.9 page. Options: the cut order (about 0.6 page), shortening the IV-B/IV-C drafts, or both.
 - **51.** Should a later session compute the P-MI ex-ante volatility (DESIGN §3.4) and the MIQCP method actually used? The latter would need a logged rerun with that attribute recorded.
+
+## 2026-10-21 — Isaiah: S4 read; Decisions 50–53; run S4b
+- Decisions 50–53 below were recommended by Claude (chat) on 2026-10-21, before the Fügenschuh office hours (10/21, 2–3 pm). Isaiah adopted them without changes on 2026-10-21 at 10:35 (US Eastern). This is after the S3, S3b and S4 results. Feedback from the 10/21 and 10/23 discussions goes in later notes, recorded as received after these results.
+- Read:
+  - PROGRESS from the S4 step 0 entry to the S4 closing entry;
+  - results/checks/REPORT_20261021T064114Z.md (CHECK REPORT round 3: FAIL on RP-4 and main.tex:236);
+  - results/checks/cold_read_20261021T062839Z.md.
+  - Pushed at ece1a59 (origin was at 1ab42f6).
+- Verified at ece1a59, before the commits below:
+  - tree clean;
+  - no commit since 1ab42f6 touches docs/DESIGN.md, docs/CHECKS.md, experiments/configs/integer.yaml, experiments/configs/numerics.yaml or proposal/proposal.tex;
+  - under tests/ only files were added.
+- Commits made with this note:
+  - report/refs.bib gains page ranges for the 8 proposal references, from the sources named in a comment above each entry. Every `% verified:` marker is unchanged.
+  - proposal/proposal.tex holds the proposal text, drafted by Claude (chat) on 10/21 from FACTS and DESIGN and reviewed by Isaiah. Its submission is recorded in a later note.
+  - This commit contains the DESIGN edits, the docs/AI_USE.md rows and this note.
+
+### Corrections (PROGRESS is append-only, so they are recorded here)
+- (e) main.tex:236, "The plain relaxations are the z∈[0,1] relaxations solved directly, without presolve or cuts", is false (CHECK REPORT round 3). S4b uses the checker's wording. That sentence came from a round-3 fix that wrote the cold reader's guess about "plain" without checking the code.
+- (f) The GATE I note (10/20) and docs/AI_USE.md said the proposal text had been drafted with Claude (chat). No draft existed then. Claude (chat) drafted it on 10/21, and docs/AI_USE.md is corrected in this commit.
+- (g) The S4 page table counts each float where it lands:
+  - IV-B's 1.37 includes Figs. 2–3 and Table II;
+  - V's 0.96 includes Table III;
+  - Fig. 5 lands in the references' span.
+  - With each float counted in its own section, II–IV run about 6.7 pages against a budget of 4.9. This is Claude (chat)'s estimate from the page images; S4b measures it.
+- (h) "11 names hold both legs" (IV-C; s3b_analysis item 5) counts name–relaxation pairs, not names.
+  - 9 of the 11 pairs come from the 2020-03 full-universe instances at three tightness levels.
+  - The 2λ*dℓ/(c + 2κ) ratio has its median equal to its maximum (7.87), so several pairs share one name.
+  - The number of distinct names is not reported yet.
+- (i) Two effort medians straddle the WorkLimit, so neither is a meaningful median. FACTS carries both lines; the proposal cites neither.
+  - N1 with presolve off, big-M: "median Work 255", with 6 of 12 solves stopped at W* = 340.
+  - N2(a), big-M at s_obj = 1: "median Work 172", with 2 of 4 stopped. s3_analysis.json n2.miqp gives min 2.93, max 340.0005, median 172.3.
+- (j) A9, the IV-C wording and the Abstract and Introduction outlines merge two mechanisms.
+  - The cone feasibility tolerance accounts for the incumbent cone effect and for certified gaps above MIPGap.
+  - The default-scaling root bound is something else. S2d item 1 showed it is Gurobi's outer approximation stopping before it converges: MIQCPMethod 1 reproduces it at 7 of 8 instances, MIQCPMethod 0 brings it to the plain relaxation, and FeasibilityTol 1e-9 leaves the root gap at 0.99× the default at the median.
+  - S2d is pilot evidence on 8 instances. N3 replicates it on N1's 36 (Decision 51).
+- (k) report/main.pdf is set in Latin Modern, not Times (pdffonts). Under tectonic's XeTeX the class's ptm font is unavailable; this is S4's "TU/ptm" advisory. The fallback font also lengthens the draft.
+- (l) The cold read's "115 checks" are K15 checks per constraint key at the D12 dates, with each style factor its own key (for example 2011-08 style:CMA; PROGRESS, S2 entries). The report must say so.
+
+### Decisions
+- **Decision 50 (page plan).** Follow DESIGN §11.1 and §11.2 as edited in this commit:
+  - Times first, then re-measure;
+  - the new budgets;
+  - II–IV at most 5.0 pages, each float counted in the section that first references it;
+  - the cut order (1)–(9).
+  - If Prof. Ferguson says references don't count toward the page limit, a later note gives the freed space to V, not to IV.
+- **Decision 51 (diagnostics).**
+  - (a) The P-MI ex-ante volatility, computed from the stored polished weights.
+  - (b) N3, as in DESIGN §7 as edited.
+  - Both were added after the S3 results and the cold read, and the report says so.
+- **Decision 52 (S4b scope).** The addendum below.
+- **Decision 53 (who writes what).** DESIGN §11.6 is unchanged. Isaiah writes the Abstract, I, V, VI and the AI-use acknowledgment; the agent may update only the red outlines there. Writing mode A, unchanged.
+- **DESIGN.** Twelve edits, applied verbatim by Isaiah's script (gate_s4b/patch_design.py; each old string asserted once, each new string once afterwards). `git show HEAD -- docs/DESIGN.md` shows the diff. The edits:
+  1. §3.1, the ADV row (median daily dollar volume over 63 days);
+  2. §3.4, the MIQP volatility (can differ from 3%; report it);
+  3. §3.5, the uniqueness argument (needs μ_risk > 0; strict concavity in w through A1);
+  4. §7, N3 added;
+  5. §9, A9 (quantified; the two mechanisms kept apart);
+  6. §10, Fig. 1 (four panels);
+  7. §10, Fig. 3 (removed; direct cost split instead);
+  8. §10, Fig. 4 (slope row only);
+  9. §10, Fig. 5 (one panel);
+  10. §10, the tables (experiment table; Table II single column if it fits; Table III single-column N2(b));
+  11. §11.1, budgets and cut order;
+  12. §11.2, the Times font rule.
+
+### N3 expectations
+Recorded before N3 runs. Not blind: Claude (chat) has read S2d item 1, whose 8 P4 instances are among the 36.
+- E1. MIQCPMethod 1 reproduces the default (−1) root bound exactly at most instances of both arms. S2d: 7 of 8, default-scaling arm.
+- E2. At MIQCPMethod 0, the default-scaling arm's root bound lies within about 5e-3·|V| of the plain perspective relaxation. S2d: −5.0e-3 to +7.5e-5 of |V|.
+- E3. FeasibilityTol 1e-9 leaves the default-scaling arm's root gap roughly unchanged. S2d: median ratio 0.99; 1 of 8 instances collapsed.
+- E4. The rescaled arm's root gaps under the three methods are within a factor of 10 of each other.
+- A miss is a finding to report, not a failure.
+
+### S4b addendum
+This amends RUNBOOK §4 for this session. With DESIGN as edited in this commit, it conflicts with neither CHECKS nor DESIGN.
+
+Preconditions:
+- this note;
+- after it, Isaiah's note headed "— Isaiah: Fügenschuh discussion". That note may amend this addendum; if it does, follow it;
+- a clean tree.
+
+If any precondition is missing, stop and say so.
+
+**Step 0. Diagnostics.** Tests first. Clean commits, RUN_LOG rows, outputs hashed. New config experiments/configs/n3.yaml; integer.yaml and numerics.yaml unchanged.
+- 0a. P-MI ex-ante volatility (DESIGN §7, N3, last bullet).
+  - Compute σ = √(12·wᵀΣw) for every stored polished-V weight vector: I1 (144 points), I2 (82 points) and N1 (per arm, at default presolve and with presolve off separately), using the Σ of that instance's (date, N).
+  - Report median and range per experiment and arm, against 3%/yr.
+  - Add the continuous baseline's volatility at the I1 base points and along the I2 grids.
+- 0b. N3 root probes, as in DESIGN §7. Outputs go under results/n3/. If Gurobi reports no root-pass count, say so.
+- Append a PROGRESS entry with the 0a and 0b results, each with n and source file, before step 1.
+
+**Step 1. Font** (DESIGN §11.2 as edited).
+- Make report/main.tex use a Times-metric text font under tectonic.
+- RP-6 must still pass.
+- Record the page count before and after. Nothing else changes in this step.
+
+**Step 2. Restructure II–IV** to DESIGN §10 and §11.1 as edited. Tests first for any figure or table code, and `make figures` run twice must be byte-identical.
+- Figures and tables:
+  - Fig. 3 removed;
+  - Fig. 1 in four panels;
+  - Fig. 4 as a slope row only;
+  - Fig. 5 as one panel;
+  - the experiment table added;
+  - Table III as a single-column N2(b) table;
+  - Table II single column if it fits.
+- Then apply cut-order items (7)–(9) as needed to bring II–IV to at most 5.0 pages.
+
+**Step 3. Content**, in agent-drafted text only.
+- Every such paragraph stays marked % drafted-by-agent, and derivation paragraphs keep % verify-by-hand.
+- Before writing any definitional statement, verify it against the code. The closing entry lists each such statement with its code location.
+- a. Q1–Q3 stated in II. Every experiment label defined before first use (the experiment table). C3 not mentioned, or defined in one clause.
+- b. Family-level duals and elasticities: dA*/dp = Σₖ μₖ·∂rₖ/∂p, over the rows whose right-hand side moves with p.
+  - θ enters through every θ-limited uᵢ; sectors move jointly; each style key moves separately.
+  - State K15's sample: 115 checks, over constraint keys × D12 dates.
+- c. Symbols.
+  - B only for the loadings; rename the final bound.
+  - b_k not reused for grid points.
+  - One symbol for the risk multiplier.
+  - "Binds" (e_j ≥ 1e-4) kept distinct from "certified binding" (L > 0).
+- d. Definitions to add or correct:
+  - eligible;
+  - the ×21 monthly scaling;
+  - α = IC·ω·z with IC 0.03, citing Grinold–Kahn;
+  - S_j;
+  - pod, bp, GICS;
+  - ADV as the median (DESIGN §3.1 as edited);
+  - Work (deterministic units) and W*'s rule (P5);
+  - MIPGap;
+  - MIQCPMethod;
+  - a relaxation's gap at b, (R − V)/|V|;
+  - the plain relaxations, in the checker's wording ("solved as continuous problems outside the MIP (big-M by Gurobi's dual simplex, the perspective by Clarabel), so without MIP presolve or root cuts");
+  - SCS named, and ECOS not installed;
+  - N2(b)'s rows at default tolerances, against Clarabel at 1e-10;
+  - why Table II's baseline row has n = 24 against 23 binding cases;
+  - 241 risk-model month-ends against 240 with a momentum alpha;
+  - the idealized solves: 72 = 2 mandates × 3 alphas × 12 dates, with mandate (ii) described;
+  - K9's 202 toys against K29c's 200, explained.
+- e. Derivation text. Isaiah checks each item by hand at GATE R.
+  - II.F: the uniqueness argument as in DESIGN §3.5 as edited.
+  - A1: the mean-variance maximizer at λ = μ is unique (Σ ≻ 0, λ > 0); state Slater's condition here.
+  - A2–A3: add "no costs and no other rows".
+  - A4: why g = α⊥. The projection is unique, and α⊥ satisfies both Bᵀ Σ⁻¹ α⊥ = 0 and α − α⊥ ∈ range(B).
+  - A5: the family rule of (b).
+  - A7: the comparison behind "a tighter bound need not give a better slope". Below ℓ the true local slope is 0, and big-M's a − 2λdb is closer to 0 than the perspective's a − λdℓ when b > ℓ/2. The jump needs aℓ > λdℓ².
+  - A9: as in DESIGN §9 as edited.
+  - III.C: why the floor is 8η. The stencil coefficients of s₊ − s₋ sum to 16 over 2δ_r.
+- f. Q3 in IV-C: two mechanisms.
+  - The incumbent mechanism: the cone effect, which also explains Table III's default-scaling certified gap above MIPGap.
+  - The root-bound mechanism: N3, naming S2d as the pilot that motivated it.
+  - State that the rescaled arm changes both the row scale (÷c) and the cone scale.
+  - Keep Decision 37's "solver behaviour".
+- g. Censored effort. Never report a median that includes WorkLimit stops. Give "k of n stopped at the WorkLimit" and the range of the rest (N1 with presolve off; N2(a) big-M at s_obj = 1), in II–IV and in the outlines.
+- h. Hedged legs: report both name–relaxation pairs and distinct names. At most one sentence in IV; the rest goes in the V outline.
+- i. 0a's volatility goes in II.E or IV-B, with one sentence: Q2's slopes are slopes of the risk-penalized objective, and they equal equal-risk slopes only at the convex base point (envelope; K13). This resolves the open item at main.tex:265.
+- j. Fig. 3's removal: the Q1 cost sentence comes from the direct split (DESIGN §10 as edited), with new macros.
+- k. TC (II.C): "the Σ-metric form of Clarke et al.'s transfer coefficient". Their 2002 paper uses a diagonal residual covariance. No new reference.
+- l. The red outlines (Abstract, I, V, VI):
+  - Q1 names trading costs, and notes that sector and all-style neutrality cost about the same at zero (C2: 0.961 and 0.956).
+  - Q2 drops "no continuous estimator recovers the secant": the fixed-integer dual is exact in P1 and lies in [L, H] in 4 of 23 cases. It adds the δ pattern at 2017-12 (n = 11): the fixed-integer dual is better at 5%, the relaxation slopes better at 10%. It adds the δ = 5% P1 maxima, 3.6 (perspective) and 5.4 (big-M), from s3b_analysis d0.05/P1.
+  - Q3 names both mechanisms, and that presolve, not the formulation, closes big-M's gap.
+  - Replace internal labels (DESIGN §, Decision 44, K29b-ext, S4 addendum) with in-report evidence.
+  - No text in those sections beyond the outlines.
+- m. FACTS: regenerate proposal/FACTS.md, because refs.bib's sha256 changed. Every (file, sha256) pair must match; no FACTS line changes otherwise.
+
+**Step 4. Build and measure.**
+- `make figures` twice, byte-identical; `make report`.
+- Run the full test suite on the committed tree, not an uncommitted one (round 3's advisory).
+- spec_check on the report, draft mode.
+- Page table: total pages, the refs:start page, and II–IV with each float counted in the section that first references it, against DESIGN §11.1.
+- If II–IV still exceed 5.0 after the cut order, stop and report. Never cut the formulation, the definitions, A2–A4, the n behind any statistic, or a disclosure.
+
+**Step 5. Checks.**
+- CHECK REPORT (K30–K40, draft mode) on the new build, with the result-checker. This is a new CHECK, so CLAUDE.md's 3-round limit starts afresh.
+- The checker also recomputes 0a and 0b against DESIGN §7 (N3) and the E1–E4 expectations. A miss in E1–E4 is a finding, not a FAIL.
+- Then the cold-reader on the new PDF (K40), saved verbatim.
+
+**Step 6. Stop**, and report:
+- the spec_check table;
+- the verdicts;
+- the page table under both accountings;
+- the 0a and 0b results, with n and source files;
+- E1–E4, hit or miss;
+- the cold-read top five;
+- Isaiah's open items by section;
+- anything Isaiah must decide.
+
+No push, no tag.
+
+Protected in S4b. If a change seems needed to any of these, ask:
+- proposal/proposal.tex;
+- docs/CHECKS.md;
+- docs/DESIGN.md;
+- docs/AI_USE.md;
+- report/refs.bib;
+- experiments/configs/integer.yaml and numerics.yaml.
+
+### Run S4b
+- YES, in a fresh Claude Code session, after the Fügenschuh note is appended. Stop at the end of the addendum.

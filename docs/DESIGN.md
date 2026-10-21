@@ -34,7 +34,7 @@ A long/short equity pod at a multi-manager platform receives a monthly alpha for
 | Σ = BFBᵀ + D | monthly covariance (positive definite because d > 0) |
 | y = Bᵀw | factor exposures |
 | S_j | indicator vector of sector j |
-| ADVᵢ, AUM | average daily dollar volume; AUM = $1B |
+| ADVᵢ, AUM | median daily dollar volume over the trailing 63 trading days (written ADV); AUM = $1B |
 | σ_m | monthly volatility budget = 0.03/√12 |
 
 ### 3.2 Continuous problem P-RB (fixed risk budget)
@@ -74,14 +74,14 @@ subject to  the mandate of §3.2 without the risk row, with u = 6%, and
             Σᵢ (z⁺ᵢ + z⁻ᵢ) ≤ K,   z⁺, z⁻ binary
 ```
 
-- **λ\*** is μ_risk from P-RB solved on the same universe (same date and N) at the base mandate with u = 6%; by §6 it is the root-found λ of that solve. It is held fixed across K, ℓ, tightness level, and sweep point for that (date, N). Moving the risk budget into the objective at its multiplier is a Lagrangian relaxation with zero duality gap in the convex case, so P-MI is "the same pod with integer constraints added". With K ≥ N and ℓ = 0, P-MI reproduces P-RB's solution whenever P-RB's risk row binds. The MIQP portfolio's ex-ante volatility can fall below 3%; report it.
+- **λ\*** is μ_risk from P-RB solved on the same universe (same date and N) at the base mandate with u = 6%; by §6 it is the root-found λ of that solve. It is held fixed across K, ℓ, tightness level, and sweep point for that (date, N). Moving the risk budget into the objective at its multiplier is a Lagrangian relaxation with zero duality gap in the convex case, so P-MI is "the same pod with integer constraints added". With K ≥ N and ℓ = 0, P-MI reproduces P-RB's solution whenever P-RB's risk row binds. The MIQP portfolio's ex-ante volatility can differ from 3%/yr; report it (§7, N3).
 - **Big-M** keeps Σᵢ dᵢwᵢ², with M = uᵢ, the tightest natural bound.
 - **Perspective** replaces Σᵢ dᵢwᵢ² by Σᵢ dᵢsᵢ with rotated cones wᵢ² ≤ sᵢ·(z⁺ᵢ + z⁻ᵢ), sᵢ ≥ 0.
 - **Perspective, rescaled** (I1, I2, N1, N2): the same model with the weights in units of the largest position bound c = maxᵢ uᵢ: w' = w/c, every row and bound divided by c, and each cone written in its name's bound (tᵢ = wᵢ/uᵢ, sᵢ = uᵢ²s'ᵢ, tᵢ² ≤ s'ᵢζᵢ), as the Clarabel relaxation does (§6). Solutions and bounds are mapped back to original units and c is recorded. The feasible set and objective are unchanged; only the quantities Gurobi's absolute tolerances act on differ (A9).
 
 ### 3.5 Problem classes (the report states these)
 
-P-RB is a convex QCQP, SOC-representable. When the risk row binds it has a unique optimum, because a linear objective over a strictly convex set attains its maximum at a single point. The big-M P-MI is a convex MIQP: every node relaxation is a convex QP. The perspective P-MI is a mixed-integer SOCP.
+P-RB is a convex QCQP, SOC-representable. When the risk row's multiplier μ_risk is positive, the optimal w is unique: by A1, w also maximizes the mean-variance objective at λ = μ_risk over the mandate, which is strictly concave in w (Σ ≻ 0, and the costs are convex and piecewise linear in w); the split w⁺, w⁻ is then unique because c, κ > 0. The big-M P-MI is a convex MIQP: every node relaxation is a convex QP. The perspective P-MI is a mixed-integer SOCP.
 
 ## 4. Data and risk model (kept; v2 recomputes every reported fact)
 
@@ -179,6 +179,13 @@ D12 = {2008-10, 2009-03, 2011-08, 2013-06, 2015-08, 2017-12, 2018-12, 2020-03, 2
 - (b) Convex: C1 base at 2008-10, 2013-06, 2017-12, 2020-03, 2025-04. Solve the explicit QCQP with Gurobi (barrier) with and without the risk-row normalization and objective scaling, and with every installed conic solver in CVXPY among Clarabel, SCS, and ECOS at default tolerances. Compare against a reference: Clarabel on the scaled problem with tolerances tightened to 1e-10. Report relative errors in A*, the relative L1 error in w, and the relative errors in the binding duals.
 - Feeds Table III.
 
+**N3 — root-bound diagnostic and MIQP volatility (added at the S4 read, after the S3 results and the cold read; Decision 51).**
+- Instances: the 36 N1 instances at default presolve. Arms: the perspective at default scaling and the rescaled perspective.
+- Root-only probes with N1's settings (S2d item 1's separating test, which reproduced every stored root bound exactly), at MIQCPMethod −1 (default), 0 and 1; for the default-scaling arm also MIQCPMethod −1 with FeasibilityTol 1e-9.
+- Record per probe: root bound; root gap against N1's best known value; the number of root cut passes if Gurobi reports it; status; Work.
+- Report, with n: at how many instances MIQCPMethod 1 reproduces the default root bound exactly (this records the MIQCP method Gurobi used, §11.3); each setting's root gap beside the plain perspective relaxation's gap; the FeasibilityTol 1e-9 ratio. Expectations from the S2d pilot are recorded in PROGRESS before the run (not blind).
+- P-MI ex-ante volatility (§3.4), from the stored polished weights of I1, I2 and N1 (no solves): annualized, median and range per experiment and arm, against 3%/yr.
+
 ## 8. Design pilot (S2) and parameter rules
 
 | Item | What | Rule or output |
@@ -209,16 +216,16 @@ Isaiah derives each item by hand (RUNBOOK §5.3); the tests and checks confirm t
 | A6 | For z ∈ (0,1], s ≥ w²/z ≥ w², so the perspective relaxation bound is at least as tight as big-M's. The perspective of a convex function is convex | K24 | III, IV-C |
 | A7 | One-asset toy: max aw − λdw² over w ∈ {0} ∪ [ℓ, u], w ≤ b. U jumps by f(ℓ) at b = ℓ. Below ℓ, the big-M relaxation slope is a − 2λdb, the perspective relaxation slope is a − λdℓ, and the fixed-integer dual is 0 (locally correct). A tighter bound does not imply a better slope | K9 | III |
 | A8 | The MIQP value function is the upper envelope of concave pieces indexed by support pattern: nondecreasing, generally neither concave nor continuous. What each estimator measures: relaxation dual = slope of an upper-bounding concave function; fixed-integer dual = slope of the active piece; re-solve = secant across pieces. Derivation of the certified interval | K10 | III, IV-B |
-| A9 | Scaling. An absolute tolerance τ on a quantity of size m is a relative error τ/m; rescaling an objective or row gives an equivalent problem with different effective tolerances. Rescaling the weights by the largest position bound turns the perspective cones' absolute tolerance into a relative one (§3.4); the cone-violation effect is reported (P4, N1, N2) | N2, K8 | III, IV-C |
+| A9 | Scaling. An absolute tolerance τ on a quantity of size m is a relative error τ/m; rescaling an objective or row gives an equivalent problem with different effective tolerances. Rescaling the weights by the largest position bound, with each cone written in its name's bound (§3.4), makes the cones' absolute tolerance relative to each name's bound: up to 1e-6/ℓ² ≈ 0.16 on the smallest held cones unscaled, at most 1e-6·(uᵢ/ℓ)² ≈ 5.8e-4 rescaled. This accounts for the incumbents' cone-violation effect and for certified gaps above MIPGap (reported: P4, N1, N2). It does not account for the default-scaling perspective's root bound, which is Gurobi's outer approximation stopping before it converges (S2d item 1; N3); the report keeps the two mechanisms apart | N2, N3, K8 | III, IV-C |
 
 ## 10. Figures and tables
 
-- **Fig. 1** (C2): retained alpha A*(b)/A*(off) against the bound for each family, median and interquartile range over D12, α_mom; for factor families, α⊥ and α∥ dashed.
+- **Fig. 1** (C2): retained alpha A*(b)/A*(off) against the bound, median and interquartile range over D12, α_mom, in four panels: liquidity θ, sector, all styles jointly, and the Mom bound (α⊥ and α∥ dashed on the two factor panels). The other families are flat; the text gives their tightest-point values.
 - **Fig. 2** (C1): retained fraction under full factor neutrality against φ. The closed-form curve √(1 − φ), the numerical idealized points (three alphas × D12), and the realistic base-mandate points.
-- **Fig. 3** (C1): the Stubbs–Vandenbussche decomposition at λ*, stacked by constraint family over D12. Its total exceeds the fixed-risk loss A*_unconstrained(σ) − A*, because the unconstrained portfolio at λ* carries more than 3% risk; the caption says so. First candidate to cut.
-- **Fig. 4** (I2): for each instance, the value functions of P-MI and the continuous baseline (upper panel), and the slopes (lower panel): the secant slope of V between neighbouring grid points, the baseline's dual, and the three estimators at 0.5·b, b and 1.5·b beside the certified secant s and its interval. The y-axes say P-MI objective, not alpha. Two-column width is allowed for this figure.
-- **Fig. 5** (N1): root gap and Work against tightness for the three arms at default presolve, with the default-scaling perspective marked as solver behaviour (Decision 37). Thin reference lines mark the median plain-relaxation gaps of big-M and the perspective. Censored solves are marked only if any are plotted. The N = 250 presolve-on/off comparison is reported in the text.
-- **Table I:** notation and base mandate. **Table II** (I1): estimator errors with n binding, by K, at δ = 10%, with the in-[L, H] count and the median relative interval width (H − L)/s per row; the convex baseline row is at δ = 10%. **Table III** (N2): numerics.
+- **Fig. 3:** removed (Decision 50). Q1's cost sentence uses instead a direct split of the base portfolio's gross expected alpha α'w* into A*, borrow cost and trading cost (median and range over D12, α_mom, from the C1 outputs, no solves; if the stored outputs lack a term, say so and drop the sentence). The Stubbs–Vandenbussche attribution stays in the results files and may be cited in one sentence.
+- **Fig. 4** (I2): for each instance, one slope panel: the secant slope of V between neighbouring grid points (certified-nonconcave neighbours marked), the baseline's dual, and the three estimators at 0.5·b, b and 1.5·b beside the certified secant s and its interval. The value functions are described in one sentence of text. The y-axes say P-MI objective per unit of bound, not alpha. Two-column width is allowed; the height is about half the S4 version's.
+- **Fig. 5** (N1): root gap against tightness for the three arms at default presolve, one panel, with the default-scaling perspective marked as solver behaviour (Decision 37). Thin reference lines mark the median plain-relaxation gaps of big-M and the perspective. Work medians are given in the text. Censored solves are marked only if any are plotted. The N = 250 presolve-on/off comparison is reported in the text.
+- **Table I:** notation and base mandate. **Experiment table** (in II or III, single column): one row per experiment (C1, C2, I1, I2, N1, N2(a), N2(b), N3) with dates, N, f or K, the perturbation δ, the arms, and the number of solves. **Table II** (I1): estimator errors with n binding, by K, at δ = 10%, with the in-[L, H] count and the median relative interval width (H − L)/s per row; the convex baseline row is at δ = 10%; single column if it fits at the class's default size. **Table III** (N2(b)): single column; Gurobi barrier, Clarabel and SCS, each without and with objective scaling, against the reference, with each row's n; risk-row normalization is reported in one sentence (it changes nothing for the barrier). N2(a) is reported in the text. Figure and table numbers in this section name roles; the report numbers them in order of first reference.
 - **Format:** single-column width (3.5 in) unless justified; text ≥ 8 pt at print size; colorblind-safe palette, with meaning never carried by color alone; vector PDF; deterministic metadata, so regeneration is byte-identical. Also export 300-dpi PNGs to `figures/png/` (for the talk).
 
 ## 11. Report
@@ -227,21 +234,21 @@ Isaiah derives each item by hand (RUNBOOK §5.3); the tests and checks confirm t
 
 | Part | Pages | Content |
 |---|---|---|
-| Abstract | 0.3 | Problem, approach, principal findings |
-| I. Introduction | 0.8 | Motivation, significance, related work, questions, contributions |
-| II. Problem Setting | 1.1 | §2–§5; Table I; problem classes |
-| III. Solution Approach and Analysis | 1.3 | A1–A9 (brief derivations), solvers and algorithms, numerics, validation |
-| IV. Results | 2.5 | A: Q1 with Figs. 1–3 (1.2); B: Q2 with Fig. 4 and Table II (0.7); C: Q3 with Fig. 5 and Table III (0.6) |
-| V. Discussion | 1.0 | Coverage list in §11.4 |
-| VI. Conclusion | 0.25 | Findings and extensions |
-| Disclosures and AI-use acknowledgment | 0.2 | §11.5 |
-| References | 0.45 | §13 |
+| Abstract | 0.2 | Problem, approach, principal findings |
+| I. Introduction | 0.6 | Motivation, significance, related work, questions, contributions |
+| II. Problem Setting | 1.1 | §2–§5; Table I; problem classes; Q1–Q3 stated |
+| III. Solution Approach and Analysis | 1.2 | A1–A9 (brief derivations), solvers and algorithms, numerics, validation, the experiment table |
+| IV. Results | 2.7 | A: Q1 with Figs. 1–2; B: Q2 with Fig. 4 and Table II; C: Q3 with Fig. 5 and Table III |
+| V. Discussion | 0.8 | Coverage list in §11.4 |
+| VI. Conclusion | 0.2 | Findings and extensions |
+| Disclosures and AI-use acknowledgment | 0.3 | §11.5 |
+| References | 0.5 | §13 |
 
-Cut order if over 8 pages: Fig. 3; C3; Table III to text; Fig. 5 to one panel; related work to one paragraph. Never cut the formulation, the definitions, A2–A4, the n behind every statistic, or a required disclosure. If under 6 pages before references: add substance, never layout.
+II–IV are measured together, each float counted in the section that first references it: at most 5.0 pages (Decision 50; the S4 build ran about 6.7). Cut order if over budget: (1) Times as the text font (§11.2), then re-measure; (2) Fig. 3 removed; (3) Table III single column, N2(a) in the text; (4) Fig. 5 one panel; (5) Fig. 1 four panels; (6) Fig. 4 slope row only; (7) the experiment table replaces instance detail in each Setup paragraph; (8) compress III's validation paragraph, IV-A's envelope paragraph, IV-B's certification and slope-accuracy paragraphs and IV-C's N2(b) paragraph, and move the hedged legs to V; (9) Table II single column. Never cut the formulation, the definitions, A2–A4, the n behind every statistic, or a required disclosure. If under 6 pages before references: add substance, never layout.
 
 ### 11.2 Page and format rules
 
-`\documentclass[conference]{IEEEtran}` with class defaults. Not allowed: geometry, `\fontsize`, `\linespread`, `\baselinestretch`, `\enlargethispage`, negative `\vspace` in running text, or font-size switches in body text. Put `\label{refs:start}` immediately before the bibliography. Final mode: references start on page 7 or later, and the PDF has at most 8 pages. Draft mode: at most 8 pages only.
+`\documentclass[conference]{IEEEtran}` with class defaults. The text font is Times, as IEEEtran intends: under tectonic (XeTeX) the class's ptm font is unavailable, so the build loads a Times-metric text font explicitly (for example TeX Gyre Termes through fontspec, or newtxtext); math fonts are left as they are. Not allowed: geometry, `\fontsize`, `\linespread`, `\baselinestretch`, `\enlargethispage`, negative `\vspace` in running text, or font-size switches in body text. Put `\label{refs:start}` immediately before the bibliography. Final mode: references start on page 7 or later, and the PDF has at most 8 pages. Draft mode: at most 8 pages only.
 
 ### 11.3 Content requirements by section
 
