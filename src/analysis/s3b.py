@@ -13,6 +13,7 @@ and hedged legs. experiments/run_s3b.py and tools/s3b_analysis.py apply them.
   and carry no row. The convention is src.opt.sensitivity.active_set's (residual ≥ −tol).
 - Classes: P1 support and active set unchanged over b − δ, b, b + δ; P2 support unchanged and
   active set changed; P3 support changed.
+- Case classes and the I2 grid (items 3–4): case_classes, grid_nonconcavity.
 - Hedged legs (item 5): names with w⁺ > 1e-6 and w⁻ > 1e-6 in a perspective relaxation, and the
   note's prediction |w⁺ − w⁻| < ℓ and z⁺ + z⁻ > |w⁺ − w⁻|/ℓ per name.
 """
@@ -101,3 +102,40 @@ def hedged_names(wp, wm, zp, zm, ell: float, tol: float = LEG_TOL) -> pd.DataFra
 
 def spearman(x, y) -> float:
     return float(spearmanr(np.asarray(x, float), np.asarray(y, float)).statistic)
+
+
+def case_classes(support: pd.DataFrame) -> pd.DataFrame:
+    """Item 3: one row per I1 case from s3b_support rows (three points each): the class (P1, P2,
+    P3), the number of names whose support entry changes against b at b − δ and b + δ, and the
+    active rows that change (';'-joined, sorted)."""
+    out = []
+    for cid, g in support.groupby("id", sort=True):
+        g = g.set_index("point")
+        if set(g.index) != {"minus", "b", "plus"}:
+            raise ValueError(f"{cid}: points {sorted(g.index)}")
+        sups = [g.loc[p, "support"] for p in ("minus", "b", "plus")]
+        acts = [frozenset(filter(None, g.loc[p, "active_set"].split(";"))) for p in ("minus", "b", "plus")]
+        sset = [set(filter(None, x.split(";"))) for x in sups]
+        out.append({"id": cid, "class": support_class(sups, acts),
+                    "n_support_changes_minus": len(sset[0] ^ sset[1]),
+                    "n_support_changes_plus": len(sset[2] ^ sset[1]),
+                    "active_rows_changed": ";".join(sorted((acts[0] ^ acts[1]) | (acts[2] ^ acts[1])))})
+    return pd.DataFrame(out)
+
+
+def grid_nonconcavity(bounds, V, B_eff) -> pd.DataFrame:
+    """Item 4: interior triples of an equally spaced grid. certified: V(b_{k−1}) + V(b_{k+1}) >
+    2·B_eff(b_k) (the true value at b_k is at most B_eff, and V is a lower bound at the ends, so
+    the midpoint inequality of concavity fails for the true value function); uncertified: the same
+    with V(b_k) in place of B_eff(b_k)."""
+    b, V, Be = (np.asarray(a, float) for a in (bounds, V, B_eff))
+    o = np.argsort(b)
+    b, V, Be = b[o], V[o], Be[o]
+    h = np.diff(b)
+    if not np.allclose(h, h[0], rtol=1e-9, atol=0):
+        raise ValueError("grid is not equally spaced")
+    k = np.arange(1, len(b) - 1)
+    lhs = V[k - 1] + V[k + 1]
+    return pd.DataFrame({"k": k, "bound": b[k], "lhs_minus_2Beff": lhs - 2 * Be[k],
+                         "lhs_minus_2V": lhs - 2 * V[k], "certified": lhs > 2 * Be[k],
+                         "uncertified": lhs > 2 * V[k]})

@@ -150,3 +150,34 @@ def test_leg_task_ids_are_unique_across_sources():
     R.check_unique_ids([{"id": "a"}, {"id": "b"}])
     with pytest.raises(ValueError, match="duplicate"):
         R.check_unique_ids([{"id": "a"}, {"id": "a"}])
+
+
+# ----- items 3 and 4: case classes and the I2 grid's shape (added after the s3b run, tests first) -----
+
+def _sup(cid, sups, acts):
+    return [{"id": cid, "point": p, "support": s, "active_set": a}
+            for p, s, a in zip(("minus", "b", "plus"), sups, acts)]
+
+
+def test_case_classes():
+    df = pd.DataFrame(_sup("p1", ["1+;2-"] * 3, ["cap:1"] * 3)
+                      + _sup("p2", ["1+;2-"] * 3, ["cap:1", "cap:1;sector:upper:0", "cap:1"])
+                      + _sup("p3", ["1+", "1+;2-", "1+;2-;5+"], [""] * 3))
+    c = S.case_classes(df).set_index("id")
+    assert c["class"].to_dict() == {"p1": "P1", "p2": "P2", "p3": "P3"}
+    assert c.loc["p2", "active_rows_changed"] == "sector:upper:0"
+    assert c.loc["p3", "n_support_changes_minus"] == 1 and c.loc["p3", "n_support_changes_plus"] == 1
+    with pytest.raises(ValueError, match="points"):
+        S.case_classes(df[df["point"] != "plus"])
+
+
+def test_grid_nonconcavity_certified_and_uncertified():
+    b = np.array([0.0, 1.0, 2.0, 3.0])
+    V = np.array([0.0, 0.5, 2.0, 2.1])          # triple at k=1: 0 + 2 > 1.0 (nonconcave)
+    Be = np.array([0.0, 0.9, 2.0, 2.1])         # certified: 2 > 1.8; k=2: 0.5 + 2.1 < 4
+    g = S.grid_nonconcavity(b, V, Be)
+    assert list(g["certified"]) == [True, False] and list(g["uncertified"]) == [True, False]
+    g2 = S.grid_nonconcavity(b, V, np.array([0.0, 1.1, 2.0, 2.1]))
+    assert list(g2["certified"]) == [False, False] and list(g2["uncertified"]) == [True, False]
+    with pytest.raises(ValueError, match="equally spaced"):
+        S.grid_nonconcavity([0.0, 1.0, 3.0], V[:3], Be[:3])

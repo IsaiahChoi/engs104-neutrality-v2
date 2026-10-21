@@ -1,0 +1,16 @@
+
+==================================== ERRORS ====================================
+___________________ ERROR collecting tests/test_s3b_tool.py ____________________
+ImportError while importing test module '/Users/isaiahchoi/Desktop/engs_104_final_project/engs104-neutrality-v2/tests/test_s3b_tool.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_s3b_tool.py:9: in <module>
+    import tools.s3b_analysis as T
+E   ModuleNotFoundError: No module named 'tools.s3b_analysis'
+=========================== short test summary info ============================
+ERROR tests/test_s3b_tool.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.36s
