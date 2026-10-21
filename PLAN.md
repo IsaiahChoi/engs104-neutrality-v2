@@ -26,14 +26,14 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [ ] Stop at GATE C with the pilot table, proposed I1/N1 parameters, C1/C2 headlines, the CHECK CONT verdict, the S3 projection
 
 ## GATE C — Isaiah (Mon 10/19)
-- [ ] GATE C note in PROGRESS (pilot P1/P4; continuous results sound; proposed parameters noted)
+- [x] GATE C note in PROGRESS (pilot P1/P4; continuous results sound; proposed parameters noted)
 
 ## Proposal — Isaiah (Mon 10/19 – Thu 10/22)
 - [ ] Written by Isaiah from proposal/FACTS.md inside the scaffold; `make proposal`; spec_check --target proposal --mode final; submitted Thu 10/22
 - [ ] Discussion with an instructor (Fri 10/23)
 
 ## GATE DESIGN — Isaiah (Fri 10/23)
-- [ ] GATE DESIGN note: instructor feedback; integer.yaml / numerics.yaml approved or changed; run S3
+- [x] GATE DESIGN note: instructor feedback; integer.yaml / numerics.yaml approved or changed; run S3
 
 ## S3 — Integer sensitivity, formulations, numerics (Claude Code, Fri 10/23 – Sun 10/25)
 - [x] 1. Finalize integer.yaml and numerics.yaml per the GATE DESIGN note (DESIGN edits applied verbatim at 0a, 14e386a; configs 2d45cee); K29c gate run PASS first (results/k29c/run_20261020T225805Z)
@@ -45,7 +45,7 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [ ] Stop at GATE I with headlines (n, source files), the verdict, surprises, open questions
 
 ## GATE I — Isaiah (Mon 10/26)
-- [ ] GATE I note: AI-use policy answer and source; writing mode A or B
+- [x] GATE I note: AI-use policy answer and source; writing mode A or B
 
 ## S4 — Report build (Claude Code, Mon 10/26)
 - [ ] 1. Writing mode per DESIGN §11.6 (default B)

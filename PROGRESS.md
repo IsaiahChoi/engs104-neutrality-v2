@@ -1513,3 +1513,80 @@ index 4561d89..e8e5367 100644
 
 ### Commits this session (S3)
 - 14e386a (0a DESIGN), 4020dba (0e slope rule and K29c runner), bdb4edd (K29c read), 2d45cee (configs and runners), 2850eb3 and 64eabe2 (I1 run; I2 constraint), 189d5ea (N1 fix; analysis and figure code), 9dd1639 (analysis and figures), 120ea56 (round-1 fixes), 1fe7abe (reruns; superseded), 8bd53a3 and 8a8641a (optional C1 ratio), and the commit containing this entry (round-2 report, PLAN ticks). Not pushed.
+
+## 2026-10-20 — Isaiah: GATE I
+- Signed on 2026-10-20, after reading S3 and before the instructor discussions (Prof. Fügenschuh 10/21; class 10/23). Any change that comes from them is recorded as made after S3 results.
+- Read: PROGRESS from the S3 step 0a entry to the S3 closing entry; results/checks/INT_20261021T004136Z.md (CHECK INT round 2: PASS, K22–K29c); results/checks/code_review_S3_20261020T235435Z.md (no CRITICAL or HIGH). Pushed at db4e659 (origin was at 7716b6d, the GATE DESIGN note).
+- Verified at db4e659: DESIGN changed since f6d1074 only in 14e386a; CHECKS unchanged; under tests/ the only modified file is tests/test_s3_runners.py, whose removed lines are the three logged spec changes; no kept-core file changed.
+- Checked against results/s3_analysis/ (sources at 120ea56) and i1_estimators.csv. I1 median errors at δ = 10% (23 binding of 36): big-M 0.0729, perspective 0.0133, fixed-integer 0.0228. At 2017-12 (n = 11), δ = 5% / 10%: big-M 0.238 / 0.0729, perspective 0.0520 / 0.0156, fixed-integer 0.0141 / 0.0228. The all-date and 2017-12 medians coincide for big-M and fixed-integer because the median case is a 2017-12 case.
+
+### Corrections to the S3 closing entry (PROGRESS is append-only, so they are recorded here)
+- (a) "At MIPGap 1e-6 the certified intervals are nearly points (H − L ≤ about 1e-6 of s)" is wrong by two to four orders of magnitude. The width is set by B_eff's slack: (H − L)/s ≥ 1e-6·|V|/(δ·s), about 1e-5/e at δ = 10% of b, with e the elasticity. Measured at δ = 10% over the 23 binding cases: median 3.6e-4, range 1.2e-4 to 2.0e-2 (i1_estimators.csv). "In [L, H]" therefore tests agreement with the secant to about 0.04% typically, not to solver precision.
+- (b) "Dual against the δ = 10% secant: median 3.0e-4, max 4.2e-3 (n = 36)" pools the δ = 10% and 5% steps (s3_analysis.json i1.k27_baseline, n_secant = 36). Table II's convex row (n = 24, median 3.7e-4) appears to be the δ = 10% subset; S3b item 1 confirms which. The report pairs the δ = 10% integer rows with the δ = 10% convex figure.
+- (c) "Errors fall as K/S rises" holds for big-M only (medians 0.26, 0.14, 0.019 at f = 0.25, 0.5, 0.75). The perspective slope is flat from f = 0.5 (0.045, 0.0082, 0.0084). The fixed-integer dual is non-monotone (0.048, 0.060, 0.0052). n = 7, 8, 8.
+- (d) Non-binding cases are 13 of 36 at δ = 10% and 1 of 12 at the 5% step, with every estimator zero in all of them. They are reported per δ and never summed.
+
+### Decisions
+- AI-use policy: AI use is fine for this course, with disclosure (recorded by Isaiah on 2026-10-20). docs/AI_USE.md is updated in this commit, including that the proposal text was drafted with Claude (chat). For the proposal this supersedes RUNBOOK D11 and §5.2 ("written entirely by you"); DESIGN §11.6 is amended below. This is not a precedence conflict to stop on.
+- Writing mode: A (DESIGN §11.6, as amended below).
+- Decision 44: keep I2 on sector@0.02, chosen by DESIGN §7's rule as read (s, estimator (c)) and recorded before I2 ran. No I2 run on Mom@0.025. The Discussion reports the near-tie (median s 1.364e-3 against 1.316e-3) and the flipped order under the perspective slope (median slope 1.222e-3 against 1.306e-3; ratios of medians).
+- Decision 45: extend the K29b comparison, as a diagnostic, to every I1 case it did not cover (S3b item 2). CHECK INT stands as passed and CHECKS is unchanged. Reason: "the first 3 by sorted id" selected a single date. Apart from K29c's K8 instances, no gated scale evidence exists for any key at 2017-12 or 2020-03, and none at all for 2017-12 style:Mom (review M1).
+- Decision 46: Table II keeps the in-[L, H] column as DESIGN §7 specifies and adds the median relative interval width per row (DESIGN edit 4). The report explains when an estimator can lie in [L, H] (S3b item 3). No δ-bracket: it would be post hoc, it exists only at 2017-12 (n = 11), and the secant need not be monotone in δ.
+- Decision 47: report the N2(b) normalization null result as observed. S3b item 8 probes the mechanism only if time allows; it is exploratory, with no prediction.
+- Decision 48: Fig. 5 keeps the default-scaling arm in the main panels on the log axis, marked as solver behaviour (Decision 37), with the changes in DESIGN edit 3.
+- Known gaps (review M2, the K29c clause of M4, L1–L6): fixed in S3b item 1, before S4 generates numbers.tex (L2 and L6 are labels, done in S4). integer.yaml's I2 comment stays as history; the rerun gives the same choice (INT note 3).
+- Run S3b: YES, with the scope below; stop at its end. Then run S4 in a fresh session, only if results/checks/S3B_*.md ends in "VERDICT: PASS" and the S3b closing entry raises no open decision. Otherwise wait for a note.
+
+### DESIGN edits approved at GATE I (S3b step 0 applies them verbatim and shows the diff in PROGRESS)
+1. §11.6: replace "Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. Nobody but Isaiah writes text in `proposal/proposal.tex`." with "Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. The agent never edits text in `proposal/proposal.tex`; the proposal text was drafted with Claude (chat) and edited by Isaiah (docs/AI_USE.md)."
+2. §10: replace "**Fig. 4** (I2): value functions of P-MI and the continuous baseline, with tangents from the three estimators." with "**Fig. 4** (I2): for each instance, the value functions of P-MI and the continuous baseline (upper panel), and the slopes (lower panel): the secant slope of V between neighbouring grid points, the baseline's dual, and the three estimators at 0.5·b, b and 1.5·b beside the certified secant s and its interval. The y-axes say P-MI objective, not alpha. Two-column width is allowed for this figure."
+3. §10: replace "**Fig. 5** (N1): root gap and Work against tightness, big-M versus perspective, with censoring marked." with "**Fig. 5** (N1): root gap and Work against tightness for the three arms at default presolve, with the default-scaling perspective marked as solver behaviour (Decision 37). Thin reference lines mark the median plain-relaxation gaps of big-M and the perspective. Censored solves are marked only if any are plotted. The N = 250 presolve-on/off comparison is reported in the text."
+4. §10: replace "**Table II** (I1): estimator errors with n binding, by K." with "**Table II** (I1): estimator errors with n binding, by K, at δ = 10%, with the in-[L, H] count and the median relative interval width (H − L)/s per row; the convex baseline row is at δ = 10%."
+
+### S3b scope (analysis added after S3 results, approved here before it runs; where the chat had already read part of the data when a prediction was written, the item says so)
+1. **Analysis hardening, tests first** (review M2, M4, L1, L3, L4).
+   - tools/s3_analysis.py: a synthetic-frame test for each *_analysis function, and every filter raises on zero rows.
+   - run_k29c's verdict fails on any "unchecked" toy point. The logged run had 0 such points and is not rerun.
+   - L1: the raw-dual statistic at main δ only, split by persp_raw_usable.
+   - L3: assert that every K29b instance id occurs.
+   - L4: a JSON encoder that keeps bools and ints.
+   - Confirm which subset Table II's convex row uses (correction (b)).
+   - Acceptance: the regenerated s3_analysis.json equals the current one leaf by leaf, except the L1 statistic and new keys. Every changed leaf is listed in PROGRESS with its old and new values.
+2. **K29b-ext** (Decision 45).
+   - Perspective-relaxation slopes at 10·s_obj for every I1 case K29b did not cover: the 6 instances at 2017-12 and 2020-03 at δ = 10% (24 cases), and the 12 cases at 2017-12 at δ = 5% (36 cases in all; 5-point stencils as in DESIGN §6).
+   - Criterion: K29b's, applied to every case as K29b does: |ŝ(10·s_obj) − ŝ(s_obj)| ≤ 1e-5·|ŝ| + 2N, with N at s_obj.
+   - Its own config file and runner option, tests first. Clean commit, RUN_LOG row, outputs hashed. integer.yaml and numerics.yaml unchanged.
+   - A miss is recorded and flagged at the stop, and it blocks S4 until Isaiah decides. It does not stop the other items.
+3. **Support stability** (a test of A8).
+   - For each I1 case at both δ, compare the supports of V's incumbent at b − δ, b and b + δ (|w| > 1e-6, sign included). Compare also the fixed-integer QP's active set at those points; if it is not stored, recompute it by dual simplex at the stored z, as a logged run.
+   - Classes: P1, support and active set unchanged; P2, support unchanged and active set changed; P3, support changed.
+   - Predictions:
+     - P1: |μ_fixed − s|/s ≤ 1e-6.
+     - P2: the error is at most 4.2e-3, the convex baseline's largest secant error (K27).
+     - P3: no size prediction; report the distribution.
+     - Every fixed-integer in-[L, H] case (4 at δ = 10%, 5 at δ = 5%) is in P1 or P2.
+   - Report: class counts by f and δ, and every estimator's errors per class (descriptive). Also the Spearman rank correlation, at δ = 10%, between each relaxation's gap at b, (relaxation value − V)/|V|, and its slope error (descriptive).
+   - Not blind. Before writing this, the chat read i1_estimators.csv. It saw that the fixed-integer dual matches s to ≤ 1e-11 at the three 2017-12 cases whose s is identical at δ = 5% and 10%, and it computed the Spearman correlations: 0.65 for the perspective and 0.47 for big-M, n = 23. The supports themselves have not been examined.
+4. **I2 grid shape** (A8), on both 41-point grids. Descriptive, no prediction, no solves. Report:
+   - triples where nonconcavity is certified, V(b_{k−1}) + V(b_{k+1}) > 2·B_eff(b_k), using combined values (the true value at b_k is at most B_eff);
+   - the same count with V in place of B_eff (uncertified);
+   - support changes between neighbouring points.
+5. **Hedged legs** (INT note 5).
+   - Recompute the 36 N1 plain perspective relaxations and the 9 I1 perspective relaxations at the base bound (Clarabel, as in DESIGN §6), storing w⁺, w⁻, z⁺ and z⁻ per name, as a logged run.
+   - Prediction: every name with both legs > 1e-6 has |w⁺ − w⁻| < ℓ and z⁺ + z⁻ > |w⁺ − w⁻|/ℓ.
+   - Report: counts by instance; the largest min(w⁺, w⁻); and, for those names, 2λ*·dᵢ·ℓ against c + 2κ (descriptive).
+   - Do not change the formulation. Per-leg cones are a Discussion extension only.
+6. **V ties.** If both arms' incumbent z are stored at the I1 and I2 points, compare them and report how many differ. If they are not stored, record that and do not rerun. The report then says only that the polished values were identical (review M5).
+7. **N1 presolve, like for like** (no solves).
+   - At N = 250, presolve on against off, per arm: the median and range of the root gap, the median Work and the censored count, beside the median plain-relaxation gap. Add these to s3_analysis.json.
+   - Computed in chat from n1_table.csv and n1_relax.csv, for the checker to confirm (on / off):
+     - big-M: root gap 6.05e-4 / 5.73e-2 (plain 6.0e-2); Work 1.09 / 255; censored 0 / 6 of 12;
+     - rescaled perspective: root gap 4.86e-4 / 5.52e-4; Work 0.77 / 2.28;
+     - default-scaling perspective: root gap 1.60e-2 / 1.63e-2; Work 2.05 / 1.89;
+     - plain perspective relaxation gap: 1.4e-3.
+8. **Optional, last, if time allows** (Decision 47). Write the CVXPY-built Gurobi models of N2(b), with and without the risk-row normalization, to .lp files and diff them. Re-solve both with Presolve 0, then with ScaleFlag 0. Exploratory, no prediction; an A9 diagnostic.
+9. **FACTS.** Extend tools/make_facts.py with S3 and S3b facts (I1, I2, N1 and N2 headlines, and items 2–7), each with its source file and sha256, and regenerate proposal/FACTS.md. The proposal is due 10/22 and cites only FACTS.
+10. **result-checker.**
+    - Recompute items 2–7 independently against the criteria above, and write results/checks/S3B_<UTC stamp>.md ending in "VERDICT: PASS | FAIL | BLOCKED".
+    - A failed prediction in item 3 or 5 is a finding, not a FAIL. FAIL means a number that does not recompute, or a criterion of item 1 or 2 that is not met.
+    - Then write a PROGRESS closing entry giving every item's result with n and source file, and stop. This session writes no report or proposal text.

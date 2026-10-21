@@ -1,6 +1,6 @@
 # AI use log (supports disclosure in the proposal and report)
 
-ENGS 104 AI policy (quote or link it here): ____
+ENGS 104 AI policy (quote or link it here): AI use is fine for this course, with disclosure (recorded by Isaiah on 2026-10-20).
 Discussed with Prof. Fügenschuh on: ____  Notes: ____
 
 Tools: Claude (claude.ai chat) for planning; Claude Code for implementation.
@@ -28,3 +28,10 @@ The project was restarted as a course project without pre-registration, in a fre
 | Date | Tool | What the AI did | What Isaiah did / reviewed |
 |---|---|---|---|
 | 2026-10-18 | Claude (chat) | Read the v1 repo, data backup, and course documents; designed v2; extracted the v2 repo and kit | Chose to restart; to confirm decisions D1–D15, check the AI-use policy, and write the proposal |
+| 2026-10-18/19 | Claude Code + result-checker | S1: verified the kept core, ported v1 infrastructure, built the v2 foundations with tests; CHECK CORE passed in round 3. S2: design pilot, C1–C3, Figs. 1–3, FACTS; CHECK CONT passed in round 1 | Decided Decisions 1–26 at gates; signed GATE C |
+| 2026-10-19/20 | Claude Code + result-checker | S2b–S2e: pilot reruns with the 1e-9 polish, the rescaled perspective arm, slope and root-bound tooling, Decision 25; K20 recomputation | Decided Decisions 27–43; signed GATE DESIGN and the CHECKS edits |
+| 2026-10-18 to 10-21 | Claude (chat) | Read results and checker reports; proposed most design decisions, CHECKS row text, DESIGN edit text, gate-note drafts and session prompts; derivation sketches (finite-difference noise, certified-slope sensitivity, value-function differentiability, the hedged-leg relaxation mechanism) | Chose among the proposals; edited and signed the gate notes and CHECKS; ran the commands |
+| 2026-10-20/21 | Claude Code + result-checker + python-reviewer | S3: K29c, I1, I2, N1, N2, analysis, Figs. 4–5, Tables II–III; CHECK INT passed in round 2 | Read the results; signed GATE I |
+| 2026-10-20 to 10-22 | Claude (chat) | Drafted the proposal text | Edited and submitted it |
+
+Note (2026-10-20): the "Draft disclosure for the report" paragraph in the v1 section predates v2 and is not accurate for it. In v2, Claude (chat and Code) proposed most design decisions and checks, and Isaiah decided them at gates. Rewrite the disclosure from this log before using it.
