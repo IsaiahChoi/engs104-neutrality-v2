@@ -85,7 +85,7 @@ def make_task(cfg: dict, p: dict, inst) -> dict:
             "kwargs": {**inst.kwargs, "mandate": md}, "formulation": form, "rescale": rescale,
             "s_obj": float(cfg["s_obj"]), "mip_gap": float(st["mip_gap"]),
             "work_limit": float(st["work_limit_factor"]) * float(cfg["W_star"]),
-            "cone_diag": bool(cfg.get("cone_diagnostic", True))}
+            "cone_diag": bool(cfg.get("cone_diagnostic", True)), "workers": s3.workers(cfg)}
 
 
 def n1_task(t: dict) -> dict[str, pd.DataFrame]:
@@ -93,7 +93,7 @@ def n1_task(t: dict) -> dict[str, pd.DataFrame]:
     r = M.solve(mip_gap=t["mip_gap"], work_limit=t["work_limit"], presolve=t["presolve"],
                 cone_diag=t["cone_diag"])
     ids = {k: t[k] for k in ("id", "date", "N", "N_names", "f", "K", "tightness", "arm",
-                             "presolve", "lam_star", "rerun")}
+                             "presolve", "lam_star", "rerun", "workers")}
     ids["N"] = str(ids["N"])                # a label: 100, 250 or "full" (parquet needs one type)
     rec = s3.pmi_record(r, ids)
     w = pd.DataFrame({"id": t["id"], "i": np.arange(len(r.w)), "w": r.w, "zp": r.zp, "zm": r.zm})

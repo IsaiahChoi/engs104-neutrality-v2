@@ -81,8 +81,9 @@ def tightened(mandate, tight: dict | None):
 def pmi_record(r, extra: dict) -> dict:
     """One P-MI solve's record (the S2b runner's fields: status, V, B, B_eff, gaps, cone effect,
     checker verdicts, Work, Runtime, nodes, settings), plus the raw incumbent's verdict at
-    Gurobi's tolerances (CHECKS K26)."""
-    return {**_rec(r, extra), "incumbent_verdict": r.incumbent_verdict}
+    Gurobi's tolerances (CHECKS K26) and s_obj; the runners put the worker count in `extra`
+    (DESIGN §6, recorded per solve)."""
+    return {**_rec(r, extra), "incumbent_verdict": r.incumbent_verdict, "s_obj": r.s_obj}
 
 
 SLOPE_RULES = {"central": "design", "three_point": "three_point"}

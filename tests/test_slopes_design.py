@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from fractions import Fraction as Fr
 
+import numpy as np
 import pytest
 
 from src.opt.slopes import DESIGN_METHOD, fd_slopes, relaxation_slope, stencil
@@ -131,3 +132,22 @@ def test_design_relaxation_slope_on_random_toys():
             cf = Tf.slopes(b)["perspective"]
             worst = max(worst, abs(r["slope"] - cf) / abs(cf))
     assert worst <= 1e-6, worst
+
+
+def test_raw_duals_recorded_at_every_stencil_point():
+    """CHECKS K29b / DESIGN §6: Clarabel's raw duals are recorded for every relaxation, i.e. at
+    every stencil point: the slope key's dual (original units), all keys as JSON, and whether
+    the relaxation was usable (Decision 25 keeps a failed point's duals)."""
+    import json
+    Tf = random_toys(20261020, 1)[0][0]
+    b = 0.5 * (Tf.ell + Tf.w_opt)
+    P = _toy_pmi(Tf, b)
+    r = relaxation_slope(P, "gross", method=DESIGN_METHOD)
+    assert len(r["points"]) == 5
+    for p in r["points"]:
+        assert {"raw_dual", "raw_duals_json", "raw_duals_usable"} <= set(p)
+        assert np.isfinite(p["raw_dual"]) and p["raw_duals_usable"] is True
+        assert json.loads(p["raw_duals_json"])["gross"] == p["raw_dual"]
+    mid = next(p for p in r["points"] if p["offset"] == 0)
+    ref = P.relaxation_duals()["perspective"]["shadow"]["gross"]
+    assert mid["raw_dual"] == pytest.approx(ref, rel=1e-9)

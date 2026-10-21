@@ -172,3 +172,27 @@ def test_n1_frames_with_full_and_numeric_N_write_to_parquet(inst, tmp_path):
         df = pd.concat(frames, ignore_index=True)
         assert list(df["N"]) == ["30", "full"]
         df.to_parquet(tmp_path / "x.parquet", index=False)
+
+
+def test_solves_record_s_obj_and_workers(inst):
+    """DESIGN §6 "Recorded per solve": the scale factors and the worker count (CHECKS K29 note)."""
+    cfg = config("integer")
+    t = i1.make_task(cfg, inst, {"key": "sector", "b": 0.02}, rel_delta=0.10, f=SMALL["f"])
+    out = i1.i1_task(t)
+    sv = out["i1_solves"]
+    assert (sv["s_obj"] == 1e4).all() and (sv["workers"] == 4).all()
+    assert {"raw_dual", "raw_duals_json", "raw_duals_usable"} <= set(out["i1_slope_points"].columns)
+    ncfg = config("numerics")
+    p = {"date": SMALL["date"], "N": SMALL["N"], "f": SMALL["f"], "tightness": "base", "arm": "bigm",
+         "presolve": -1}
+    r = n1.n1_task(n1.make_task(ncfg, p, inst))["n1_solves"].iloc[0]
+    assert r["s_obj"] == 1e4 and r["workers"] == 4
+
+
+def test_n1_relax_records_perspective_raw_duals(inst):
+    import json
+    cfg = config("numerics")
+    p = {"date": SMALL["date"], "N": SMALL["N"], "f": SMALL["f"], "tightness": "base"}
+    r = n1.relax_task(n1.make_relax_task(cfg, p, inst))["n1_relax"].iloc[0]
+    d = json.loads(r["perspective_raw_duals_json"])
+    assert "sector" in d and "gross" in d and r["perspective_raw_duals_usable"]

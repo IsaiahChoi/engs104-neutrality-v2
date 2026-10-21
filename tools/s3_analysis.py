@@ -91,13 +91,14 @@ def i1_analysis(f: dict) -> tuple[dict, dict]:
                         "raw_dual_rel_err_binding": _q(rawerr),
                         "raw_relaxation_failed": int(raw_bad.sum()),
                         "raw_relaxation_failed_kept_duals": int((raw_bad & est["mu_persp_raw_unusable"].notna()).sum())},
-        "k29b": A.k29b(est),
+        "k29b": {**A.k29b(est), "binding_keys": A.k29b(est[est["binding"].astype(bool)])},
+        "nonbinding_by_delta": A.nonbinding_breakdown(est, by="rel_delta").to_dict("records"),
         "k27_baseline": A.k27(base),
         "work": _q(solves["work"]), "statuses": _counts(solves["status"]),
     }
     tables = {"i1_long": long, "i1_errors_by_f": A.error_summary(main, by=["f"]),
               "i1_errors_by_delta": A.error_summary(long[long["date"] == "2017-12"], by=["rel_delta"]),
-              "i1_nonbinding": A.nonbinding_breakdown(main_est)}
+              "i1_nonbinding": A.nonbinding_breakdown(est, by="rel_delta")}
     return out, tables
 
 

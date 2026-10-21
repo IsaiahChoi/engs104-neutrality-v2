@@ -24,6 +24,15 @@ ESTIMATORS = (("bigm_relax", "mu_bigm_relax"), ("perspective", "persp_slope"), (
 CASE_COLS = ("id", "instance", "date", "f", "K", "key", "b", "rel_delta")
 
 
+def _flag(df: pd.DataFrame, col: str) -> pd.Series:
+    """A boolean column; a missing value is an error, never True (pandas' astype(bool) would
+    make NaN True)."""
+    s = df[col]
+    if s.isna().any():
+        raise ValueError(f"{col}: {int(s.isna().sum())} missing values")
+    return s.astype(bool)
+
+
 def b_eff(B, V):
     B, V = np.asarray(B, float), np.asarray(V, float)
     return np.maximum(B, V) + BEFF_RTOL * np.abs(V)
@@ -41,13 +50,13 @@ def i1_long(est: pd.DataFrame, bound_col: str = "b") -> pd.DataFrame:
     available only), in_interval, zero."""
     rows = []
     defined = np.isfinite(est["L"].astype(float)) & np.isfinite(est["H"].astype(float))
-    binding = est["binding"].astype(bool) & defined
+    binding = _flag(est, "binding") & defined
     s = est["s"].astype(float)
     for name, col in ESTIMATORS:
         mu = est[col].astype(float)
         avail = np.isfinite(mu)
         if name == "perspective" and "persp_ok" in est:
-            avail &= est["persp_ok"].astype(bool)
+            avail &= _flag(est, "persp_ok")
         with np.errstate(divide="ignore", invalid="ignore"):
             err = np.where(binding & avail, np.abs(mu - s) / np.abs(s), np.nan)
         d = est[[c for c in CASE_COLS if c in est] + ["s", "L", "H", "V"]].copy()
@@ -78,8 +87,14 @@ def error_summary(long: pd.DataFrame, by: list[str]) -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
-def nonbinding_breakdown(est: pd.DataFrame) -> pd.DataFrame:
-    """Non-binding cases (interval defined, L ≤ 0) by which estimators are zero or nonzero."""
+def nonbinding_breakdown(est: pd.DataFrame, by: str | None = None) -> pd.DataFrame:
+    """Non-binding cases (interval defined, L ≤ 0) by which estimators are zero or nonzero;
+    with `by` (e.g. rel_delta), one breakdown per value."""
+    if by is not None:
+        parts = [nonbinding_breakdown(g).assign(**{by: v}) for v, g in est.groupby(by, sort=True)]
+        parts = [p for p in parts if len(p)]
+        cols = [by, "pattern", "n"]
+        return pd.concat(parts, ignore_index=True)[cols] if parts else pd.DataFrame(columns=cols)
     long = i1_long(est)
     nb = long[long["defined"] & ~long["binding"]]
     pats = {}
@@ -131,14 +146,15 @@ def _pairs(solves: pd.DataFrame, group: list[str]) -> pd.DataFrame:
                    "status_i": a["status"], "status_j": c["status"],
                    "both_reached_gap": bool(a["reached_gap"]) and bool(c["reached_gap"])}
             if not all(np.isfinite(x) for x in (a["V"], c["V"], a["B"], c["B"])):
-                out.append({**rec, "undefined": True, "pass": np.nan, "abs_dV": np.nan,
+                why = "V undefined" if not (np.isfinite(a["V"]) and np.isfinite(c["V"])) else "B undefined"
+                out.append({**rec, "undefined": True, "undefined_reason": why, "pass": np.nan, "abs_dV": np.nan,
                             "allowed": np.nan, "ratio": np.nan, "within_allowed": np.nan,
                             "i_beats_j": False, "j_beats_i": False})
                 continue
             bi, bj = float(b_eff(a["B"], a["V"])), float(b_eff(c["B"], c["V"]))
             dV = abs(a["V"] - c["V"])
             allowed = max(bi - a["V"], bj - c["V"])
-            out.append({**rec, "undefined": False, "V_i": a["V"], "V_j": c["V"], "Beff_i": bi,
+            out.append({**rec, "undefined": False, "undefined_reason": "", "V_i": a["V"], "V_j": c["V"], "Beff_i": bi,
                         "Beff_j": bj, "pass": bool(a["V"] <= bj and c["V"] <= bi),
                         "i_beats_j": bool(a["V"] > bj), "j_beats_i": bool(c["V"] > bi), "abs_dV": dV,
                         "allowed": allowed, "ratio": dV / allowed if allowed > 0 else np.inf,
@@ -170,7 +186,9 @@ def n2_disagreements(miqp: pd.DataFrame) -> pd.DataFrame:
 def k24(relax: pd.DataFrame) -> dict:
     """CHECKS K24: plain perspective relaxation ≤ big-M relaxation + 1e-8·max(|V|, |V_ref|), V the
     perspective value and V_ref the instance's best known value; failed relaxations excluded."""
-    ok = relax["perspective_ok"].astype(bool)
+    ok = _flag(relax, "perspective_ok")
+    if relax.loc[ok, ["bigm", "perspective", "V_best"]].isna().any().any():
+        raise ValueError("K24: a usable instance has an undefined relaxation or best known value")
     r = relax[ok]
     tol = 1e-8 * np.maximum(np.abs(r["perspective"]), np.abs(r["V_best"]))
     margin = (r["bigm"] - r["perspective"]) / np.abs(r["V_best"])
@@ -236,6 +254,8 @@ def k27(base: pd.DataFrame) -> dict:
     with np.errstate(divide="ignore", invalid="ignore"):
         e = base["mu"] * base["b"] / np.abs(base["value"])
         binding = (e >= ZERO_ELASTICITY) & np.isfinite(base["slope"].astype(float))
+    for col in ("within", "kink"):
+        _flag(base[binding], col)
         sec = (np.abs(base["mu"] - base["secant"]) / np.abs(base["secant"])) if "secant" in base else None
     b = base[binding]
     out = {"n": len(base), "n_binding": int(binding.sum()), "n_within": int(b["within"].astype(bool).sum()),
@@ -254,7 +274,7 @@ def k29b(est: pd.DataFrame) -> dict:
     """CHECKS K29b: slopes at s_obj and k29b_scale·s_obj agree within 1e-5·|ŝ| + 2N, N the central
     slope's a-priori noise at s_obj (1e-9·max(|V|, |V_ref|)/δ_r with V_ref = V(b))."""
     r = est[np.isfinite(est["k29b_scale"].astype(float))]
-    ok = r["persp_ok"].astype(bool) & r["persp_ok_k29b"].astype(bool)
+    ok = _flag(r, "persp_ok") & _flag(r, "persp_ok_k29b")
     q = r[ok]
     diff = np.abs(q["persp_slope"] - q["persp_slope_k29b"])
     tol = 1e-5 * np.abs(q["persp_slope"]) + 2 * q["persp_noise_central"]

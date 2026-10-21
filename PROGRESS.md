@@ -1426,3 +1426,23 @@ index 4561d89..e8e5367 100644
   - Table III's MIQP block is directional: whose V lies above whose B_eff. The analysis gained i_beats_j/j_beats_i; test test_n2_disagreement_direction, RED KeyError, then GREEN.
   - Fig. 4 layout fixed: the legend no longer overlaps the first panel title, and the tangents are longer and thicker.
 - **Suite:** see the commit's log (logs/test_s3_post_analysis_*).
+
+## 2026-10-21 — S3: CHECK INT round 1 FAIL (K29b recording clause only); python-reviewer review; fixes before round 2
+- **python-reviewer** (results/checks/code_review_S3_20261020T235435Z.md): no CRITICAL or HIGH findings.
+  - MEDIUM:
+    - M1: the 2017-12 style:Mom scale check is ungated: its K29c stencil at s_obj failed, and K29b covers 2009-03 only.
+    - M2: tools/s3_analysis.py's glue is untested.
+    - M3: astype(bool) turns NaN into True.
+    - M4: silent pass paths (K24 NaN, K22 finite V with NaN B, K29c "unchecked" points).
+    - M5: v_from is vacuous; V ties at every I1/I2 point, so estimator (b) always comes from the big-M incumbent.
+  - Fixed now, tests first: M3 (a missing gating flag raises), M4 for K22 (undefined_reason "B undefined" is separate from "V undefined") and K24 (a NaN on a usable instance raises).
+  - Not fixed (listed for GATE I): M1 (open question); M2 (a known gap); M4's K29c "unchecked" (the run had 0 such points); M5 (a reporting rule: the report says V tied at every point); the LOWs.
+- **CHECK INT round 1: VERDICT FAIL** (results/checks/INT_20261021T000733Z.md). K22–K29c pass except K29b. K29b's numerical clauses pass (12/12 cases, max diff/tol 1.1e-3), but its recording clause fails: "Clarabel status, residuals, and raw duals are recorded for every relaxation". The I1 stencil relaxations recorded status and residuals but no raw duals, at neither scale. The checker also notes the same gap in I2's stencils and n1_relax (not gated; DESIGN §6 says "every solve").
+- **Fixes for round 2, tests first:** RED logs/test_s3_round2_red_* (6 failing for the intended reasons); GREEN logs/test_s3_round2_green_*.
+  - src/opt/slopes.relaxation_slope: every stencil point records Clarabel's raw duals (raw_dual for the key, raw_duals_json for every key, dU*/db in original units; raw_duals_usable). This covers I1 at both scales and I2.
+  - src/opt/rootprobe.plain_relaxations: perspective_raw_duals_json and perspective_raw_duals_usable (n1_relax).
+  - Every solve record now carries s_obj and the worker count (DESIGN §6's per-solve list; the K29 note).
+  - The analysis gives the non-binding breakdown per δ (the K28 note: the δ = 5% non-binding case is now broken down) and K29b on binding keys alone.
+  - No estimator, value or bound changes. The checker reran all 452 I1/I2 arm solves at HEAD and found them bit-for-bit identical.
+- **Suite:** 427 passed, 1 skipped, 2 xfailed in 85.45s (0:01:25) (logs/test_s3_round2_full_20261021T001123Z.log).
+- **Next:** rerun I1, I2 (constraint unchanged: sector@0.02, chosen by the rule from I1; the rerun reproduces I1, and I will confirm), N1 and N2 at the next commit. The four runs of 2026-10-20 23:10–23:38 are marked superseded once the reruns finish. Then CHECK INT round 2.

@@ -67,7 +67,7 @@ def miqp_task(t: dict) -> dict[str, pd.DataFrame]:
     form, rescale = ARMS[t["arm"]]
     M = PMI(**t["kwargs"], formulation=form, s_obj=t["s_obj"], rescale=rescale)
     r = M.solve(mip_gap=t["mip_gap"], work_limit=t["work_limit"], cone_diag=True)
-    ids = {k: t[k] for k in ("id", "date", "N", "f", "K", "tightness", "arm", "s_obj", "lam_star")}
+    ids = {k: t[k] for k in ("id", "date", "N", "f", "K", "tightness", "arm", "s_obj", "lam_star", "workers")}
     w = pd.DataFrame({"id": t["id"], "i": np.arange(len(r.w)), "w": r.w, "zp": r.zp, "zm": r.zm})
     return {"n2_miqp": pd.DataFrame([s3.pmi_record(r, ids)]), "n2_miqp_weights": w}
 
@@ -170,7 +170,8 @@ def main(argv=None) -> int:
                           "K": inst.K, "lam_star": inst.lam,
                           "kwargs": {**inst.kwargs, "mandate": s3.tightened(inst.mandate, tight)},
                           "mip_gap": float(m["mip_gap"]),
-                          "work_limit": float(m["work_limit_factor"]) * float(cfg["W_star"])})
+                          "work_limit": float(m["work_limit_factor"]) * float(cfg["W_star"]),
+                          "workers": s3.workers(cfg)})
         wk = s3.workers(cfg)
         out = pool_chunks(run, MIQP_FRAMES, tasks, lambda t: t["id"], miqp_task, wk)
         items = [convex_item(cfg, ym) for ym in cfg["n2"]["convex"]["dates"]]

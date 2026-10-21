@@ -13,10 +13,14 @@ status, Work, Runtime and the settings are returned.
 
 plain_relaxations(pmi) gives the z ∈ [0, 1] relaxations in original units: big-M by the kept
 relax() (dual simplex), the perspective by Clarabel with the DESIGN §6 value (cones exact), its
-status, residuals, gap and own objective, and Gurobi's barrier on the same relaxation
-(BarQCPConvTol 1e-9, the kept relax()).
+status, residuals, gap and own objective, its raw duals (dU*/db per key, original units, as JSON;
+DESIGN §6 diagnostics, kept on failure as Decision 25) and Gurobi's barrier on the same
+relaxation (BarQCPConvTol 1e-9, the kept relax()).
 """
 from __future__ import annotations
+
+import json
+from types import SimpleNamespace
 
 import numpy as np
 from gurobipy import GRB
@@ -72,7 +76,11 @@ def plain_relaxations(pmi) -> dict:
         barrier, barrier_status = P.relax().U / s, "OPTIMAL"
     except RuntimeError as err:
         barrier, barrier_status = np.nan, str(err)
+    raw = ({k: v / s for k, v in pmi._shadows(SimpleNamespace(duals=cl.duals)).items()}
+           if cl.duals else {})
     return {"bigm": bigm, "perspective": info["value"] / s, "perspective_ok": bool(cl.ok),
+            "perspective_raw_duals_json": json.dumps(raw, sort_keys=True),
+            "perspective_raw_duals_usable": bool(cl.ok),
             "perspective_status": cl.status, "perspective_fail_reason": info.get("fail_reason"),
             "perspective_clarabel_status": info["clarabel_status"],
             "perspective_r_prim": info["r_prim"], "perspective_r_dual": info["r_dual"],

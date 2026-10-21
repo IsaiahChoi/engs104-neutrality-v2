@@ -97,7 +97,8 @@ def make_task(cfg: dict, inst, con: dict, rel_delta: float, f: float,
             "slope_method": s3.slope_rule(c.get("perspective_slope_method", "central")),
             "fd_rel_step": float(c.get("perspective_fd_rel_step", 1e-3)),
             "baseline_kinds": list(c.get("baseline_kinds", BASELINE_KINDS)),
-            "k29b_scale": None if k29b_scale is None else float(k29b_scale)}
+            "k29b_scale": None if k29b_scale is None else float(k29b_scale),
+            "workers": s3.workers(cfg)}
 
 
 def _set(P: PMI, key: str, value: float) -> None:
@@ -153,7 +154,8 @@ def i1_task(t: dict) -> dict[str, pd.DataFrame]:
                     "work_total": sum(p.work for p in parts.values()),
                     "mu_fixed": (fixed or {}).get("shadow", {}).get(key, np.nan),
                     "fixed_status": (fixed or {}).get("status", "not run")}
-        solves += [s3.pmi_record(r, {**ids, "point": tag, "arm": f}) for f, r in parts.items()]
+        solves += [s3.pmi_record(r, {**ids, "point": tag, "arm": f, "workers": t["workers"]})
+                   for f, r in parts.items()]
         weights.append(pd.DataFrame({"id": t["id"], "point": tag, "i": np.arange(len(w)), "w": w}))
     _set(P, key, b)
     V0 = pts["b"]["V"]

@@ -32,6 +32,9 @@ The arithmetic uses only +, −, ×, ÷ on the values, so Fractions stay exact (
 relaxation_slope(pmi, key) evaluates the perspective relaxation (src.opt.relaxation, Clarabel) at
 the stencil for one shadow-price key of a P-MI instance (dollar, beta, gross, style, sector,
 style:<factor>, sector:<j>; a family key moves every element together) and restores the bounds.
+Every point also records Clarabel's raw duals (CHECKS K29b, DESIGN §6; a diagnostic, never an
+estimator): raw_dual for `key` and raw_duals_json for every key, dU*/db in original units, with
+raw_duals_usable = the relaxation passed DESIGN §6 (a failed point keeps its duals, Decision 25).
 V(b) is solved first and passed as V_ref to the other points' gap clause (the stencil rule of
 DESIGN §6); a given v_ref (original units, e.g. the toy's U* as in K9) is used at every point
 instead, and in the noise term. Values are in original units (÷ s_obj). If any point fails (DESIGN §6) the slope is nan, ok = False, and the first failed
@@ -40,7 +43,9 @@ point's reason is recorded; every point's status, residuals and gaps are recorde
 from __future__ import annotations
 
 import copy
+import json
 from dataclasses import asdict, dataclass
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -159,9 +164,14 @@ def relaxation_slope(pmi, key: str, b: float | None = None, rel_delta: float = R
                                         v_ref=ref if ref is not None and np.isfinite(ref) else None)
             info = cl.info
             value = info.get("value", np.nan) / s
+            raw = ({kk: v / s for kk, v in pmi._shadows(SimpleNamespace(duals=cl.duals)).items()}
+                   if cl.duals else {})
             points.append({"offset": k, "bound": b0 + k * delta, "ok": bool(cl.ok),
                            "status": cl.status, "value": value,
-                           **{f: info.get(f) for f in POINT_FIELDS}})
+                           **{f: info.get(f) for f in POINT_FIELDS},
+                           "raw_dual": raw.get(key, np.nan),
+                           "raw_duals_json": json.dumps(raw, sort_keys=True),
+                           "raw_duals_usable": bool(cl.ok)})
             if cl.ok:
                 vals[k] = value
             elif fail is None:

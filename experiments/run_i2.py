@@ -75,7 +75,8 @@ def make_task(cfg: dict, inst, con: dict, b: float, estimator: bool) -> dict:
             "formulations": list(c.get("formulations", ["perspective"])),
             "slope_method": s3.slope_rule(c.get("perspective_slope_method", "central")),
             "fd_rel_step": float(c.get("perspective_fd_rel_step", 1e-3)),
-            "baseline_kinds": list(c.get("baseline_kinds", BASELINE_KINDS))}
+            "baseline_kinds": list(c.get("baseline_kinds", BASELINE_KINDS)),
+            "workers": s3.workers(cfg)}
 
 
 def i2_task(t: dict) -> dict[str, pd.DataFrame]:
@@ -100,7 +101,7 @@ def i2_task(t: dict) -> dict[str, pd.DataFrame]:
         sl = relaxation_slope(P, key, rel_delta=t["fd_rel_step"], method=t["slope_method"])
         pt.update(slope_columns(sl))
         slope_pts = pd.DataFrame([{**ids, **q} for q in sl["points"]])
-    solves = [s3.pmi_record(r, {**ids, "arm": f}) for f, r in parts.items()]
+    solves = [s3.pmi_record(r, {**ids, "arm": f, "workers": t["workers"]}) for f, r in parts.items()]
     CP, alpha = s3.baseline_problem(t["kwargs"])
     base = []
     for kind in t["baseline_kinds"]:

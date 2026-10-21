@@ -152,3 +152,28 @@ def test_n2_disagreement_direction():
     r = A.n2_disagreements(m).iloc[0]
     assert r["arm_i"] == "bigm" and bool(r["i_beats_j"]) and not bool(r["j_beats_i"])
     assert bool(r["incumbent_beats_other_bound"])
+
+
+def test_nan_in_a_gating_flag_raises():
+    """Review M3: a NaN in binding / persp_ok / within / reached_gap is an error, never True."""
+    with pytest.raises(ValueError, match="binding"):
+        A.i1_long(pd.DataFrame([_est(binding=np.nan)]))
+    b = pd.DataFrame({"mu": [1e-3], "b": [0.02], "value": [1e-3], "rel_err": [0.0], "within": [np.nan],
+                      "kink": [False], "slope": [1e-3], "secant": [1e-3]})
+    with pytest.raises(ValueError, match="within"):
+        A.k27(b)
+
+
+def test_k22_flags_a_defined_V_with_undefined_B():
+    """Review M4: a finite V with a non-finite B is not an "undefined V" pair to skip; it is
+    reported separately (CHECKS K22 skips only undefined V)."""
+    s = pd.DataFrame([_n1("bigm", 1.0, np.nan), _n1("perspective", 1.0, 1.0001)])
+    p = A.k22_pairs(s)
+    assert p["undefined_reason"].iloc[0] == "B undefined"
+
+
+def test_nonbinding_breakdown_by_delta():
+    rows = [_est(id="a", rel_delta=0.05, binding=False, L=-1e-9, s=0.0, mu_bigm_relax=0.0,
+                 persp_slope=0.0, mu_fixed=0.0), _est(id="b")]
+    nb = A.nonbinding_breakdown(pd.DataFrame(rows), by="rel_delta")
+    assert nb.to_dict("records") == [{"rel_delta": 0.05, "pattern": "bigm_relax=0, perspective=0, fixed=0", "n": 1}]
