@@ -1352,7 +1352,8 @@
    },
    "incumbent_beats_other_bound": 1,
    "n": 24,
-   "n_pairs": 24
+   "n_pairs": 24,
+   "n_undefined": 0
   }
  },
  "sources": {
