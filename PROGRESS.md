@@ -2156,3 +2156,24 @@ Protected in S4b. If a change seems needed to any of these, ask:
   - 0b: 36 N1 instances × (4 default-scaling + 3 rescaled probes) = 252 root-only probes.
   - The E1–E4 hit rules are fixed in n3.yaml before the run: "most" = more than half; E3 = median ratio in [0.5, 2].
 - Next: `make n3` in the background (expected a few minutes; S2d probes took ≤ 1.3 Work each).
+
+## 2026-10-24 — S4b step 0 results (Claude Code, Opus 5.5): N3 done; before step 1
+- Run: results/n3/run_20261024T092033Z at b176bbb. make exit 0, DONE, RUN_LOG "ok". The suite passed at that commit before the run (508 passed, 1 skipped, 2 xfailed; logs/make_n3_s4b.out). The input runs (I1 001423Z, I2 001657Z, N1 001914Z) matched their outputs.json hashes. Everything below is from results/n3/run_20261024T092033Z/summary.json unless another file is named.
+- **0a, P-MI ex-ante volatility** (annualized, against 3%/yr). Every V recomputed from its stored weights matches the stored V (max rel. diff 1.9e-15, n = 370).
+  - I1, all points (n = 144): median 2.874%, range 2.423–3.024%, 141 below the budget. At the base points (n = 48): median 2.874%, range 2.429–2.994%, all 48 below. V comes from big-M at every point; the two formulations' polished values tie at all 144.
+  - I2 grid (n = 82): median 2.908%, range 2.848–2.958%, all below; ties at all 82.
+  - N1 at default presolve (n = 36 per arm): median 2.768%, range 2.219–3.315%, 32 below and 4 above (all 4 at loose tightness). With presolve off (n = 12 per arm): median 2.710%, range 2.288–3.001%. All three arms give the same distribution.
+  - N1 by tightness, big-M, default presolve (n = 12 each): loose 2.919% (2.623–3.315%), base 2.838% (2.623–2.973%), tight 2.630% (2.219–2.926%).
+  - Continuous baseline (stored vol_ann), I1 base points (n = 48): median 3.000%, range 2.805–3.000%. 39 sit at the budget; the 9 below are the instances whose Mom bound at 0.025 is tighter than base. I2 grid (n = 82): median 3.000%, range 2.968–3.032%.
+- **0b, root probes** (252 probes, 36 N1 instances at default presolve; n = 36 per arm and setting; files n3_table.parquet and n3_probes.parquet).
+  - The default probe (MIQCPMethod −1) reproduces N1's stored root bound exactly at 36 of 36 instances in both arms (S2d's separating test, replicated).
+  - Gurobi reports no root-cut-pass attribute. n_passes counts its MIPNODE callbacks at node 0: median 10 (−1), 3 (0) and 10 (1) at default scaling; 22.5, 4 and 23 rescaled.
+  - Default-scaling root gap, median (range), against N1's best known value: −1: 1.45e-2 (1.9e-4–0.117); 0: 5.7e-4 (1.0e-4–2.7e-2); 1: 1.45e-2 (identical to −1); −1 with FeasibilityTol 1e-9: 1.51e-2 (1.3e-4–0.113). The plain perspective relaxation's gap is 1.94e-3 (1.0e-4–4.9e-2).
+  - Rescaled root gap, median: −1 4.6e-4, 0 4.8e-4, 1 4.6e-4.
+  - Median Work per probe: 0.71 (−1), 0.24 (0), 0.71 (1), 0.81 (FeasibilityTol) at default scaling; 0.64, 0.23 and 0.64 rescaled.
+- **E1–E4** (rules fixed in n3.yaml before the run):
+  - E1 HIT. MIQCPMethod 1 reproduces the default root bound exactly at 29 of 36 (default scaling) and 30 of 36 (rescaled). So Gurobi used outer approximation (method 1) at most instances; this records the MIQCP method, DESIGN §11.3.
+  - E2 HIT, with three exceptions. At MIQCPMethod 0 the default-scaling root bound is within 5e-3·|V_best| of the plain perspective relaxation at 33 of 36; signed range −2.2e-2 to +9.8e-5 (negative = below the plain relaxation, i.e. tighter after cuts).
+  - E3 HIT. Gap ratio at FeasibilityTol 1e-9 against −1: median 0.984; 31 of 36 in [0.5, 2]; 2 below 0.5 (collapsed); range 0.012–4.39.
+  - E4 HIT. The rescaled arm's three gaps are within a factor of 10 at 36 of 36; max spread 7.7.
+- Reading: the default-scaling root bound is the outer approximation's (method 1) stopping point. A QCP node relaxation (method 0) brings it to about the plain relaxation, and a tighter feasibility tolerance does not (median ratio 0.98). This replicates S2d item 1 on 36 instances, and it is the root-bound mechanism the report keeps apart from the cone-tolerance (incumbent) mechanism.
