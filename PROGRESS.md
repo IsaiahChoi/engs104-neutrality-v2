@@ -2177,3 +2177,46 @@ Protected in S4b. If a change seems needed to any of these, ask:
   - E3 HIT. Gap ratio at FeasibilityTol 1e-9 against −1: median 0.984; 31 of 36 in [0.5, 2]; 2 below 0.5 (collapsed); range 0.012–4.39.
   - E4 HIT. The rescaled arm's three gaps are within a factor of 10 at 36 of 36; max spread 7.7.
 - Reading: the default-scaling root bound is the outer approximation's (method 1) stopping point. A QCP node relaxation (method 0) brings it to about the plain relaxation, and a tighter feasibility tolerance does not (median ratio 0.98). This replicates S2d item 1 on 36 instances, and it is the root-bound mechanism the report keeps apart from the cone-tolerance (incumbent) mechanism.
+
+## 2026-10-24 — S4b steps 1–4 (Claude Code, Opus 5.5): build at 0d98fe5; II–IV over the 5.0-page budget after the cut order (addendum step 4 stop condition)
+- **Step 1, font** (fbd8abd). TeX Gyre Termes through fontspec (`no-math`), math unchanged; RP-6 PASS.
+  - Before (Latin Modern, efabeab text): 9 pages, refs:start p. 8; II–IV A 5.86, B 6.42.
+  - After: 9 pages, refs:start p. 8; II–IV A 6.16, B 6.42. Times alone did not shorten II–IV measurably.
+  - New tool tools/page_sections.py (tests first): zref positions in a scratch copy, column units. A = floats where they land; B = floats in the part that first references them, outline-only Abstract and I skipped. On the pre-font build it reproduces S4's 5.86 (1.25 + 1.27 + 3.34).
+- **Step 2, restructure** (99aed2d; tests first in tests/test_fig_s4b.py).
+  - Figures: Fig. 3 removed from the report; Fig. 1 in four panels with base values marked; Fig. 4 as a slope row, 6.8 × 2.2 in (the S4 version was 8.4 in wide, so its 8-pt text printed at about 6.8 pt); Fig. 5 as one panel.
+  - Tables: experiment table added (III-A); Table III is now the single-column N2(b) table (src/figures/numbers.table3_n2b); Table II is single column.
+  - fig3_attribution and the two-block table3_n2 are still generated, because the S3/S4 registry and table tests pin them (rule 5), but they are no longer in the report. Isaiah may retire them.
+  - Cut order (7)–(9) applied; (8) in full: validation, envelope, certification, slope-accuracy and N2(b) paragraphs compressed, and the hedged legs moved to the V outline.
+- **Step 3, content** (99aed2d). Items a–l are in II–IV and in the outlines. Definitional statements were verified against code before writing:
+  - eligible / valid day: src/risk/factor_model.py:73–75, src/risk/build_all.py:36–40;
+  - ×21 monthly: src/risk/factor_model.py:8–10, 21;
+  - α = IC·√d·z, IC 0.03: src/alpha/momentum.py:17, 36–38;
+  - ADV as median: src/opt/inputs.py:73–76;
+  - momentum lookback 252, skip 21 (so 240 of 241 month-ends): src/alpha/momentum.py:18; disclosures run;
+  - family duals: src/opt/attribution.py:50–80 (θ through ub < u with ADV/AUM; u through ub = u; sector and style sums);
+  - K15's 115 checks over 18 keys: c1_envelope;
+  - gap at b = (R − V)/|V|: tools/s3b_analysis.py:99–100;
+  - plain relaxations: src/opt/rootprobe.py:68–90 (the checker's wording);
+  - N2(b) solvers at default tolerances, ECOS not installed: experiments/run_n2.py:8–16, 44–49, numerics.yaml;
+  - W* rule: pilot P5 (results/pilot/run_20261019T191206Z/summary.json: 300 s × 1.124 Work/s → 340);
+  - K9's 202 = T1, T2 plus the 200 random toys of core.yaml's seed, which K29c reuses: experiments/run_core.py:452–460, k29c.yaml:9;
+  - Table II's baseline n = 24 = the 23 certified-binding cases plus one 2017-12 dollar case (f 0.25) whose baseline binds (e = 6.3e-4) while P-MI's L ≤ 0;
+  - 72 idealized = 2 mandates × 3 alphas × 12 dates;
+  - hedged legs: 11 name–relaxation pairs, 4 distinct names (PCG, CRWD at 2020-03; DAL, STT at 2009-03).
+  - New macros come from _s4b_macros in src/figures/numbers.py, each with a source and sha256: the direct split from c1_weights (borrow + trading reproduce the stored costs to 9e-18), the N3 summary, censored-effort ranges, P5, A9's quantified tolerances, and the δ = 5% P1 maxima.
+  - Censored medians: PreBigMWorkOff and NTwoBigMWorkOne are no longer used anywhere in the report.
+- **Step 3m, FACTS.** Regenerated (0d98fe5). Every (file, sha256) pair matches. Content changes beyond the refs.bib block:
+  - the eight "Measured effort" lines changed only in results/RUN_LOG.csv's sha (the N3 row);
+  - **the full-suite line changed from "489 passed" (logs/make_disclosures_20261021T034105Z.out) to "521 passed" (logs/test_full_20261024T094332Z.log)**, because the generator cites the newest full-suite log. Isaiah: keep or revert.
+- **Step 4.**
+  - Full suite at the committed 99aed2d: 521 passed, 1 skipped, 2 xfailed (logs/test_full_20261024T094332Z.log).
+  - `make figures` twice: 18 outputs byte-identical.
+  - `make report`: 8 pages, refs:start p. 8. spec_check report draft: PASS (RP-4 8 pages; RP-5 and RP-8 N/A).
+- **Page table** (results/scratch/pages_s4b_final.txt; budgets from DESIGN §11.1), A / B:
+  - Abstract 0.19 / 0.19 (0.2); I 0.24 / 0.24 (0.6);
+  - II 1.42 / 1.42 (1.1); III 1.65 / 1.65 (1.2); IV 2.17 / 2.70 (2.7): IV-A 0.37 / 0.82, IV-B 1.11 / 1.00, IV-C 0.67 / 0.87;
+  - V 1.13 / 0.61 (0.8); VI 0.14 (0.2); disclosures and AI use 0.33 (0.3); references 0.29 (0.5).
+  - **II–IV: A 5.24, B 5.77 against at most 5.0 (B governs). Over by 0.77 after the full cut order.**
+  - The excess is in II (+0.32) and III (+0.45): the step 3 definitions and derivation additions, which the addendum protects ("never cut the formulation, the definitions, A2–A4, the n behind any statistic, or a disclosure").
+  - Per addendum step 4: stopped and reported. Decision for Isaiah below.
