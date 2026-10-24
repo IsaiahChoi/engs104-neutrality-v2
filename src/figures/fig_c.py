@@ -8,8 +8,10 @@ in line style or marker, stacks in hatching, and every figure has a legend (src/
 slots 1–4 pass the dataviz validator; slots 3–4 are below 3:1 contrast on white, so they always
 come with labels, markers, or hatching).
 
-- Fig. 1 (C2): A*(b)/A*(off) against the bound, one panel per family; α_mom median over D12
-  with its interquartile band; for factor families the α⊥ and α∥ medians dashed and dash-dotted.
+- Fig. 1 (C2): A*(b)/A*(off) against the bound in four panels (DESIGN §10 as edited at the S4
+  read): liquidity θ, sector, all styles jointly and the Mom bound; α_mom median over D12 with its
+  interquartile band, the α⊥ and α∥ medians dashed and dash-dotted on the two factor panels, and
+  the base value marked. The other families are flat; the text gives their tightest-point values.
 - Fig. 2 (C1): retained fraction against φ: the closed form √(1 − φ), the idealized full-factor-
   neutrality solves (filled, three alphas × D12) and the base-mandate solves (hollow), both
   relative to the unconstrained, costless P-RB.
@@ -31,9 +33,11 @@ from experiments.common import latest_done
 from src.figures import style
 
 TAG = ""                             # "_preliminary" until GATE C (S2)
-FAMILY_PANELS = [("dollar", "Dollar (net)"), ("beta", "Beta"), ("style_all", "All styles"),
-                 ("style:Mom", "Momentum"), ("sector", "Sector"), ("gross", "Gross"),
-                 ("position", "Position cap"), ("liquidity", "Liquidity (θ)")]
+FIG1_PANELS = [("liquidity", "Liquidity cap"), ("sector", "Sector"), ("style_all", "All styles jointly"),
+               ("style:Mom", "Momentum")]
+FIG1_XLABEL = {"liquidity": "θ (fraction of ADV)", "sector": "bound on each net weight",
+               "style_all": "exposure bound", "style:Mom": "exposure bound"}
+FIG1_BASE = {"liquidity": "liquidity_theta", "sector": "sector", "style_all": "style", "style:Mom": "style"}
 FACTOR_FAMILIES = {"beta", "style_all", "style:Mom"}
 ALPHAS = [("mom", r"$\alpha_{\mathrm{mom}}$", "-", "o"), ("perp", r"$\alpha_\perp$", "--", "s"),
           ("par", r"$\alpha_\parallel$", "-.", "^")]
@@ -64,10 +68,12 @@ def _read(name: str, table: str) -> pd.DataFrame:
 
 def fig1_cost_curves() -> Path:
     _apply()
+    from src.opt.continuous import load_config
+    base = load_config()[0]
     pts = _read("c2", "c2_points")
     pts = pts[~pts["off"]]
-    fig, axes = plt.subplots(4, 2, figsize=(style.COLUMN_WIDTH_IN, 5.6), sharey=True)
-    for ax, (fam, title) in zip(axes.flat, FAMILY_PANELS):
+    fig, axes = plt.subplots(2, 2, figsize=(style.COLUMN_WIDTH_IN, 3.3), sharey=True)
+    for ax, (fam, title) in zip(axes.flat, FIG1_PANELS):
         for i, (kind, label, ls, mk) in enumerate(ALPHAS):
             if kind != "mom" and fam not in FACTOR_FAMILIES:
                 continue
@@ -77,15 +83,21 @@ def fig1_cost_curves() -> Path:
                 ax.fill_between(q.index, q[0.25], q[0.75], color=style.SERIES[i], alpha=0.2,
                                 linewidth=0)
             ax.plot(q.index, q[0.5], ls=ls, marker=mk, ms=3, color=style.SERIES[i], label=label)
+        ax.axvline(getattr(base, FIG1_BASE[fam]), color=style.INK_SECONDARY, lw=0.6, ls=":",
+                   label="base value")
         ax.set_title(title, loc="left")
+        ax.set_xlabel(FIG1_XLABEL[fam])
         ax.axhline(1.0, color=style.INK_SECONDARY, lw=0.5)
     for ax in axes[:, 0]:
         ax.set_ylabel(r"$A^*(b)/A^*(\mathrm{off})$")
-    for ax in axes[-1, :]:
-        ax.set_xlabel("bound $b$")
-    h, lab = axes[0, 1].get_legend_handles_labels()
-    fig.legend(h, lab, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.02))
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    seen = {}
+    for ax in axes.flat:
+        for hh, ll in zip(*ax.get_legend_handles_labels()):
+            seen.setdefault(ll, hh)
+    h, lab = list(seen.values()), list(seen.keys())
+    fig.legend(h, lab, loc="upper center", ncol=4, bbox_to_anchor=(0.5, 1.03), columnspacing=0.8,
+               handletextpad=0.4)
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
     return _save(fig, f"fig1_cost_curves{TAG}")
 
 

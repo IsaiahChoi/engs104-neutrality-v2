@@ -582,9 +582,149 @@ def _code_macros(M: _M) -> None:
     M.add("SigmaMSq", sig(risk_budget.SIGMA_M ** 2), "src/opt/risk_budget.py")
 
 
+# ----- S4b: macros for the restructured II–IV (S4b addendum steps 2–3) -----
+
+def _s4b_macros(M: _M) -> None:
+    c1 = latest_done("c1")
+    wf, pf = c1 / "c1_weights.parquet", c1 / "c1_points.parquet"
+    w = pd.read_parquet(wf)
+    w = w[w["point_id"].str.endswith("|mom|base")]
+    pts = pd.read_parquet(pf).set_index("point_id")
+    md, _ = _cfg("base_mandate")
+    cm, kap = md["mandate"]["borrow_annual"] / 12.0, md["mandate"]["trade_cost"]
+    g = w.groupby("point_id")["w"]
+    borrow = g.apply(lambda x: cm * np.maximum(-x, 0.0).sum())
+    trade = g.apply(lambda x: kap * np.abs(x).sum())
+    gross_alpha = pts.loc[borrow.index, "alpha_total"]
+    if float((borrow + trade - pts.loc[borrow.index, "costs"]).abs().max()) > 1e-12:
+        raise ValueError("borrow + trading from the C1 weights do not reproduce the stored costs")
+    for name, x in (("A", pts.loc[borrow.index, "A"] / gross_alpha), ("Borrow", borrow / gross_alpha),
+                    ("Trade", trade / gross_alpha)):
+        M.add(f"Split{name}Med", sig(x.median()), wf)
+        M.add(f"Split{name}Min", sig(x.min()), wf)
+        M.add(f"Split{name}Max", sig(x.max()), wf)
+    c2f = latest_done("c2") / "c2_points.parquet"
+    c2 = pd.read_parquet(c2f)
+    z = c2[(c2["alpha"] == "mom") & ~c2["off"].astype(bool) & np.isclose(c2["value"], 0.0)
+           & c2["family"].isin(["style:SMB", "style:HML", "style:RMW", "style:CMA"])]
+    M.add("CTwoSingleStyleTightMin", sig(z.groupby("family")["retained_vs_off"].median().min(), 3), c2f)
+    ef = c1 / "c1_envelope.parquet"
+    M.add("KFifteenKeys", i(pd.read_parquet(ef)["key"].nunique()), ef)
+    # N3 (DESIGN §7; Decision 51)
+    nf = latest_done("n3") / "summary.json"
+    S = _json(nf)
+    v = S["volatility"]
+    row = lambda lst, **k: next(r for r in lst if all(r[a] == b for a, b in k.items()))
+    pc = lambda x: sig(100 * x, 3)
+    for name, r in (("IOne", row(v["by_experiment_arm"], experiment="I1")),
+                    ("ITwo", row(v["by_experiment_arm"], experiment="I2")),
+                    ("NOne", row(v["N1_by_arm_presolve"], arm="bigm", presolve=-1))):
+        M.add(f"Vol{name}Med", pc(r["median"]), nf)
+        M.add(f"Vol{name}Min", pc(r["min"]), nf)
+        M.add(f"Vol{name}Max", pc(r["max"]), nf)
+        M.add(f"Vol{name}N", i(r["n"]), nf)
+        M.add(f"Vol{name}Below", i(r["n_below"]), nf)
+        M.add(f"Vol{name}Above", i(r["n_above"]), nf)
+    rb = row(v["I1_base_points"], experiment="I1")
+    M.add("VolIOneBaseMed", pc(rb["median"]), nf)
+    M.add("VolIOneBaseN", i(rb["n"]), nf)
+    M.add("VolIOneBaseBelow", i(rb["n_below"]), nf)
+    b1, b2 = row(v["baseline"], experiment="I1 base points"), row(v["baseline"], experiment="I2 grid")
+    M.add("VolBaseIOneAt", i(b1["n_at"]), nf)
+    M.add("VolBaseIOneN", i(b1["n"]), nf)
+    M.add("VolBaseIOneMin", pc(b1["min"]), nf)
+    M.add("VolBaseITwoMin", pc(b2["min"]), nf)
+    M.add("VolBaseITwoMax", pc(b2["max"]), nf)
+    M.add("VolMaxRelDiff", sig(v["max_V_rel_diff"]), nf)
+    E, P = S["expectations"], S["probes"]
+    M.add("NThreeN", i(P["n_instances"]), nf)
+    M.add("NThreeProbes", i(P["n_probes"]), nf)
+    M.add("NThreeReproDef", i(P["repro_stored"]["perspective"]["exact"]), nf)
+    M.add("NThreeReproResc", i(P["repro_stored"]["perspective_rescaled"]["exact"]), nf)
+    M.add("NThreeEOneDef", i(E["E1"]["perspective"]["exact"]), nf)
+    M.add("NThreeEOneResc", i(E["E1"]["perspective_rescaled"]["exact"]), nf)
+    gd, gr = P["gaps"]["perspective"], P["gaps"]["perspective_rescaled"]
+    M.add("NThreeGapDef", sig(gd["gap_m-1"]["median"]), nf)
+    M.add("NThreeGapMZero", sig(gd["gap_m0"]["median"]), nf)
+    M.add("NThreeGapFeas", sig(gd["gap_m-1_feastol1e-9"]["median"]), nf)
+    M.add("NThreeGapPlain", sig(gd["gap_plain"]["median"]), nf)
+    M.add("NThreeGapResc", sig(gr["gap_m-1"]["median"]), nf)
+    M.add("NThreeGapRescMZero", sig(gr["gap_m0"]["median"]), nf)
+    M.add("NThreeRatioMed", sig(E["E3"]["median_ratio"]), nf)
+    M.add("NThreeRatioIn", i(E["E3"]["n_in_band"]), nf)
+    M.add("NThreeCollapsed", i(E["E3"]["n_collapsed"]), nf)
+    M.add("NThreeETwoWithin", i(E["E2"]["within"]), nf)
+    M.add("NThreeRescSpread", sig(E["E4"]["max_spread"]), nf)
+    cfg3, p3 = _cfg("n3")
+    M.add("NThreeETwoTol", sig(cfg3["expectations"]["E2_atol_rel"]), p3)
+    # censored effort (S4b addendum item g): k of n stopped and the range of the rest
+    n1f = latest_done("n1") / "n1_solves.parquet"
+    ns = pd.read_parquet(n1f)
+    ok = ns[(ns["arm"] == "bigm") & (ns["presolve"] == 0) & ~ns["rerun"].astype(bool) & (ns["status"] == "OPTIMAL")]
+    M.add("PreBigMWorkOffOkMin", sig(ok["work"].min()), n1f)
+    M.add("PreBigMWorkOffOkMax", sig(ok["work"].max(), 3), n1f)
+    n2f = latest_done("n2") / "n2_miqp.parquet"
+    m2 = pd.read_parquet(n2f)
+    ok2 = m2[(m2["arm"] == "bigm") & (m2["s_obj"] == 1) & (m2["status"] == "OPTIMAL")]
+    M.add("NTwoBigMWorkOneOkMin", sig(ok2["work"].min()), n2f)
+    M.add("NTwoBigMWorkOneOkMax", sig(ok2["work"].max()), n2f)
+    M.add("NTwoArmN", i(len(m2[(m2["arm"] == "bigm") & (m2["s_obj"] == 1)])), n2f)
+    # hedged legs: distinct names behind the name–relaxation pairs (S4b addendum item h)
+    hf = ROOT / "results" / "s3b_analysis" / "item5_hedged_names.csv"
+    from experiments.designs import month_end
+    from experiments.instances import restricted, subsample
+    names = set()
+    for _, r in pd.read_csv(hf).iterrows():
+        mm = re.search(r"(\d{4}-\d{2})_N(\w+?)_", r["id"])
+        di, _, idx = subsample(month_end(mm[1]), "full" if mm[2] == "full" else int(mm[2]))
+        names.add((mm[1], restricted(di, idx)[5][int(r["i"])]))
+    M.add("HedgedDistinct", i(len({t for _, t in names})), hf)
+    # Table II's baseline row: its own bindingness (e ≥ 1e-4) against P-MI's L > 0, δ = 10%
+    i1 = latest_done("i1")
+    bf, ef1 = i1 / "i1_baseline.parquet", i1 / "i1_estimators.parquet"
+    b = pd.read_parquet(bf)
+    b = b[b["rel_delta"] == 0.10]
+    e = b["mu"] * b["b"] / np.abs(b["value"])
+    est = pd.read_parquet(ef1)
+    est = est[est["rel_delta"] == 0.10].set_index("id")["binding"].astype(bool)
+    bb = b.assign(bb=(e >= 1e-4).to_numpy()).set_index("id")
+    M.add("BaseOnlyBind", i((bb["bb"] & ~est.loc[bb.index]).sum()), bf)
+    # A9 quantified (DESIGN §9 as edited): 1e-6/ℓ² unscaled; 1e-6·(u/ℓ)² rescaled
+    ic, ip = _cfg("integer")
+    from src.opt import integer
+    ell, u = ic["mandate"]["min_position"], ic["mandate"]["position"]
+    M.add("ConeTolUnscaled", sig(integer.RAW_FEAS_TOL / ell ** 2), ip)
+    M.add("ConeTolRescaled", sig(integer.RAW_FEAS_TOL * (u / ell) ** 2), ip)
+    # δ = 5% P1 maxima (s3b item 3)
+    sb = ROOT / "results" / "s3b_analysis" / "s3b_analysis.json"
+    ec = _json(sb)["item3_support"]["errors_per_class_binding"]["d0.05/P1"]
+    M.add("ClassPerspPOneFiveMax", sig(ec["perspective"]["max"]), sb)
+    M.add("ClassBigMPOneFiveMax", sig(ec["bigm_relax"]["max"]), sb)
+    M.add("ClassPOneFiveN", i(ec["fixed"]["n"]), sb)
+    # P5 (W* rule), constants in code
+    pp = latest_done("pilot", status="pilot") / "summary.json"
+    p5 = _json(pp)["P5"]
+    M.add("WStarSeconds", num(p5["reference_seconds"]), pp)
+    M.add("WorkRateMed", sig(p5["work_per_second_median"], 3), pp)
+    from src.risk import factor_model
+    from src.alpha import momentum
+    M.add("DaysPerMonth", i(factor_model.DAYS_PER_MONTH), "src/risk/factor_model.py")
+    M.add("MomLookback", i(momentum.LOOKBACK), "src/alpha/momentum.py")
+    M.add("MomSkip", i(momentum.SKIP), "src/alpha/momentum.py")
+    cv = pd.read_parquet(latest_done("n2") / "n2_convex.parquet")
+    br = cv[cv["solver"] == "GUROBI_BARRIER"].pivot_table(index=["date", "scaled"], columns="normalize", values="A")
+    M.add("BarrierNormSame", i((br[True] == br[False]).sum()), latest_done("n2") / "n2_convex.parquet")
+    M.add("BarrierNormPairs", i(len(br)), latest_done("n2") / "n2_convex.parquet")
+    sf = ROOT / "results" / "s3_analysis" / "s3_analysis.json"
+    ar = _json(sf)["n2"]["miqp"]["arms"]
+    M.add("NTwoDefGapScaled", sig(ar["perspective/s10000"]["gap_eff"]["median"]), sf)
+    M.add("NTwoDefConeMax", sig(ar["perspective/s10000"]["cone_effect_rel"]["max"]), sf)
+    M.add("NTwoRescGapScaled", sig(ar["perspective_rescaled/s10000"]["gap_eff"]["median"]), sf)
+
+
 def result_macros() -> list[tuple[str, str, str]]:
     M = _M()
-    for part in (_config_macros, _code_macros, _data_macros, _validation_macros, _q1_macros, _q2_macros, _q3_macros):
+    for part in (_config_macros, _code_macros, _data_macros, _validation_macros, _q1_macros, _q2_macros, _q3_macros, _s4b_macros):
         part(M)
     return M.rows
 
@@ -618,5 +758,95 @@ def table1_mandate() -> Path:
     lines += [r"\hline", r"\end{tabular}"]
     TABLES.mkdir(parents=True, exist_ok=True)
     p = TABLES / "table1_mandate.tex"
+    p.write_text("\n".join(lines) + "\n")
+    return p
+
+
+# ----- the experiment table and Table III (N2(b)), S4b (DESIGN §10 as edited at the S4 read) -----
+
+def _n(name: str, table: str) -> int:
+    return len(pd.read_parquet(latest_done(name) / f"{table}.parquet"))
+
+
+def experiment_rows() -> list[dict]:
+    """One row per experiment (DESIGN §10): instances, what is varied and by which arms, and the
+    number of solves, read from the configs and the newest finished runs."""
+    cc, _ = _cfg("continuous")
+    ic, _ = _cfg("integer")
+    nc, _ = _cfg("numerics")
+    n3, _ = _cfg("n3")
+    i1, i2, n1, n2 = ic["i1"], ic["i2"], nc["n1"], nc["n2"]
+    pct = lambda x: f"{num(100 * x)}\\%"
+    fs = lambda v: "\\{" + ", ".join(num(f) for f in v) + "\\}"
+    Ns = "\\{" + ", ".join("all" if str(x) == "full" else str(x) for x in n1["N"]) + "\\}"
+    so = ", ".join(pow10(x) if x != 1 else "1" for x in n2["miqp"]["s_obj"])
+    probes = sorted({pr["probe"] for v in n3["probes"].values() for pr in v})
+    return [
+        {"exp": "C1", "inst": f"D12 ({len(cc['d12'])} dates); all eligible names; "
+                              r"$\alpha_{\mathrm{mom}}$, $\alpha_\perp$, $\alpha_\parallel$",
+         "what": f"base mandate, and the idealized mandates (i), (ii); envelope at "
+                 f"$\\delta={pct(cc['envelope_rel_step'])}$ ({pct(cc['envelope_fine_step'])})",
+         "solves": _n("c1", "c1_points") + _n("c1", "c1_idealized")},
+        {"exp": "C2", "inst": r"D12; all eligible; $\alpha_{\mathrm{mom}}$ ($\alpha_\perp$, $\alpha_\parallel$ "
+                              "on factor families)",
+         "what": "one family swept over its grid, the others at base", "solves": _n("c2", "c2_points")},
+        {"exp": "I1", "inst": f"{', '.join(i1['dates'])}; $N={i1['N']}$; $f\\in{fs(i1['f'])}$",
+         "what": f"{len(i1['constraints'])} bounds at $\\delta={pct(i1['rel_delta'])}$ "
+                 f"({pct(i1['robustness']['rel_delta'])} at {i1['robustness']['date']}); "
+                 "big-M and rescaled perspective", "solves": _n("i1", "i1_solves")},
+        {"exp": "I2", "inst": "; ".join(f"{x['date']} ($K={x['K']}$)" for x in i2["instances"])
+                              + f"; $N={i2['instances'][0]['N']}$",
+         "what": f"{i2['constraint']['key']} bound at {i2['points']} points on $[0,2b]$; as I1",
+         "solves": _n("i2", "i2_solves")},
+        {"exp": "N1", "inst": f"{', '.join(n1['dates'])}; $N\\in{Ns}$; $f\\in{fs(n1['f'])}$; "
+                              f"{len(n1['tightness'])} tightness levels",
+         "what": f"big-M, perspective (default scaling, rescaled); presolve off at "
+                 f"$N={n1['presolve_off']['N']}$; {len(n1['determinism'])} reruns",
+         "solves": _n("n1", "n1_solves")},
+        {"exp": "N2(a)", "inst": f"N1 at $N={n2['miqp']['N']}$, {n2['miqp']['tightness']} tightness",
+         "what": f"the N1 arms at $s_{{\\mathrm{{obj}}}}\\in\\{{{so}\\}}$", "solves": _n("n2", "n2_miqp")},
+        {"exp": "N2(b)", "inst": f"C1 base at {len(n2['convex']['dates'])} dates",
+         "what": "Gurobi barrier, Clarabel, SCS; risk-row normalization and objective scaling "
+                 "on/off; reference", "solves": _n("n2", "n2_convex")},
+        {"exp": "N3", "inst": "the N1 instances at default presolve",
+         "what": f"root only, both perspective arms; MIQCPMethod $-1$, 0, 1 (default scaling also "
+                 f"FeasibilityTol {pow10(1e-9)})" if probes else "", "solves": _n("n3", "n3_probes")},
+    ]
+
+
+def table_experiments() -> Path:
+    rows = experiment_rows()
+    lines = ["% generated by `make figures` (src/figures/numbers.py) from the configs and the newest "
+             "finished runs. Do not edit.",
+             r"\begin{tabular}{@{}l@{\hspace{4pt}}p{3.05cm}@{\hspace{4pt}}p{3.05cm}@{\hspace{4pt}}r@{}}",
+             r"\hline", r"exp. & instances & varied, arms & solves \\", r"\hline"]
+    lines += [f"{r['exp']} & {r['inst']} & {r['what']} & {r['solves']} \\\\" for r in rows]
+    lines += [r"\hline", r"\end{tabular}"]
+    TABLES.mkdir(parents=True, exist_ok=True)
+    p = TABLES / "table_experiments.tex"
+    p.write_text("\n".join(lines) + "\n")
+    return p
+
+
+def table3_n2b() -> Path:
+    """Table III (N2(b)), one column: each solver without and with objective scaling, worst over
+    the dates and both risk-row normalizations against the reference, with each row's n."""
+    from src.figures.fig_s3 import _sci
+    cv = pd.read_parquet(latest_done("n2") / "n2_convex.parquet")
+    cv = cv[cv["solver"] != "reference"]
+    lab = {"GUROBI_BARRIER": "Gurobi barrier", "CLARABEL": "Clarabel", "SCS": "SCS"}
+    lines = ["% generated by `make figures` (src/figures/numbers.py) from the newest N2 run. Do not edit.",
+             r"\begin{tabular}{@{}l@{\hspace{4pt}}r@{\hspace{4pt}}r@{\hspace{4pt}}r@{\hspace{4pt}}r@{}}",
+             r"\hline", r"solver, objective & $n$ & $|\Delta A^*|/A^*$ & $\|\Delta w\|_1/\|w\|_1$ & dual err. \\",
+             r"\hline"]
+    for sol in ("GUROBI_BARRIER", "CLARABEL", "SCS"):
+        for sc in (False, True):
+            g = cv[(cv["solver"] == sol) & (cv["scaled"] == sc)]
+            n = f"{int(g['ok'].sum())}" if g["ok"].all() else f"{int(g['ok'].sum())}/{len(g)}"
+            lines.append(f"{lab[sol]} {'scaled' if sc else 'unscaled'} & {n} & {_sci(g['A_rel_err'].max())} & "
+                         f"{_sci(g['w_l1_rel_err'].max())} & {_sci(g['max_binding_dual_rel_err'].max())} \\\\")
+    lines += [r"\hline", r"\end{tabular}"]
+    TABLES.mkdir(parents=True, exist_ok=True)
+    p = TABLES / "table3_n2b.tex"
     p.write_text("\n".join(lines) + "\n")
     return p

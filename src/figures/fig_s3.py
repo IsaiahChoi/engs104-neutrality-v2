@@ -3,20 +3,21 @@
 Same print rules as src/figures/fig_c.py: one IEEE column, text ≥ 8 pt, vector PDF with
 deterministic metadata plus a 300-dpi PNG; identity never by color alone (line style, marker).
 DESIGN §10 as amended at GATE I (edits 2–4) and the S4 addendum's item 4:
-- Fig. 4 (I2), two-column width: one column per instance. Upper panel: the P-MI value V(b)
-  (combined certification) and the continuous baseline's value U(b), as P-MI objective in
-  bp/month. Lower panel: the slopes: the secant slope of V between neighbouring grid points
-  (the secants beside a grid point where nonconcavity is certified, results/s3b_analysis/
-  item4_i2_triples.csv, drawn as hollow diamonds), the baseline's dual, and at 0.5·b, b, 1.5·b the
-  three estimators beside the certified secant s with its interval [L, H].
-- Fig. 5 (N1): root gap (root bound − best known value)/|best known value| and Work against
-  tightness for the three arms at default presolve, one marker per instance, median connected;
+- Fig. 4 (I2), two-column width, the slope row only (DESIGN §10 as edited at the S4 read; the
+  value functions are described in the text), about half the S4 height and within the text
+  width so 8-pt text prints at 8 pt: one panel per instance with the secant slope of V between
+  neighbouring grid points (the secants beside a grid point where nonconcavity is certified,
+  results/s3b_analysis/item4_i2_triples.csv, drawn as hollow diamonds), the baseline's dual, and
+  at 0.5·b, b, 1.5·b the three estimators beside the certified secant s with its interval [L, H].
+- Fig. 5 (N1), one panel (DESIGN §10 as edited at the S4 read; Work medians are in the text): root
+  gap (root bound − best known value)/|best known value| against tightness for the three arms at
+  default presolve, one marker per instance, median connected;
   the default-scaling perspective is labelled solver behaviour (Decision 37). Thin gray lines
   mark the median plain-relaxation gaps of big-M and the perspective per tightness. Solves that
   stopped at the WorkLimit are hollow, with a legend entry only if any is drawn. Root gaps
   ≤ 1e-6 are drawn at 1e-6 (log axis); their count is printed.
-- Table II (I1), δ = 10%: each estimator's relative error |μ̂ − s|/|s| over binding cases with
-  n, by f (K = round(f·S) differs by date), how many lie in [L, H], and the median relative
+- Table II (I1), δ = 10%, one column (S4b): each estimator's relative error |μ̂ − s|/|s| over
+  binding cases with n, by f (K = round(f·S) differs by date), how many lie in [L, H], and the median relative
   interval width (H − L)/s of the row's cases; the convex baseline's dual-versus-secant error
   at δ = 10% beneath. report/tables/table2_i1.tex.
 - Table III (N2): (b) convex solver variants against the reference (max over the dates);
@@ -57,6 +58,7 @@ def _read(name: str, table: str) -> pd.DataFrame:
 
 TRIPLES = ROOT / "results" / "s3b_analysis" / "item4_i2_triples.csv"
 EST_MARK = {"bigm_relax": "v", "perspective": "s", "fixed": "D"}
+TABLE2_LABEL = {"bigm_relax": "big-M dual", "perspective": "perspective", "fixed": "fixed-integer"}   # one column (S4b)
 TEXT_WIDTH_IN = 7.0              # IEEE two-column text width is 7.16 in (DESIGN §10: Fig. 4 may span it)
 
 
@@ -83,18 +85,13 @@ def fig4_value_functions() -> Path:
     ivs = _read("i2", "i2_intervals")
     sec = grid_secants(pts, pd.read_csv(TRIPLES))
     insts = sorted(pts["instance"].unique())
-    fig, axes = plt.subplots(2, len(insts), figsize=(TEXT_WIDTH_IN, 4.3), sharex=True,
-                             gridspec_kw={"height_ratios": [1, 1.25]})
-    axes = np.asarray(axes).reshape(2, len(insts))
+    fig, axes = plt.subplots(1, len(insts), figsize=(TEXT_WIDTH_IN, 2.3), sharey=True)
+    axes = np.atleast_1d(axes)
     for j, inst in enumerate(insts):
-        top, low = axes[0, j], axes[1, j]
+        low = axes[j]
         g, gb = pts[pts["instance"] == inst], base[base["instance"] == inst]
-        top.plot(g["bound"], 1e4 * g["V"], color=style.SERIES[0], marker="o", ms=2.5, lw=1.0,
-                 label="P-MI value $V(b)$")
-        top.plot(gb["bound"], 1e4 * gb["value"], color=style.INK_SECONDARY, ls="-", lw=0.8,
-                 label="continuous baseline value")
         date, rest = inst.split("_N")
-        top.set_title(f"{date}, N = {rest.split('_')[0]}, K = {inst.split('_K')[1]}", loc="left")
+        low.set_title(f"{date}, N = {rest.split('_')[0]}, K = {inst.split('_K')[1]}", loc="left")
         s = sec[sec["instance"] == inst]
         plain, mark = s[~s["beside_certified"]], s[s["beside_certified"]]
         low.plot(s["mid"], 1e4 * s["slope"], color=style.SERIES[0], lw=0.6, alpha=0.6)
@@ -115,14 +112,13 @@ def fig4_value_functions() -> Path:
                      ls="none", marker="_", ms=7, mew=1.2, color=style.INK, capsize=2,
                      label="certified secant $s$ with $[L, H]$")
         low.set_xlabel(f"bound $b$ on {pts['key'].iloc[0]} (net weight)")
-    axes[0, 0].set_ylabel("P-MI objective (bp/month)")
-    axes[1, 0].set_ylabel("slope of P-MI objective\n(bp/month per unit $b$)")
+    axes[0].set_ylabel("slope of P-MI objective\n(bp/month per unit $b$)")
     seen = {}
     for ax in axes.flat:
         for hh, ll in zip(*ax.get_legend_handles_labels()):
             seen.setdefault(ll, hh)
-    fig.tight_layout(rect=(0, 0, 1, 0.86))
-    fig.legend(list(seen.values()), list(seen.keys()), loc="upper center", ncol=4,
+    fig.tight_layout(rect=(0, 0, 1, 0.72))
+    fig.legend(list(seen.values()), list(seen.keys()), loc="upper center", ncol=3,
                bbox_to_anchor=(0.5, 1.0), columnspacing=0.8, handletextpad=0.4)
     return _save(fig, "fig4_value_functions")
 
@@ -155,36 +151,32 @@ def fig5_formulations() -> Path:
     rg = A.relax_gaps(_read("n1", "n1_relax"), solves)
     ref = plain_gap_medians(rg)
     labels = fig5_labels(int(tab["censored"].sum()))
-    fig, axes = plt.subplots(2, 1, figsize=(style.COLUMN_WIDTH_IN, 4.6), sharex=True)
+    fig, ax = plt.subplots(figsize=(style.COLUMN_WIDTH_IN, 2.75))
     x0 = {t: i for i, t in enumerate(TIGHT)}
     clipped = 0
     for k, (arm, label, mk, ls, slot) in enumerate(ARM_STYLE):
         g = tab[tab["arm"] == arm]
         off = (k - 1) * 0.18
-        for ax, col in ((axes[0], "root_gap"), (axes[1], "work")):
-            y = g[col].astype(float).to_numpy()
-            if col == "root_gap":
-                clipped += int((y <= GAP_FLOOR).sum())
-                y = np.maximum(y, GAP_FLOOR)
-            xs = g["tightness"].map(x0).to_numpy() + off
-            cen = g["censored"].to_numpy(bool)
-            ax.plot(xs[~cen], y[~cen], ls="none", marker=mk, ms=3, color=style.SERIES[slot], alpha=0.8)
-            ax.plot(xs[cen], y[cen], ls="none", marker=mk, ms=4, mfc="none", color=style.SERIES[slot])
-            med = [float(np.median(y[g["tightness"].to_numpy() == t])) for t in TIGHT]
-            ax.plot(np.arange(3) + off, med, ls=ls, color=style.SERIES[slot], lw=1.0,
-                    label=ARM_LABEL5[arm] if col == "root_gap" else None)
+        y = g["root_gap"].astype(float).to_numpy()
+        clipped += int((y <= GAP_FLOOR).sum())
+        y = np.maximum(y, GAP_FLOOR)
+        xs = g["tightness"].map(x0).to_numpy() + off
+        cen = g["censored"].to_numpy(bool)
+        ax.plot(xs[~cen], y[~cen], ls="none", marker=mk, ms=3, color=style.SERIES[slot], alpha=0.8)
+        ax.plot(xs[cen], y[cen], ls="none", marker=mk, ms=4, mfc="none", color=style.SERIES[slot])
+        med = [float(np.median(y[g["tightness"].to_numpy() == t])) for t in TIGHT]
+        ax.plot(np.arange(3) + off, med, ls=ls, marker=mk, ms=3, color=style.SERIES[slot], lw=1.0,
+                label=ARM_LABEL5[arm])
     for arm, lab in (("bigm", labels[3]), ("perspective", labels[4])):
-        axes[0].plot(np.arange(3), np.maximum(ref[arm], GAP_FLOOR), ls=REF_STYLE[arm], lw=0.6,
-                     color=GRAY5, label=lab)
-    for ax in axes:
-        ax.set_yscale("log")
-    axes[0].set_ylabel("root gap")
-    axes[1].set_ylabel("Work (Gurobi units)")
-    axes[1].set_xticks(range(3), TIGHT)
-    axes[1].set_xlabel("mandate tightness (style and beta bounds)")
+        ax.plot(np.arange(3), np.maximum(ref[arm], GAP_FLOOR), ls=REF_STYLE[arm], lw=0.6,
+                color=GRAY5, label=lab)
+    ax.set_yscale("log")
+    ax.set_ylabel("root gap")
+    ax.set_xticks(range(3), TIGHT)
+    ax.set_xlabel("mandate tightness (style and beta bounds)")
     if len(labels) > 5:
-        axes[0].plot([], [], ls="none", marker="o", mfc="none", color=style.INK_SECONDARY, label=labels[5])
-    fig.tight_layout(rect=(0, 0, 1, 0.80))
+        ax.plot([], [], ls="none", marker="o", mfc="none", color=style.INK_SECONDARY, label=labels[5])
+    fig.tight_layout(rect=(0, 0, 1, 0.70))
     fig.legend(loc="upper center", ncol=1, bbox_to_anchor=(0.5, 1.0), handletextpad=0.4)
     if clipped:
         print(f"fig5: {clipped} root gaps ≤ {GAP_FLOOR:g} drawn at {GAP_FLOOR:g}")
@@ -216,9 +208,11 @@ def table2_lines() -> list[str]:
     long = A.i1_long(est[est["rel_delta"] == 0.10])
     by = A.error_summary(long, by=["f"])
     bl = long[long["binding"].astype(bool)].assign(width=lambda d: (d["H"] - d["L"]) / d["s"])
-    lines = [r"\begin{tabular}{llrrrrr}", r"\hline",
-             r"estimator & $f$ & $n$ & median err. & max err. & in $[L,H]$ & median $(H-L)/s$ \\", r"\hline"]
-    for name, _, label, _, _ in EST_STYLE:
+    lines = [r"\begin{tabular}{@{}p{1.3cm}@{\hspace{3pt}}l@{\hspace{4pt}}r@{\hspace{4pt}}r@{\hspace{4pt}}r@{\hspace{4pt}}r@{\hspace{4pt}}r@{}}",
+             r"\hline",
+             r"estimator & $f$ & $n$ & median & max & in $[L,H]$ & med.\ $(H-L)/s$ \\", r"\hline"]
+    for name, _, _, _, _ in EST_STYLE:
+        label = TABLE2_LABEL[name]
         for _, r in by[by["estimator"] == name].sort_values("f").iterrows():
             w = bl.loc[(bl["estimator"] == name) & (bl["f"] == r["f"]), "width"]
             lines.append(f"{label} & {r['f']:g} & {int(r['n_binding'])} & {_sci(r['median_rel_err'])} & "
@@ -228,7 +222,7 @@ def table2_lines() -> list[str]:
         e = b["mu"] * b["b"] / np.abs(b["value"])
         err = (np.abs(b["mu"] - b["secant"]) / np.abs(b["secant"]))[e >= A.ZERO_ELASTICITY]
     med, mx = (float(err.median()), float(err.max())) if len(err) else (np.nan, np.nan)
-    lines += [r"\hline", f"convex baseline dual vs.\\ secant & all & {len(err)} & {_sci(med)} & {_sci(mx)} & -- & -- \\\\",
+    lines += [r"\hline", f"convex baseline & all & {len(err)} & {_sci(med)} & {_sci(mx)} & -- & -- \\\\",
               r"\hline", r"\end{tabular}"]
     return lines
 
