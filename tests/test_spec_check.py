@@ -100,7 +100,14 @@ def test_scaffolds_pass_static_checks():
     assert sc.missing_sections(rep) == [] and sc.has_ai_use(rep)
     assert sc.forbidden_layout(rep) == []
     assert sc.not_allowed(entries) == [] and set(entries) == set(sc.ALLOWED)
-    assert not any(e["verified"] for e in entries.values())
+    # S1 asserted that no entry was verified yet; since Isaiah's b28057b some are. Changed in S4b
+    # with his approval (PROGRESS): every entry carries a well-formed marker (DESIGN §13).
+    bib = (ROOT / "report" / "refs.bib").read_text()
+    starts = list(re.finditer(r"@\w+\s*\{\s*[^,\s]+\s*,", bib))
+    for i, m in enumerate(starts):
+        head = bib[starts[i - 1].end() if i else 0: m.start()]
+        marks = re.findall(r"^%\s*verified:.*$", head, flags=re.M)
+        assert marks and re.fullmatch(r"%\s*verified:\s*(no|yes \(\d{4}-\d{2}-\d{2}\))\s*", marks[-1])
     assert "\\label{refs:start}" in rep.split("\\bibliography{refs}")[0]
 
 

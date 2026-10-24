@@ -1,0 +1,30 @@
+# N3 — root-bound diagnostic and MIQP volatility (DESIGN §7 N3; Decision 51; S4b addendum step 0).
+# Added at the S4 read, after the S3 results and the cold read. `make n3` → results/n3/run_<UTC>/.
+# Expectations E1–E4 are recorded in PROGRESS ("Isaiah: S4 read; Decisions 50–53") before the run.
+# integer.yaml and numerics.yaml are unchanged; the settings below are N1's (numerics.yaml), read
+# back from the stored N1 run's config and checked against it. Plain decimals with a dot.
+runner: n3
+status: "diagnostic (DESIGN §7 N3; Decision 51), S4b"
+workers: 4                                         # DESIGN §6: up to 4 workers
+runs:                                              # the stored S3 runs (RUN_LOG "ok" at 120ea56); hashes checked
+  i1: results/i1/run_20261021T001423Z
+  i2: results/i2/run_20261021T001657Z
+  n1: results/n1/run_20261021T001914Z
+target_vol: 0.03                                   # DESIGN §3.3: 3%/yr ex-ante
+v_check_rtol: 1.0e-9                               # V recomputed from the stored weights against the stored V
+probes:                                            # root-only (NodeLimit 1) at N1's settings, default presolve
+  perspective:                                     # the perspective at default scaling
+    - {probe: m-1, params: {}}
+    - {probe: m0, params: {MIQCPMethod: 0}}
+    - {probe: m1, params: {MIQCPMethod: 1}}
+    - {probe: m-1_feastol1e-9, params: {FeasibilityTol: 1.0e-9}}
+  perspective_rescaled:                            # the rescaled perspective (DESIGN §3.4)
+    - {probe: m-1, params: {}}
+    - {probe: m0, params: {MIQCPMethod: 0}}
+    - {probe: m1, params: {MIQCPMethod: 1}}
+expectations:                                      # PROGRESS, "N3 expectations" (not blind: S2d item 1). Hit rules fixed
+                                                   # here before the run; "most" = more than half of the instances
+  # E1: m1's root bound equals m-1's exactly (float equality) at most instances, in each arm
+  E2_atol_rel: 0.005                               # |root(m0) − plain perspective|/|V_best| ≤ 5e-3 at most instances, default-scaling arm
+  E3_band: [0.5, 2.0]                              # median over instances of root gap(FeasibilityTol 1e-9)/root gap(m-1) in this band
+  E4_factor: 10.0                                  # rescaled arm: max/min root gap over m-1, m0, m1 ≤ 10 at most instances
