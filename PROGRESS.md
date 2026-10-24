@@ -2147,3 +2147,12 @@ Protected in S4b. If a change seems needed to any of these, ask:
 - Nothing in DESIGN, CHECKS or the S4b addendum changes. Writing mode A and Decision 53 stand: Isaiah writes the Abstract, I, V, VI and the AI-use acknowledgment, unless a later GATE R note says otherwise.
 - Preconditions for S4b: the notes "Isaiah: S4 read; Decisions 50-53; run S4b" and "Isaiah: Fügenschuh discussion (none)" are in this file, and the tree is clean after this commit.
 - Run S4b: YES.
+
+## 2026-10-24 — S4b (Claude Code, Opus 5.5): preconditions met; step 0 code committed; before the N3 run
+- Preconditions: the notes "Isaiah: S4 read; Decisions 50–53; run S4b" and "Isaiah: Fügenschuh discussion (none)" are present, as is the 10/24 note. The tree was clean at fd818a6.
+- **Test change, approved by Isaiah in this session.** The full suite failed at HEAD on tests/test_spec_check.py::test_scaffolds_pass_static_checks. Its S1 assertion `not any(e["verified"] ...)` has been false since Isaiah's b28057b (8 refs.bib entries `% verified: yes (2026-10-21)`). Asked, Isaiah chose to update it. It now checks that every entry carries a well-formed marker (`% verified: no` or `% verified: yes (<date>)`, DESIGN §13). refs.bib is unchanged.
+- 174a7d7: experiments/run_n3.py, experiments/configs/n3.yaml, tests/test_n3.py (9 tests, written first, failing before the runner existed), Makefile `n3`. integer.yaml and numerics.yaml are unchanged; N1's settings are read from the stored N1 run's config and checked equal to numerics.yaml.
+  - 0a: σ = √(12·wᵀΣw) for every stored polished-V weight vector. Each V is recomputed from its weights and must match the stored V to 1e-9; a dry check gave 1.9e-15 over 370 vectors.
+  - 0b: 36 N1 instances × (4 default-scaling + 3 rescaled probes) = 252 root-only probes.
+  - The E1–E4 hit rules are fixed in n3.yaml before the run: "most" = more than half; E3 = median ratio in [0.5, 2].
+- Next: `make n3` in the background (expected a few minutes; S2d probes took ≤ 1.3 Work each).
