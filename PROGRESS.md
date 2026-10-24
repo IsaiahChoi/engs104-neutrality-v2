@@ -2140,3 +2140,10 @@ Protected in S4b. If a change seems needed to any of these, ask:
 ## 2026-10-21 — Isaiah: Fügenschuh discussion (none)
 - No meeting with Prof. Fügenschuh took place on 2026-10-21. The S4b addendum is unchanged. The N3 diagnostics and the Q3 questions in the Fügenschuh brief stay open for the 10/23 class discussion and the report Discussion.
 - Run S4b: YES.
+
+## 2026-10-24 — Isaiah: proposal accepted; AI use approved; run S4b
+- The proposal (proposal/proposal.tex at commit 3374e65; PDF sha256 6a87bf004b084df06145b7a7b7369f67434da30f2bb99d235abdb8028b92d709, kept at ~/Desktop/engs_104_final_project/submitted/proposal.pdf) was submitted on Canvas and accepted. Recorded at 02:11 (US Eastern). Claude (chat) drafted it and Isaiah reviewed it; docs/AI_USE.md records this.
+- AI use is officially approved for this project. Source: AI Use allowed, as long as disclosed, so log everything.. docs/AI_USE.md line 3 now carries it.
+- Nothing in DESIGN, CHECKS or the S4b addendum changes. Writing mode A and Decision 53 stand: Isaiah writes the Abstract, I, V, VI and the AI-use acknowledgment, unless a later GATE R note says otherwise.
+- Preconditions for S4b: the notes "Isaiah: S4 read; Decisions 50-53; run S4b" and "Isaiah: Fügenschuh discussion (none)" are in this file, and the tree is clean after this commit.
+- Run S4b: YES.
