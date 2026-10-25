@@ -2841,3 +2841,8 @@ Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
 - Numbers I typed by hand: none. Section I uses only macros from numbers.tex.
 - Mode: draft. spec_check and CHECK REPORT in draft mode.
 - Run S5 pass 1: YES, under the S5 addendum in my note "— Isaiah: S4c read; Decisions 58–62; GATE R open; run S5 pass 1 (after my draft note)".
+
+## 2026-10-25 — S5 pass 1 (Claude Code, Opus 5.5): preconditions met; BASE recorded
+- BASE = 9fec2bea073c6129dd00a415891cde94883a4671 (`git rev-parse HEAD` at session start).
+- Preconditions (S5 addendum): Isaiah's note "S4c read; Decisions 58–62; GATE R open; run S5 pass 1 (after my draft note)" present; "— Isaiah: draft (S5 pass 1)" present after it; tree clean; Section I (report/main.tex:44–58) has no red outline, its three paragraphs marked `% drafted-by-chat`.
+- Mode: draft (Isaiah's draft note). Following the S5 addendum; stop at its step 8. No experiment runs; docs/, refs.bib, proposal/, experiments/configs/ untouched; tests/ additions only.
