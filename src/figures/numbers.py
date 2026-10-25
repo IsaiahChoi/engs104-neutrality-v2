@@ -783,6 +783,8 @@ def experiment_rows() -> list[dict]:
     Ns = "\\{" + ", ".join("all" if str(x) == "full" else str(x) for x in n1["N"]) + "\\}"
     so = ", ".join(pow10(x) if x != 1 else "1" for x in n2["miqp"]["s_obj"])
     probes = sorted({pr["probe"] for v in n3["probes"].values() for pr in v})
+    ftol = next(float(pr["params"]["FeasibilityTol"]) for pr in n3["probes"]["perspective"]
+                if "FeasibilityTol" in pr["params"])
     return [
         {"exp": "C1", "inst": f"D12 ({len(cc['d12'])} dates); all eligible names; "
                               r"$\alpha_{\mathrm{mom}}$, $\alpha_\perp$, $\alpha_\parallel$",
@@ -812,7 +814,7 @@ def experiment_rows() -> list[dict]:
                  "on/off; reference", "solves": _n("n2", "n2_convex")},
         {"exp": "N3", "inst": "the N1 instances at default presolve",
          "what": f"root only, both perspective arms; MIQCPMethod $-1$, 0, 1 (default scaling also "
-                 f"FeasibilityTol {pow10(1e-9)})" if probes else "", "solves": _n("n3", "n3_probes")},
+                 f"FeasibilityTol {pow10(ftol)})" if probes else "", "solves": _n("n3", "n3_probes")},
     ]
 
 
