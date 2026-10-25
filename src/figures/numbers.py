@@ -889,7 +889,7 @@ def experiment_rows() -> list[dict]:
          "what": "one family swept over its grid, the others at base", "solves": _n("c2", "c2_points")},
         {"exp": "I1", "inst": f"{', '.join(i1['dates'])}; $N={i1['N']}$; $f\\in{fs(i1['f'])}$",
          "what": f"{len(i1['constraints'])} bounds at $\\delta={pct(i1['rel_delta'])}$ "
-                 f"({pct(i1['robustness']['rel_delta'])} at {i1['robustness']['date']}); "
+                 f"(also {pct(i1["robustness"]["rel_delta"])} at {i1["robustness"]["date"]}); "
                  "big-M and rescaled perspective", "solves": _n("i1", "i1_solves")},
         {"exp": "I2", "inst": "; ".join(f"{x['date']} ($K={x['K']}$)" for x in i2["instances"])
                               + f"; $N={i2['instances'][0]['N']}$",

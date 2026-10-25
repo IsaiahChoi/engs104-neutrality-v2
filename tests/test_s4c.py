@@ -138,3 +138,9 @@ def test_s4c_text_macros(tmp_path):
     g = v["CTwoGrids"]
     assert g.startswith("dollar 0.1, 0.05, 0.02, 0.01, 0;") and "each style and all styles 0.4, 0.2, 0.1, 0.05, 0.02, 0;" in g
     assert g.endswith(r"$\theta$ 0.1, 0.05, 0.025")
+
+
+def test_experiment_table_i1_says_also_five_percent():
+    """Cold read (S4c): "(5% at 2017-12)" read as instead of; I1 runs both steps at 2017-12."""
+    i1 = next(r for r in numbers.experiment_rows() if r["exp"] == "I1")
+    assert "(also 5\\% at 2017-12)" in i1["what"]
