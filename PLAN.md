@@ -55,6 +55,15 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [ ] 5. **CHECK REPORT** (K30–K39, draft mode); cold-reader saved to results/checks/cold_read_<UTC>.md — 3 rounds, all FAIL (round 3: RP-4 and one sentence, main.tex:236); stopped per CLAUDE.md. Cold read saved (cold_read_20261021T062839Z.md)
 - [ ] Stop at GATE R with the spec_check table, verdict, cold-read top five, page count by section, open items
 
+## S4b — Report restructure (Claude Code, 10/24–10/25; Isaiah's note "S4 read; Decisions 50–53; run S4b")
+- [x] 0. N3 diagnostics: P-MI volatility and root probes (results/n3/run_20261024T092033Z); E1–E4 all hit
+- [x] 1. Times-metric text font (TeX Gyre Termes); 9 pages before and after
+- [x] 2. II–IV restructured to DESIGN §10/§11.1 as edited; cut order (1)–(9) applied
+- [x] 3. Content items a–l (agent-drafted, verified against code)
+- [x] 4. Build and measure: 8 pages; spec_check draft PASS; II–IV 5.84 pages (B) > 5.0, so the stop condition was met (Isaiah chose to run step 5)
+- [x] 5. **CHECK REPORT** (K30–K40): round 3 PASS (results/checks/REPORT_20261025T083010Z.md); cold read of the current build (cold_read_20261025T082337Z.md)
+- [x] 6. Stop and report (PROGRESS, S4b closing entry)
+
 ## GATE R — Isaiah (10/27 – 10/30)
 - [ ] GATE R note: derivations done (RUNBOOK §5.3); open items
 

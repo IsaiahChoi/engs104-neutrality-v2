@@ -2220,3 +2220,82 @@ Protected in S4b. If a change seems needed to any of these, ask:
   - **II–IV: A 5.24, B 5.77 against at most 5.0 (B governs). Over by 0.77 after the full cut order.**
   - The excess is in II (+0.32) and III (+0.45): the step 3 definitions and derivation additions, which the addendum protects ("never cut the formulation, the definitions, A2–A4, the n behind any statistic, or a disclosure").
   - Per addendum step 4: stopped and reported. Decision for Isaiah below.
+
+## 2026-10-25 — S4b closing entry (Claude Code, Opus 5.5): CHECK REPORT round 3 PASS; stopped at the addendum's step 6
+- **Order note.** Step 4's stop condition was met (II–IV over 5.0 pages after the cut order). Asked, Isaiah chose to run step 5 anyway. Step 5 ran the cold-reader before each CHECK round, so K40 could be evaluated in the same round; each fix round required a new cold read.
+- **Correction to the step 1–4 entry** ("Decision for Isaiah below"): the decision is listed under "Decisions needed" here.
+
+### Verdicts
+- CHECK REPORT (K30–K40, draft mode), a new CHECK with 3 rounds:
+  - Round 1: results/checks/REPORT_20261025T075002Z.md, **FAIL**. K31: FeasibilityTol 1e-9 hand-typed. Prose: K15 flag wording; experiment-table caption; N3 scope. Fixed in 03e107e.
+  - Round 2: REPORT_20261025T081305Z.md, **FAIL**. Two items introduced by the round-1 rewrite: the K15 sentence mis-scoped δ = 1%, and a hand-typed "eight". Fixed in 53f9b57.
+  - Round 3: REPORT_20261025T083010Z.md, **PASS**, no FAIL items. HEAD 23f2e04, build fe6a6f4.
+  - No round changed a reported number.
+- The checker recomputed N3 (0a, 0b) from raw outputs in round 1:
+  - 370 volatility vectors match to 3.7e-15;
+  - the probe table matches n3_table exactly;
+  - E1–E4 all HIT.
+- **Cold reads** (verbatim): cold_read_20261025T073115Z.md (0d98fe5), cold_read_20261025T080435Z.md (86cf976), cold_read_20261025T082337Z.md (fe6a6f4, the current build). Verdict each time: MOSTLY self-contained.
+  - Two of their "errors" were checked and are not errors:
+    - φ is computed from each alpha's own split and is scale-invariant (src/alpha/decompose.py:44–65);
+    - the 2017-12 vs pooled δ = 10% median coincidence is real (verified case by case in i1_long.csv).
+  - Their Abstract Q2 point (big-M is not better than the fixed-integer dual at 10%) was correct and is fixed in the outline.
+
+### spec_check (report, draft, fe6a6f4)
+- PASS: RP-1–4 (8 pages), RP-6, RP-7 (19 cited), RP-9, RP-10, RP-11.
+- N/A: RP-5 (refs:start p. 8), RP-8.
+- The proposal is protected and was reported only (round 1).
+
+### Page table (final build, tools/page_sections.py; results/scratch/pages_s4b_r3.txt). A = floats where they land; B = floats in the first-referencing section; budget in parentheses.
+- Abstract 0.20 / 0.20 (0.2); I 0.24 (0.6).
+- II 1.43 (1.1). III 1.68 (1.2).
+- IV 2.21 / 2.73 (2.7): IV-A 0.84 / 0.84, IV-B 0.67 / 1.00, IV-C 0.68 / 0.88.
+- V 1.14 / 0.61 (0.8); VI 0.15 (0.2); disclosures and AI use 0.33 (0.3); references 0.29 (0.5).
+- **II–IV: A 5.32, B 5.84 against 5.0.** Total 8 pages; refs:start p. 8.
+
+### Commits this session (fd818a6..HEAD)
+174a7d7, b176bbb, 3baaaf1, 61fa822 (step 0); fbd8abd (step 1); 99aed2d, 0d98fe5, 6272a9a (steps 2–4); 8541973, 03e107e, 4fc1b08, 86cf976, 3cec994, 53f9b57, fe6a6f4, 23f2e04 (step 5); and the commit with this entry. Not pushed, not tagged.
+
+### Runs this session
+results/n3/run_20261024T092033Z at b176bbb: make exit 0, DONE, RUN_LOG "ok". It is the only run.
+
+### Open items for Isaiah, by section (dates from RUNBOOK §1)
+- **GATE R (10/27–10/30):**
+  - derivations A1–A9 by hand (% verify-by-hand), now including II-F's uniqueness, A4's projection argument, A7's comparison and III-D's 8η;
+  - confirm the tests/test_spec_check.py assertion change (rule 5; flagged by the checker in every round);
+  - the page decision below.
+- **II (10/30):**
+  - the cold read's φ wording: add "of the given alpha's own split (scale-invariant)";
+  - the jargon list:
+    - key, gated, risk-row normalization, certified gap, best known value, collapse, arm, probe;
+    - name, excess return, ex-ante volatility (σ_m = 3%/√12);
+    - c per month vs Table I per year;
+    - the five style factors;
+    - the number of sectors.
+- **III (11/4):**
+  - MIPGap for I1/I2 is not stated in II–IV;
+  - the 8279 vs 8399 toy points (K9 counts all 202 toys after excluding the band; K29c counts grid points at b > 0 differently; a one-clause reconciliation is needed);
+  - "predicted ≤ 10⁻⁶" (P1) needs its source;
+  - the s_obj and I1-constraint selection rules (design pilot) are not described in the report.
+- **IV (11/6):**
+  - the "agree at 10 s_obj on all 12 gated…" sentence (all three cold reads);
+  - the P1/P2/P3 sentence mixes pooled and δ = 10% counts;
+  - the I2 near-tie compares raw secants in different units;
+  - the C2 grids and the 18 keys are not listed;
+  - "four families that cost the most" includes the single Mom bound;
+  - the rescaled arm confounds row and cone scaling, yet the Abstract and VI outlines credit "rescaling the weights";
+  - "Gurobi chose outer approximation" is inferred from 29 and 30 of 36.
+- **V (11/8):** outline items whose numbers are not in Results: nodes, MIPGap 10⁻⁶, P1 maxima at δ = 5%, per-class errors, the near-tie flip, 1.6e-5, the hedged legs, and 39 of 48 baseline points on the budget.
+- **Abstract, VI, disclosures, AI use (11/10):**
+  - outlines updated per addendum item l;
+  - the disclosures point to repository files.
+- **Fig. 3 and the two-block Table III** are still generated (pinned by S3/S4 tests) but are out of the report; retiring them needs a test change, which is your call.
+- **FACTS:** the full-suite line now cites the newest log (521 passed, logs/test_full_20261025T081735Z.log); it previously read 489.
+
+### Decisions needed
+- **54. Page budget.** II–IV measure 5.84 pages (B) against 5.0 after the full cut order; the report is 8 pages in total. The excess is in II (+0.33) and III (+0.48), the step 3 definitions and derivations that the addendum protects. Options:
+  - (a) accept and rebalance the budgets (V and I are under);
+  - (b) move material (e.g. A5–A9 detail or Validation) to the Discussion, or cut it;
+  - (c) a later note naming what may be cut.
+- **55.** Retire fig3_attribution and the two-block table3_n2 (test change), or keep generating them.
+- **56.** Confirm the test_spec_check.py assertion change.
