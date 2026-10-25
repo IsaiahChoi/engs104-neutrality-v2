@@ -2526,3 +2526,70 @@ YES, in a fresh Claude Code session.
 - **Q-j (slack risk row).** If vol(λ_min) ≤ target, the solver returns the QP at λ_min = 10⁻⁶ (base_mandate.yaml lambda_min), not λ = 0, and records risk_binding = False (src/opt/risk_budget.py:11–12, 43, 88, 124–125). In C1 this happens at 4 of 36 base solves, all α∥: 2011-08, 2013-06, 2015-08 and 2017-12, with vol 2.2–2.7%/yr (c1_points.parquet).
   - Derivation (mine, for GATE R): the returned w is P-RB-feasible, and for any P-RB-feasible w′, f(w) − λ_min q(w) ≥ f(w′) − λ_min q(w′). So A*_QP ≥ A*_PRB − λ_min σ_m² = A*_PRB − 7.5e-11, and A*_QP ≤ A*_PRB by feasibility: the reported A* is within λ_min σ_m² of P-RB's.
   - No P-MI instance uses these points: P-MI's λ* is from α_mom.
+
+## 2026-10-25 — S4c steps 2–5 (Claude Code, Opus 5.5): fixes, open items, cuts, build; before CHECK REPORT
+- Commits: 30aa635 (code: tests/test_s4c.py first, then src/figures/fig_c.py, numbers.py; Table I h_j), f89e6bc (report/main.tex II–IV), 9c… (see git log; build), the REPORT_FIGURES fix, af80c25 (make figures ×2 byte-identical, make report). Not pushed.
+- **My error, fixed within the session.** I appended fig1_cost_curves_row to fig_c.FIGURES, which broke tests/test_fig_s3.py:20 (it pins make_all.FIGURES exactly). Code fix, no test change: the figure is registered in make_all.REPORT_FIGURES. Full suite at the committed tree: 530 passed, 1 skipped, 2 xfailed (logs/test_full_20261025T171740Z.log); \TestsPassed is now 530.
+- **Correction to the step-1 Q-a finding.** The NaN closed-form A* occurs at 6 α∥ rows, not 1: 2008-10, 2015-08 and 2023-03, each in both idealized mandates (c1_idealized.parquet). √(1 − φ) is NaN at 5 of the 36 mandate-(i) rows. Clipped, \IdealRetErr stays 7.5e-8 (n = 36) and \IdealZeroAbs stays 3.6e-17 (n = 24 = \IdealZeroN, both mandates; my step-1 entry wrongly said 12). numbers.ideal_errors now clips and raises on a NaN closed form outside α∥ (tests/test_s4c.py).
+- **Fig. 1 (Decision 54).** Three panels in one row, all text 8 pt at 3.5 in (tested: every visible Text artist ≥ 8 pt; 3.5 × 2.15 in). It is a new figure, figures/fig1_cost_curves_row.pdf (src/figures/fig_c.py fig1_row_figure). The four-panel fig1_cost_curves stays generated because tests/test_fig_s4b.py:25 pins it (rule 5; Decision 55's pattern). Retiring it needs a test change: Isaiah's call.
+- **Table III (cut 10)** is out of the report; table3_n2b and table3_n2 stay generated (Decision 55).
+
+### F-items (report/main.tex line numbers at af80c25)
+| item | file:line | what changed | code or output source |
+|---|---|---|---|
+| F1 | main.tex:70 | φ(α) defined on α's own unrescaled split; invariant to rescaling; rescaled α⊥, α∥ are signals | src/alpha/decompose.py:50–65 (alignment_share on each alpha's own split) |
+| F2 | main.tex:159 | jump max(0, aℓ − λdℓ²), positive iff a > λdℓ; big-M slope a − 2λdb for b < w° = a/(2λd), else 0; perspective a − λdℓ if a > λdℓ, else 0; ℓ/2 < b < ℓ comparison kept | derivation (cross-check §7); src/opt/toy.py closed forms (relaxation_value) |
+| F3 | main.tex:99, 180 | baseline: P-RB's optimizer and constraint duals at the base point, value A* − λ*σ_m²; III-E names K13's quantity (weights) | Q-i: experiments/run_core.py:583–588, 636–638; src/opt/baseline.py:5–7 |
+| F4 | main.tex:139 | MV maximizer unique for λ > 0; volatility continuous, nonincreasing; root ⇒ feasibility + complementary slackness; Slater ⇒ KKT sufficient; strong duality ⇒ every P-RB optimum maximizes the Lagrangian; slack case λ_min = \LambdaMin, within \SlackValueBound (new macro) | Q-j: src/opt/risk_budget.py:11–12, 43, 124–125; c1_points.parquet (4 of 36) |
+| F5 | main.tex:167 | "certified" conditional on V feasible (checker at \VerdictTol, new macro) and Ū_eff valid (slack a margin); K23 0/144; N2(a) s_obj = 1 counter-case \FalseCertGap | src/opt/integer.py:81, 305, 370 (VERDICT_TOL); s3_analysis.json i1.k23; n2_miqp.parquet |
+| F6 | main.tex:174–176 | η and 8η are noise scales, valid if each value is within ε of exact; `% verify-by-hand` added | derivation (cross-check §10) |
+| F7 | main.tex:171 | q_i = w_i² ∈ [ℓ², u_i²] at an optimum (minimized, not bounded); scale estimates, not objective bounds; N2(a) default-scaling solves at 10⁴: \NTwoDefScaledOpt of \NTwoDefScaledN OPTIMAL (new macros) | s3_analysis.json n2.miqp.arms["perspective/s10000"].statuses = {OPTIMAL: 4} |
+| F8 | main.tex:143 | A full row rank; g ≠ 0 (α ∉ range(Aᵀ)); A*_eq named | derivation (cross-check §3) |
+| F9 | main.tex:147 | inverse-free step ΣD⁻¹α⊥ = α⊥ ⇒ Σ⁻¹α⊥ = D⁻¹α⊥, BᵀΣ⁻¹α⊥ = 0, no assumption on F; B full column rank; zero shadow price for b_k > 0 | derivation (cross-check §4) |
+| F10 | main.tex:151 | derivative where multipliers unique; one-sided slopes elsewhere, e.g. cap tie u = θ·ADV_i/AUM; e_p defined for A* > 0 (main.tex:84) | derivation (cross-check §5) |
+| F11 | main.tex:155 | "over the same (w, z), restricted by the same linking rows"; q = w = 0 at z = 0; λ* ≥ 0 | DESIGN §3.4; derivation |
+| F12 | main.tex:134 | "exact active sets and duals" → a basic solution, active set and duals exact up to \QPTol | src/opt/continuous.py SOLVER_OPTS (dual simplex) |
+| F13 | main.tex:79, 99, 171, 176; Table I | renames: sector bound s_j → h_j (eq. (1) and Table I via src/figures/numbers.py table1_mandate); perspective epigraph s_i → q_i (and s_i′ → q_i′) in II-E, A6, A9, III-D. Kept: s, ŝ, s± for slopes (and s_obj) | h, q unused elsewhere in II–IV (checked) |
+
+### Open items (S4b closing entry) and step-3 additions
+| item | file:line | what changed | source |
+|---|---|---|---|
+| II φ wording | 70 | F1 | decompose.py |
+| II jargon: key | 84 | defined | src/opt/attribution.py keys (families, sector:j, style:f) |
+| gated | 180 | defined (pass/fail check fixed in advance) | CHECKS K29b/K29c |
+| risk-row normalization | 266 | defined (risk cone ÷ σ_m, unit right-hand side) | src/opt/risk_budget.py docstring (soc form), run_n2.py:100–105 |
+| certified gap | 167 | defined (Ū_eff − V)/|V| | DESIGN §6 |
+| best known value | 250 | defined | src/analysis/s3.py:221–225 |
+| collapse | 263 | removed as a word; E3 stated as within factor \NThreeBandHi / below / above | run_n3.py:278–280; n3.yaml E3_band |
+| arm | 99 | defined | DESIGN §7 N1 |
+| probe | 263 | defined (root-only runs) | n3_probes settings NodeLimit 1 |
+| name, excess return, ex-ante volatility, σ_m = 3%/√12 | 62, 66 | defined; \MonthsPerYear (new) | risk_budget.py:45; panel.py:7 |
+| c per month vs Table I per year | 62 | stated | continuous.py:55, 67 |
+| five style factors | 62 | named | src/risk/factor_model.py:20 |
+| number of sectors | 62 | \NSectors = 11 (new) | results/data_report.md:11 |
+| III MIPGap I1/I2 | 134 | \IOneMipGap, \NOneMipGap | integer.yaml, numerics.yaml |
+| III 8279 vs 8399 | 180 | K29c points: every grid b > 0, ℓ, w°; 1 failed relaxation excluded (\KTwentyNineCToyFailed new) | Q-b |
+| III "predicted ≤ 10⁻⁶" | 234 | "predicted before the analysis ran" | Q-c |
+| III s_obj and I1-constraint rules | 134, 123 | s_obj rule with \SObjProxyMin–\SObjProxyMax (new); P6 rule with \IOneNCons (new) | pilot summary P1.s_obj; DESIGN §8 P6; integer.yaml:24–28 |
+| IV "agree at 10 s_obj" sentence | 180 (moved to III-E, cut 7) | \SlopeScaleWithin of \SlopeScaleN; \SlopeScaleBindDiff over \SlopeScaleBindN (new) | Q-e |
+| IV P1/P2/P3 counts | 234 | per step: 3/2/18 of 23 (10%), 4/1/6 of \SupBindFive = 11 (5%, new); P1/P2/P3 errors "over both steps" | s3b_analysis.json item3_support |
+| IV I2 near-tie units | 237 | units stated; elasticity ranking \NearTieElMom vs \NearTieElSector, \NearTieInst instances (new) | Q-f |
+| IV C2 grids, 18 keys | 123, 212 | \CTwoGrids (new, from experiments/sweep.py); keys: binding families, every sector, CMA and Mom | Q-d |
+| IV "four families" incl. Mom | 192 | three families (Fig. 1 panels); Mom among the flat ones, each ≥ \CTwoGrossTight | c2_points.parquet |
+| IV rescaled arm confound | 263; outlines 40, 53, 297 | "N1 does not separate the two"; Abstract, I, VI outlines say "rescaled formulation (rows and cones together)" | DESIGN §3.4 |
+| IV "Gurobi chose outer approximation" | 263 | "consistent with …; its logs are off, so the choice itself is not recorded" (also V outline) | Q-h |
+| II-E I1 above-budget count | 99 | \VolIOneAbove (3 of 144) beside N1's | n3 summary.json |
+| IV-C method-0 vs plain; default looser than plain | 263 | stated; "near the plain …" replaced | n3 summary gaps |
+| IV-C samples 1.8e-3 / 1.9e-3 | 252, 263 | N1 base, n = \NOneCell; N3 over the same \NThreeN | s3_analysis.json n1; n3 summary |
+| IV-C E3 | 263 | \NThreeRatioIn within factor \NThreeBandHi, \NThreeCollapsed below, \NThreeRatioAbove above, max \NThreeRatioMax (new) | n3 summary E3 |
+| N2(b) one sentence (cut 1) | 266 | barrier errors without/with scaling by \NTwoConvexScale (new); normalization result | Q-g; s3_analysis.json n2.convex; n2_convex.parquet |
+| Q-a in IV-A (cut 5) | 202 | one clause: \IdealARelErr; \IdealRetErr is √ of φ's rounding near 1 (α∥), \IdealRetErrNonPar otherwise (new) | Q-a |
+
+### Cuts applied (Decision 54 order)
+(1) Table III out; (2) family-dual rule only in II-D, A5 points to it; (3) A6's citation sentence removed; (4) III-E compressed to K4, K5/K6, K9, K13, K29c (K10 dropped); (5) IV-A agreement → one clause; (6) "other families flat" → one clause; (7) slope-accuracy sentence → III-E, rewritten; (8) IV-C root-gap paragraph: base values in text, loose/tight via Fig. 5; (9) one-line captions (Fig. 4 two lines); (10) tightening of II (and of III–IV). Nothing listed under "never cut" was cut.
+
+### Pages (af80c25; tools/page_sections.py → results/scratch/pages_s4c_final.txt)
+- II 1.35 (budget 1.3); III 1.92 (1.5); IV A 1.99 / B 2.49 (2.5). **II–IV: A 5.27, B 5.77 against 5.3: over by 0.47 after the full cut order.**
+- Abstract 0.21 (0.2), I 0.31 (0.5), V 0.62 B (0.7), VI 0.14 (0.2), disclosures and AI use 0.33 (0.3), references 0.29 (0.3). Total 8 pages; refs:start p. 8.
+- Forecast for the outline parts, Σ max(0, budget − measured B): I +0.19, V +0.08, VI +0.06, Abstract 0, disclosures 0, for +0.33 page. At the current II–IV the report would need about 8.0 pages before float slack, at or over RP-4's 8.
+- FACTS: all 44 (file, sha256) pairs match; no hashed source changed, so it was not regenerated (proposal/ protected).
