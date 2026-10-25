@@ -49,8 +49,8 @@ def test_fig1_row_is_one_row_at_column_width_with_8pt_text():
 
 
 def test_fig1_row_is_generated_and_four_panel_version_kept():
-    names = [n for n, _ in fig_c.FIGURES]
-    assert "fig1_cost_curves_row" in names and "fig1_cost_curves" in names
+    assert ("fig1_cost_curves_row", fig_c.fig1_cost_curves_row) in make_all.REPORT_FIGURES
+    assert "fig1_cost_curves" in [n for n, _ in make_all.FIGURES]
 
 
 # ----- idealized C1: every point compared (Q-a) -----
@@ -123,7 +123,7 @@ def test_s4c_retired_outputs_are_generated_but_not_in_the_report(name):
     tex = (make_all.ROOT / "report" / "main.tex").read_text()
     tex = re.sub(r"(?<!\\)%[^\n]*", "", tex)
     assert not re.search(rf"{name}(?![A-Za-z0-9_])", tex)
-    fns = dict(make_all.FIGURES + make_all.REPORT_TABLES)
+    fns = dict(make_all.FIGURES + make_all.REPORT_FIGURES + make_all.REPORT_TABLES)
     assert name in fns
 
 

@@ -222,5 +222,5 @@ def fig_c3_summary() -> Path:
 
 
 FIGURES = [("fig1_cost_curves", fig1_cost_curves), ("fig2_alignment", fig2_alignment),
-           ("fig3_attribution", fig3_attribution), ("fig_c3_summary", fig_c3_summary),
-           ("fig1_cost_curves_row", fig1_cost_curves_row)]                     # S4c
+           ("fig3_attribution", fig3_attribution), ("fig_c3_summary", fig_c3_summary)]
+S4C_FIGURES = [("fig1_cost_curves_row", fig1_cost_curves_row)]   # S4c; FIGURES stays as pinned (test_fig_s3)
