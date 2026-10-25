@@ -31,6 +31,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.transforms import ScaledTranslation
 
 from experiments.common import latest_done
 from src.figures import style
@@ -146,12 +147,13 @@ def fig1_cost_curves_row() -> Path:
     return _save(fig1_row_figure(), f"fig1_cost_curves_row{TAG}")
 
 
-def fig2_alignment() -> Path:
+def fig2_figure():
+    """Fig. 2 at 2.6 in tall since S5 pass 1 (Decision 58(b); 3.4 in before), same content."""
     _apply()
     ide = _read("c1", "c1_idealized")
     ide = ide[ide["mandate"] == "factor"]
     pts = _read("c1", "c1_points")
-    fig, ax = plt.subplots(figsize=(style.COLUMN_WIDTH_IN, 3.4))
+    fig, ax = plt.subplots(figsize=(style.COLUMN_WIDTH_IN, 2.6))
     phi = np.linspace(0, 1, 201)
     ax.plot(phi, np.sqrt(1 - phi), color=style.INK, lw=1.0, label=r"closed form $\sqrt{1-\varphi}$")
     for i, (kind, label, _, mk) in enumerate(ALPHAS):
@@ -165,10 +167,15 @@ def fig2_alignment() -> Path:
     ax.set_ylabel(r"retained fraction $A^*/A^*_{\mathrm{unc}}$")
     ax.set_xlim(-0.02, 1.02)
     ax.set_ylim(-0.02, 1.05)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.45, -0.2), ncol=2, columnspacing=0.8,
-              handletextpad=0.3)
+    below = ax.transAxes + ScaledTranslation(0, -0.42, fig.dpi_scale_trans)   # clear of the x label
+    ax.legend(loc="upper center", bbox_to_anchor=(0.45, 0.0), bbox_transform=below, ncol=2,
+              columnspacing=0.6, handletextpad=0.3, handlelength=1.4)
     fig.tight_layout()
-    return _save(fig, f"fig2_alignment{TAG}")
+    return fig
+
+
+def fig2_alignment() -> Path:
+    return _save(fig2_figure(), f"fig2_alignment{TAG}")
 
 
 def fig3_attribution() -> Path:
