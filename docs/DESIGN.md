@@ -220,7 +220,7 @@ Isaiah derives each item by hand (RUNBOOK §5.3); the tests and checks confirm t
 
 ## 10. Figures and tables
 
-- **Fig. 1** (C2): retained alpha A*(b)/A*(off) against the bound, median and interquartile range over D12, α_mom, in three panels in one row: liquidity θ, sector, and all styles jointly (α⊥ and α∥ dashed on the all-styles panel), with text at least 8 pt at 3.5 in; if that cannot be met, four panels as before (Decision 54). The other families, the Mom bound among them, are flat for α_mom; the text gives their tightest-point values.
+- **Fig. 1** (C2): retained alpha A*(b)/A*(off) against the bound, median and interquartile range over D12, α_mom, in three panels in one row: liquidity θ, sector, and all styles jointly (α⊥ and α∥ dashed on the all-styles panel), with text at least 8 pt at 3.5 in; if that cannot be met, four panels as before (Decision 54). The other families are flat for α_mom, except the Mom bound alone, which costs slightly more at zero (Decision 59); the text gives their tightest-point values.
 - **Fig. 2** (C1): retained fraction under full factor neutrality against φ. The closed-form curve √(1 − φ), the numerical idealized points (three alphas × D12), and the realistic base-mandate points.
 - **Fig. 3:** removed (Decision 50). Q1's cost sentence uses instead a direct split of the base portfolio's gross expected alpha α'w* into A*, borrow cost and trading cost (median and range over D12, α_mom, from the C1 outputs, no solves; if the stored outputs lack a term, say so and drop the sentence). The Stubbs–Vandenbussche attribution stays in the results files and may be cited in one sentence.
 - **Fig. 4** (I2): for each instance, one slope panel: the secant slope of V between neighbouring grid points (certified-nonconcave neighbours marked), the baseline's dual, and the three estimators at 0.5·b, b and 1.5·b beside the certified secant s and its interval. The value functions are described in one sentence of text. The y-axes say P-MI objective per unit of bound, not alpha. Two-column width is allowed; the height is about half the S4 version's.
@@ -281,7 +281,7 @@ The mode is set by Isaiah's latest GATE note in PROGRESS.md; absent a note, Mode
 - **Mode A:** the agent drafts II–IV, marks each paragraph `% drafted-by-agent`, and writes red outlines for the rest.
 - **Mode B:** the agent writes no prose, captions, or displayed equations; only scaffolding, generated macros, tables, figures, and red `TODO(Isaiah)` claim→evidence outlines.
 
-Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. The agent never edits text in `proposal/proposal.tex`; the proposal text was drafted with Claude (chat) and edited by Isaiah (docs/AI_USE.md).
+Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. He may ask Claude (chat) for a draft of any of them (Decision 62); he revises it, docs/AI_USE.md logs it, and the acknowledgment says so. Claude Code never writes them. The agent never edits text in `proposal/proposal.tex`; the proposal text was drafted with Claude (chat) and edited by Isaiah (docs/AI_USE.md).
 
 ### 11.7 `tools/spec_check.py`
 

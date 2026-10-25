@@ -2743,3 +2743,93 @@ YES, in a fresh Claude Code session.
   - A5: concavity in θ and u through ui = min(u, θ·ADV/AUM).
   - The kink flag (III-D) is defined but no Results statistic uses it.
 - **Runs not reported.** Mandate (ii) results, N2(b)'s Clarabel and SCS, and default-scaling presolve-off are run but not reported.
+
+## 2026-10-25 — Isaiah: S4c read; Decisions 58–62; GATE R open; run S5 pass 1 (after my draft note)
+- Read:
+  - PROGRESS from "S4c (Claude Code, Opus 5.5): preconditions met; BASE recorded" to the S4c closing entry;
+  - results/checks/REPORT_20261025T180736Z.md (CHECK REPORT round 2, PASS);
+  - the three S4c cold reads (cold_read_20261025T172718Z.md, T173733Z.md, T180530Z.md).
+- Claude (chat) checked the S4c stop against the files on 2026-10-25. Its recommendations below are marked as Claude's; I adopted them on the date of this note, after the S4c results.
+- Pushed the 12 S4c commits (11f8696..f423718) before this note.
+
+### S4c stop, checked by Claude (chat) against the files
+- numbers.tex: 497 macros became 524. 27 were added, none removed, and the only changed value is \TestsPassed (521 to 532).
+- The 65 macros sourced from s3b_analysis.json carry the sha256 of the file Claude (chat) read (339ce5ee…). \SlopeScaleBindDiff (3.2e-7, n = 34) is the larger of 3.2e-7 (9 gated cases) and 2.6e-7 (25 others; s3b item2, binding, max 2.57e-7).
+- DESIGN: Decision 54's edits are present as specified (diff against the S4b version).
+- Commits: the 12 in git_state.txt match the closing entry's list.
+- Pages: the part B column sums to 7.77. Page 8 is about three-quarters full, which agrees. II–IV measure A 5.36 and B 5.86 against 5.3; the forecast with Abstract, I, V and VI at budget is about 8.08 pages, over RP-4's 8.
+- The newest cold read says "mostly self-contained" and finds that the Abstract, Introduction and Conclusion outlines' numbers match Results.
+- Not rechecked by Claude (chat): the code behind Q-a to Q-j. The round-2 checker confirmed all ten.
+
+### GATE R: still open
+- I have not checked the derivations by hand. The target date in the S4c note stands (2026-11-03), and the check will be on the text S4c produced.
+- Until then II–IV stay agent-drafted text (Mode A). The S5 addendum below lets S5 repair FAIL items there, and nothing else.
+- GATE R must be signed before S5 pass 2. Fixes from the hand check then go into my revision of II–IV.
+- docs/AI_USE.md keeps "checks the derivations by hand at GATE R (not yet done)". The AI-use acknowledgment may say I checked them only after I have.
+
+### Corrections (PROGRESS is append-only)
+- (p) Claude (chat)'s A1 spec, and its pre-read, said "by Slater, KKT is sufficient". KKT is sufficient for any convex program; Slater gives strong duality, hence the converse direction (every optimum maximizes the Lagrangian). main.tex:139 states it correctly.
+
+### Decisions
+Recommended by Claude (chat) on 2026-10-25, after reading the S4c results. Adopted by Isaiah on the date of this note, without changes.
+
+- **Decision 58 (pages).**
+  - (a) My GATE R revision of II–IV is the main lever. The cut order is spent, so A5–A9 may become statements plus short arguments then.
+  - (b) S5 pass 1 may reduce Fig. 2's height to about 2.6 in (tests first, text still legible), and reports the page effect. No other layout change is authorized.
+  - (c) I ask Prof. Ferguson at his office hours (Tue 10/27, MacLean 309) whether references count toward the 8 pages, and record the answer with its date. If they don't, the freed space goes to V first (Decision 54(e)).
+  - (d) Decision 54's budgets stand.
+  - (e) Pass 1 re-measures with Section I written. If the forecast is still above 8.0, it reports and I choose the next lever then; the candidates are Fig. 3 at single-column width with 2017-12 only, and a shorter Section I.
+- **Decision 59 (DESIGN §10 against the data).** DESIGN §10's Fig. 1 sentence is corrected, applied verbatim in this commit: the Mom bound is not flat, since its median at zero is 0.968 (c2_points; round-2 checker). The Abstract and Conclusion outlines get the same nuance in my writing: the Mom bound alone costs slightly more at zero than the other families.
+- **Decision 60.** The four-panel Fig. 1 and Table III (N2(b)) stay generated and are out of the report. No test changes (rule 5), as in Decision 55.
+- **Decision 61.** F4's wording stands (see correction (p)).
+- **Decision 62 (Section I).**
+  - Claude (chat) drafted Section I at my request, from the accepted proposal and the section's outline, on 2026-10-25. The proposal was itself drafted by Claude (chat) on 2026-10-21 and reviewed by me.
+  - DESIGN §11.6 gains one sentence, applied verbatim in this commit: I may ask Claude (chat) for a draft of the Abstract, I, V, VI or the acknowledgment; I revise it, docs/AI_USE.md logs it, and the acknowledgment says so. Claude Code never writes them.
+  - The AI-use acknowledgment must say that Section I was drafted by Claude (chat) and revised by me. I revise it before FINAL, and I verify its descriptions of references [1] to [13] against the papers (RUNBOOK §5.5); they follow the proposal's wording and the paper titles.
+
+### S5 addendum (pass 1, and later passes until GATE R is signed)
+Amends RUNBOOK §4 S5. With DESIGN as edited in this commit it conflicts with neither CHECKS nor DESIGN.
+
+**Preconditions.** If any is missing, stop and say so.
+- This note.
+- After it, a note headed "— Isaiah: draft (S5 pass <n>)".
+- A clean tree.
+- Section I of report/main.tex has no red outline (the draft note says so).
+
+Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
+
+**Whose text.**
+- Isaiah's text: every line of report/main.tex outside the agent paragraphs: the Abstract, Section I (marked `% drafted-by-chat` or `% chat-draft revised by Isaiah`), V, VI, the disclosures, the acknowledgment, and all red outlines. S5 changes none of it, with one exception: a mechanical fix for an error that stops `make report` or leaves `??` in the log. Record each fix in PROGRESS with its diff and the error. No outline updates; outline problems go on the issue list. Never touch proposal/.
+- Agent text: the II–IV paragraphs and captions marked `% drafted-by-agent`, while GATE R is open. S5 may change one only to (a) repair a CHECK REPORT FAIL in it, (b) fix a mechanical LaTeX error, or (c) follow a regenerated macro or label. Keep its markers (`% drafted-by-agent`, and `% verify-by-hand` on derivations). Add no derivation content. Record each change in PROGRESS with its diff and reason.
+
+**Allowed.**
+- `make figures` (twice, byte-identical) and `make report`.
+- New macros in src/figures/numbers.py for numbers Section I or the outlines need, tests first, each with source and sha256. No existing macro's value may change; if one would, stop (CLAUDE.md rule 13).
+- Fig. 2's height reduction (Decision 58(b)), tests first, with the page effect reported. Fig. 2 must keep its content and legibility.
+- No experiment runs.
+
+**Protected (ask first).** docs/, report/refs.bib, proposal/, experiments/configs/, tests/ (additions only).
+
+**Steps.**
+1. Full suite on the committed tree. `make figures` twice, byte-identical. `make report`.
+2. spec_check, report, draft mode (the table). Also run final mode as a diagnostic and report only: RP-5 and RP-8; counts of TODO(Isaiah) outlines, red text, `% drafted-by-agent`, `% drafted-by-chat`, `% chat-draft revised by Isaiah` and `% verify-by-hand`; and whether the two chat markers trip RP-8.
+3. Pages: tools/page_sections.py under both accountings, per section, against DESIGN §11.1, with refs:start. Then the forecast: for each part still in outline (Abstract, V, VI, disclosures and AI use), add max(0, budget − measured B) to the total. Flag any of these: II–IV (B) above 5.3, Section I above 0.5, a forecast above 8.0, or a forecast refs:start before page 7. Report Decision 58(b)'s effect.
+4. CHECK REPORT (K30–K40, draft mode) with the result-checker, which also checks:
+   - (a) `git diff BASE HEAD -- report/main.tex` is empty, or equals the changes recorded in PROGRESS;
+   - (b) every number and result claim in Section I maps to a macro, table, figure or result file (K31, K34), and every `\cite` and `\ref` in it resolves;
+   - (c) the statements in Section I about II–IV and Results agree with them, quoted side by side;
+   - (d) for each cited work in Section I, the sentence that describes it, listed (not judged), so that I can verify it against the paper.
+
+   A FAIL item in Isaiah's text is listed as blocking and not fixed. FAIL items in generated outputs, code, or agent text (rule above) are fixed (tests first) and re-checked, at most 3 rounds in all.
+5. Literal list for each numeric literal or number word in Isaiah's prose that is not a macro: the Abstract, Section I, V, VI and the disclosures. For each, give file:line, the literal, and the macro that should replace it with its value; or "no macro; added as \X"; or "no source found".
+6. Claims table for the Abstract, I, V and VI (RUNBOOK §4 S5 step 4).
+7. Cold read of the new PDF, saved verbatim (K40).
+8. Stop. In the PROGRESS entry: BASE and HEAD; one issue list ordered blocking / should-fix / optional, each item with file:line; the page table, the forecast and Decision 58(b)'s effect; the verdicts; macros added; marker counts; anything I must decide.
+
+   Commit. No push, no tag.
+
+### Next
+1. Push, then sign up for a talk slot, and ask Prof. Ferguson about the references (Decision 58(c)).
+2. Insert Section I (Decision 62), read it, and revise it in my own words as time allows.
+3. The draft note, then S5 pass 1.
+4. GATE R, the hand check, by 2026-11-03.
