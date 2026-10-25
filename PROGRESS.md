@@ -2924,3 +2924,4 @@ Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
 ### Decisions needed
 - **63. Page lever (Decision 58(e)).** 9 pages; II–IV 5.70 vs 5.3 and Section I 0.53 vs 0.5. Fig. 2's reduction freed 0.02 page but no line. Candidates named in 58(e): the value-function figure (Fig. 3 in the PDF) at single-column width with 2017-12 only, and a shorter Section I; the main lever remains your GATE R revision of II–IV (58(a)); Prof. Ferguson's answer on references (58(c)) matters only if RP-4's limit is changed to exclude them, which would be a DESIGN §11.1/§11.7 edit.
 - **64. RP-8 and the chat markers.** spec_check's final mode does not flag `% drafted-by-chat`. Should RP-8 also require that no `% drafted-by-chat` remains at FINAL (a DESIGN §11.7 and spec_check change, tests first)?
+- Correction (S5 pass 1 closing entry, Verdicts): the make report log is logs/make_report_s5p1_b_20261025T183547Z.log, not …T183552Z.log.
