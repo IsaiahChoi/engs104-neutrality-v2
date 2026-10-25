@@ -2484,3 +2484,45 @@ Next for me: GATE R (the hand check against S4c's text), then my revision of II�
 
 ### Run S4c
 YES, in a fresh Claude Code session.
+
+## 2026-10-25 — S4c (Claude Code, Opus 5.5): preconditions met; BASE recorded
+- BASE = 11f8696d57264dcfd8bc82fdbd468bdaf1b4a1bd (`git rev-parse HEAD` at session start).
+- Preconditions (S4c addendum): Isaiah's note "S4b read; AI derivation cross-check; Decisions 54–57; run S4c" present; results/checks/derivation_crosscheck_20261025.md present (450 lines); tree clean.
+- Following the S4c addendum; stop at its step 7. No experiment runs; docs/, refs.bib, proposal/, experiments/configs/ untouched; tests/ additions only.
+
+### S4c step 0 — full suite at BASE
+- 521 passed, 1 skipped, 2 xfailed (logs/test_full_20261025T164720Z.log; code at BASE, PROGRESS.md the only modified file).
+
+### S4c step 1 — answers Q-a … Q-j (from code and outputs, before any edit)
+- **Q-a (7.5e-8 vs 1.6e-14).** The 7.5e-8 comes entirely from the α∥ points (rescaled α∥, whose own split gives φ = 1 in exact arithmetic). φ is a ratio computed in floating point (src/alpha/decompose.py:50–54), so for α∥ it comes out as 1 − δ with |δ| up to 5.7e-15 (results/c1/run_20261019T192500Z/c1_idealized.parquet, mandate "factor"). √(1 − φ) amplifies that rounding: √5.66e-15 = 7.5e-8 (2020-03-31, α∥). The numerical retained fraction and the A2 closed form, computed from g (src/opt/closed_form.py:30–44), agree to 8.6e-15. Without α∥ the √(1 − φ) agreement is 1.9e-15 (α_mom) and 0 (α⊥). A* is compared directly against σ_m√(gᵀΣ⁻¹g), so no square root of a near-zero difference enters.
+  - **Finding (no reported number changes).** At 5 of the 12 α∥ points, φ rounds above 1. There `sqrt_1_minus_phi` is NaN, and pandas' max skips it silently in \IdealRetErr (src/figures/numbers.py:240). At 2008-10-31 (α∥), gᵀΣ⁻¹g rounds to −3.95e-30 (recomputed with src.opt.closed_form.sigma_solve), so `A_cf` is NaN, and \IdealZeroAbs's max skips it (numbers.py:244). With the clipped closed forms √max(0, ·), \IdealRetErr stays 7.5e-8 over all 36 points and \IdealZeroAbs stays 3.6e-17 over all 12: no number changes. S4c makes the macro code clip explicitly, tests first, so that the stated n is the n compared (step 2 table).
+- **Q-b (8279 vs 8399).** Both use the same 200 random toys (seed 20261019: experiments/configs/core.yaml:18–19 and k29c.yaml:9).
+  - K9 (results/core summary.json K9.all): 2 fixed + 200 random = 202 toys × 41 grid points on [0, b_max] (b = 0 included; experiments/run_core.py:467) = 8282, minus 3 band points (Decision 22) = 8279 value comparisons.
+  - K29c (results/k29c/run_20261020T225805Z/summary.json toys): the 200 random toys only, at every grid point b > 0 (40) plus b = ℓ and b = w° (experiments/run_k29c.py:51–53) = 42 each = 8400 points; 1 failed relaxation (gap) is excluded, giving 8399 checked.
+- **Q-c ("predicted ≤ 10⁻⁶" for P1).** Isaiah's GATE I note, "S3b scope" item 3, predictions: "P1: |μ_fixed − s|/s ≤ 1e-6" (PROGRESS, committed 3edd5bd, 2026-10-20 22:23 −0400). That is before tools/s3b_analysis.py was written (651fb4f, 22:45; P1_TOL = 1e-6 at tools/s3b_analysis.py:32) and before the S3b analysis ran. The note's header says items written after the chat had read part of the data say so; item 3 does not.
+- **Q-d (C2 families, grids; the 18 K15 keys).** C2_GRIDS (experiments/sweep.py:31–41; DESIGN §7 table):
+  - dollar {off, 0.10, 0.05, 0.02, 0.01, 0}; beta {off, 0.20, 0.10, 0.05, 0.02, 0};
+  - each style factor and all styles jointly {off, 0.40, 0.20, 0.10, 0.05, 0.02, 0};
+  - sector {off, 0.08, 0.04, 0.02, 0.01, 0}; gross {off, 4, 3, 2, 1.5, 1};
+  - position u {off, 0.06, 0.03, 0.015}; liquidity θ {off, 0.10, 0.05, 0.025}.
+  - α_mom runs all 12 families (5 single styles + all styles jointly + the 6 others); α⊥ and α∥ run the 7 factor families (c2_points.parquet; 2040 points).
+  - K15's 18 keys (c1_envelope.parquet; 115 checks): the families dollar, liquidity, position, sector and style (all jointly); the 11 sectors sector:0 … sector:10; and style:CMA and style:Mom.
+- **Q-e (the 12 "gated" and the 36 "other").**
+  - Gated (CHECKS K29b; integer.yaml k29b): the first 3 I1 instances by sorted id, 2009-03_N250 at f = 0.25, 0.5, 0.75 (K = 47, 94, 141), × the 4 I1 bounds, at δ = 10%: 12 cases, 9 certified binding (s3_analysis.json i1.k29b).
+  - Other (S3b item 2, K29b-ext; s3b_analysis.json item2_k29b_ext): the 6 instances at 2017-12 and 2020-03 at δ = 10% (24 cases) and the 12 cases at 2017-12 at δ = 5%: 36 cases, 25 certified binding.
+  - All 48 lie within K29b's criterion. Over the 9 + 25 = 34 certified-binding cases, the largest relative difference is 3.2e-7 (gated) and 2.6e-7 (other).
+- **Q-f (the I2 selection secants).**
+  - The secants are medians of the point slope s = (V₊ − V₋)/(2δ) over the 9 I1 instances (3 dates × 3 f) at δ = 10%, all cases, binding or not (src/figures/numbers.py:394–401 on i1_estimators.parquet; the rule is integer.yaml:39–40, Decision 40).
+  - Units: P-MI objective in original units (monthly alpha − λ*·variance − costs) per unit of bound. The sector bound is in weight (fraction of AUM) and the Mom bound in loading units, so 1.364e-3 and 1.316e-3 are in different units.
+  - Ranked by median elasticity s·b/|V| instead, the Mom bound comes first (0.0271, against 0.0200 for sector). Per instance, sector's elasticity exceeds Mom's at 6 of 9.
+  - The selection used results/i1/run_20261020T231007Z, since superseded by run_20261021T001423Z. The two runs' s are bit-identical (max |Δs| = 0), so the choice stands.
+- **Q-g (N2(b)'s "scaled").** s = choose_s_obj(A*) of the root-found QP (experiments/run_n2.py:111; src/opt/integer.py:96–105, |A*|·s ∈ [1, 10)). It is 10³ at all 5 dates (n2_convex.parquet obj_scale; A* = 2.5–3.8e-3/month). P-MI's s_obj is 10⁴.
+- **Q-h (Gurobi's MIQCP method in a log).** None exists. Every Gurobi environment is created with OutputFlag 0 (src/opt/gurobi_env.py:21; CLAUDE.md rule 10). No "Gurobi Optimizer version" banner appears in logs/ or results/, and n3_probes.parquet records only the parameters set. N3's "the default is outer approximation" therefore remains an inference from bound equality (29/36 and 30/36).
+- **Q-i (K13's 1.5e-15).** \KThirteen = max of three comparisons (experiments/run_core.py:583–588, 636–638; results/core summary.json K13):
+  - the weights, ‖w_PMI − w_PRB‖₂/‖w_PRB‖₂ = 1.5e-15 (the maximum);
+  - P-MI's net alpha after costs at its weights (exact_objective with λ = 0) against P-RB's A*: 4.4e-16;
+  - P-MI's penalized V against the mean-variance penalized objective at λ*: 2.2e-16.
+  - None compares V with A*. No reported number reads the baseline's value as P-RB's: I1 and I2 use baseline kind fixed_lambda (integer.yaml baseline_kinds), whose value U(b) is in P-MI's penalized units (src/opt/baseline.py:5–7). \BaseSec*, \ITwoSec*, Fig. 4 and "the P-MI value lies below the baseline value" all compare penalized objectives; \VolBase* are volatilities.
+- **Q-j (slack risk row).** If vol(λ_min) ≤ target, the solver returns the QP at λ_min = 10⁻⁶ (base_mandate.yaml lambda_min), not λ = 0, and records risk_binding = False (src/opt/risk_budget.py:11–12, 43, 88, 124–125). In C1 this happens at 4 of 36 base solves, all α∥: 2011-08, 2013-06, 2015-08 and 2017-12, with vol 2.2–2.7%/yr (c1_points.parquet).
+  - Derivation (mine, for GATE R): the returned w is P-RB-feasible, and for any P-RB-feasible w′, f(w) − λ_min q(w) ≥ f(w′) − λ_min q(w′). So A*_QP ≥ A*_PRB − λ_min σ_m² = A*_PRB − 7.5e-11, and A*_QP ≤ A*_PRB by feasibility: the reported A* is within λ_min σ_m² of P-RB's.
+  - No P-MI instance uses these points: P-MI's λ* is from α_mom.
