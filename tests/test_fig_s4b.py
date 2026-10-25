@@ -107,3 +107,4 @@ def test_s4b_macros_carry_the_recorded_values(tmp_path):
     assert v["HedgedDistinct"] == "4" and v["BaseOnlyBind"] == "1" and v["KFifteenKeys"] == "18"
     assert v["ConeTolUnscaled"] == "0.16" and v["ConeTolRescaled"] == r"\ensuremath{5.8\times10^{-4}}"
     assert v["ClassPerspPOneFiveMax"] == "3.6" and v["ClassBigMPOneFiveMax"] == "5.4"
+    assert v["NThreeFeasTol"] == r"\ensuremath{10^{-9}}"           # CHECK REPORT r1, K31 (main.tex:262)

@@ -657,6 +657,8 @@ def _s4b_macros(M: _M) -> None:
     M.add("NThreeRescSpread", sig(E["E4"]["max_spread"]), nf)
     cfg3, p3 = _cfg("n3")
     M.add("NThreeETwoTol", sig(cfg3["expectations"]["E2_atol_rel"]), p3)
+    ft = {pr["params"].get("FeasibilityTol") for pr in cfg3["probes"]["perspective"]} - {None}
+    M.add("NThreeFeasTol", pow10(float(ft.pop())), p3)
     # censored effort (S4b addendum item g): k of n stopped and the range of the rest
     n1f = latest_done("n1") / "n1_solves.parquet"
     ns = pd.read_parquet(n1f)
