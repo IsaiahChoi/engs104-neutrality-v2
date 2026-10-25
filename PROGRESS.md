@@ -2833,3 +2833,11 @@ Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
 2. Insert Section I (Decision 62), read it, and revise it in my own words as time allows.
 3. The draft note, then S5 pass 1.
 4. GATE R, the hand check, by 2026-11-03.
+
+## 2026-10-25 — Isaiah: draft (S5 pass 1)
+- Sections changed since the S4c build (f423718): Section I only. I replaced its red outline with Claude (chat)'s draft (Decision 62); the commit is titled "Isaiah: Section I from the chat draft (Decision 62)".
+- Revision status of Section I: not yet revised by me; I will revise it before S5 pass 2
+- Paragraph markers: Section I's paragraphs are marked `% drafted-by-chat`. I replace a marker with `% chat-draft revised by Isaiah` when I have revised that paragraph. II–IV are unchanged and still agent-drafted (GATE R is open).
+- Numbers I typed by hand: none. Section I uses only macros from numbers.tex.
+- Mode: draft. spec_check and CHECK REPORT in draft mode.
+- Run S5 pass 1: YES, under the S5 addendum in my note "— Isaiah: S4c read; Decisions 58–62; GATE R open; run S5 pass 1 (after my draft note)".
