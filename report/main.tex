@@ -43,16 +43,19 @@
 
 \section{Introduction}
 \label{sec:intro}
-\begin{outline}{I, 0.6 page}
-\item Motivation and significance: a multi-manager platform imposes neutrality to protect its other books; each constraint costs the pod expected alpha; the dual is the price of that constraint $\rightarrow$ Sec.~\ref{sec:setting}.
-\item Related work: fundamental law and transfer coefficient \cite{grinold2000active,clarke2002portfolio}; constraint attribution \cite{stubbs2010constraint}; factor alignment \cite{lee2008risk,ceria2012factor}; realistic shorts \cite{jacobs2005portfolio}; perspective reformulations \cite{frangioni2006perspective,gunluk2010perspective}; integer sensitivity \cite{geoffrion1977parametric,wolsey1981integer}; sparse portfolios \cite{bertsimas2022scalable}; course texts \cite{boyd2004convex,wolsey2020integer}.
-\item Questions Q1--Q3 $\rightarrow$ Sec.~\ref{sec:questions}.
-\item Contribution: costs at equal risk via duality at $\lambda^*$, with the alignment closed form $\sqrt{1-\varphi}$ $\rightarrow$ A1--A4, Fig.~\ref{fig:alignment}.
-\item Contribution: certified secant intervals that test integer sensitivity estimators against solver error $\rightarrow$ A8, Table~\ref{tab:i1}, \WidthMed.
-\item Contribution: a support-stability account of when the fixed-integer dual is exact $\rightarrow$ \PredOneMax\ (P1), \PredThreeMed\ (P3).
-\item Contribution: the perspective model's two scaling mechanisms kept apart, and the rescaled formulation (rows and cones together) as the fix $\rightarrow$ A9, Sec.~\ref{sec:results-q3}, \NThreeEOneDef\ of \NThreeN, \ConeRescMax.
-\item Project type: problem formulation, reusing published formulations in a new setting.
-\end{outline}
+% drafted-by-chat (Claude, claude.ai chat, 2026-10-25) from the accepted proposal and this section's outline; Isaiah revises (Decision 62)
+A multi-manager platform allocates capital to long/short equity teams, called pods. To keep one pod's risk from piling onto the others' books, it caps the pod's volatility (\RiskBudgetPct\%/yr here) and imposes a neutrality mandate on its dollar, beta, style and sector exposures. Every rule costs the pod expected alpha, and the platform reads each constraint's dual variable as that cost. In a convex program the dual is the derivative of the optimal value with respect to the bound wherever it is unique (A5), so the reading is exact. With a cardinality limit and a minimum position the program is mixed-integer, continuous duals carry no such guarantee, and a misread dual can lead the platform to loosen the wrong rule.
+
+% drafted-by-chat
+Clarke, de Silva and Thorley extend the fundamental law of active management with a transfer coefficient that measures how constraints dilute a forecast \cite{grinold2000active,clarke2002portfolio}, and Stubbs and Vandenbussche attribute a portfolio to its constraints through their duals \cite{stubbs2010constraint}. Lee and Stefek show that misaligned risk and alpha factors distort optimized portfolios \cite{lee2008risk}, and Ceria, Saxena and Stubbs frame such alignment problems \cite{ceria2012factor}; realistic shorts \cite{jacobs2005portfolio} and sparse portfolios \cite{bertsimas2022scalable} are related modeling work. Perspective cuts and reformulations strengthen mixed-integer programs with indicator variables, including portfolios with position thresholds \cite{frangioni2006perspective,gunluk2010perspective}. Geoffrion and Nauss survey postoptimality analysis for integer programs \cite{geoffrion1977parametric}, and Wolsey shows that integer duality needs price functions rather than prices \cite{wolsey1981integer}; the course texts give the background \cite{boyd2004convex,wolsey2020integer}.
+
+% drafted-by-chat
+This paper prices each constraint at equal risk, through the risk row's multiplier, and measures how far continuous sensitivity estimators drift once integrality enters. Q1 asks which constraints bind at a fixed risk budget and what each costs; Q2, how well continuous tools predict a constraint's true marginal cost under a cardinality limit and a minimum position; Q3, how big-M and perspective formulations compare and how solver tolerances interact with scaling (Sec.~\ref{sec:questions}). The contributions are:
+(i) costs at equal risk by duality at $\lambda^*$, with the closed form $\sqrt{1-\varphi}$ for the alpha kept under full factor neutrality (A1--A4): at least \IdealRetMomMin\ for momentum, while the liquidity cap carries the cost (median elasticity \ELiqMed);
+(ii) certified secant intervals, of median relative width \WidthMed, that test the estimators against solver error (A8);
+(iii) when the fixed-integer dual is exact: error at most \PredOneMax\ on a fixed support and active set, median \PredThreeMed\ when the support changes;
+(iv) the perspective model's two scaling mechanisms, kept apart: a root bound consistent with outer approximation stopping early (\NThreeEOneDef\ of \NThreeN\ instances) and a cone tolerance that inflates incumbents by up to \ConeDefMax\ of the objective, against \ConeRescMax\ when rows and cones are rescaled together (A9).
+The project is a problem-formulation study on one universe, period and risk model; it is not a backtest and makes no performance claim.
 
 \section{Problem Setting}
 \label{sec:setting}
