@@ -2593,3 +2593,153 @@ YES, in a fresh Claude Code session.
 - Abstract 0.21 (0.2), I 0.31 (0.5), V 0.62 B (0.7), VI 0.14 (0.2), disclosures and AI use 0.33 (0.3), references 0.29 (0.3). Total 8 pages; refs:start p. 8.
 - Forecast for the outline parts, Σ max(0, budget − measured B): I +0.19, V +0.08, VI +0.06, Abstract 0, disclosures 0, for +0.33 page. At the current II–IV the report would need about 8.0 pages before float slack, at or over RP-4's 8.
 - FACTS: all 44 (file, sha256) pairs match; no hashed source changed, so it was not regenerated (proposal/ protected).
+
+## 2026-10-25 — S4c closing entry (Claude Code, Opus 5.5): CHECK REPORT round 2 PASS; stopped at the addendum's step 7
+- **BASE** 11f8696. **HEAD**: the commit with this entry; the build checked is c222e53. Not pushed, not tagged. No experiment runs (RUN_LOG unchanged).
+- Commits since BASE: 22573c2, 30aa635, f89e6bc, b71eb4e, f733bc8, af80c25, 71b79e2, 858ee31, 9e00f47, 68066f3, c222e53, and this one. (The steps 2–5 entry's commit list, "9c… (see git log; build)", was garbled; this list is authoritative.)
+
+### Verdicts
+- **CHECK REPORT** (K30–K40 draft mode, plus every F-item, open item, Q-answer and S4c macro), a new CHECK:
+  - Round 1, results/checks/REPORT_20261025T174432Z.md: **FAIL**, 3 items, all fixed in 68066f3.
+    1. main.tex:192 called the Mom bound flat; c2_points gives a median 0.968 at zero.
+    2. main.tex:202 had lost the n behind the idealized agreement (my cut 5).
+    3. main.tex:266 had lost the n and statistic type of the N2(b) barrier maxima (my cut 1).
+  - Round 2, results/checks/REPORT_20261025T180736Z.md: **PASS**, at c222e53.
+    - Every macro recomputes independently (524, 48 sha pairs).
+    - make figures is byte-identical; the suite gives 532 passed, 1 skipped, 2 xfailed; rule checks clean.
+    - F1–F13, the open items and Q-a … Q-j are confirmed true.
+- **Cold reads** (verbatim), verdict MOSTLY self-contained each time; no mathematical error found in any:
+  - cold_read_20261025T172718Z.md (af80c25);
+  - cold_read_20261025T173733Z.md (9e00f47);
+  - cold_read_20261025T180530Z.md (c222e53, the current build).
+  - The first read found real errors in my S4c wording, fixed in 858ee31 before round 1: A1's Slater/KKT logic, A1's root existence, the A2 step, and captions cut too far.
+- **spec_check** (report, draft, c222e53): PASS. RP-1–4 (8 pages), RP-6, RP-7 (19 cited), RP-9, RP-10, RP-11; RP-5 and RP-8 N/A.
+- **Suite**: 532 passed, 1 skipped, 2 xfailed (logs/test_full_20261025T175152Z.log); \TestsPassed = 532. tests/ changed only by adding tests/test_s4c.py (11 tests).
+
+### F1–F13 (report/main.tex lines at c222e53)
+| item | line | change | source |
+|---|---|---|---|
+| F1 | 70 | φ(α) on α's own unrescaled split, rescaling-invariant; rescaled α⊥, α∥ are signals | src/alpha/decompose.py:50–65 |
+| F2 | 159 | jump max(0, aℓ − λdℓ²); for b < ℓ big-M slope a − 2λdb if b < w°, else 0; perspective a − λdℓ if a > λdℓ, else 0; ℓ/2 < b < ℓ comparison | derivation; src/opt/toy.py |
+| F3 | 99, 180 | baseline = P-RB's optimizer and duals, value A* − λ*σ_m²; K13's quantity named (weights) | Q-i |
+| F4 | 139 | partial Lagrangian; uniqueness, continuity, monotonicity, vol → 0; root ⇒ KKT (sufficient for convex); Slater ⇒ strong duality ⇒ every optimum maximizes the Lagrangian; λ* ≤ λ_min case within \SlackValueBound | Q-j; src/opt/risk_budget.py |
+| F5 | 167 | "certified" conditional on V feasible (checker at \VerdictTol) and Ū_eff valid (slack a margin); K23 0/144; counter-case \FalseCertGap | src/opt/integer.py:81; s3_analysis.json; n2_miqp |
+| F6 | 174–176 | η, 8η noise scales under the ε premise; `% verify-by-hand` | derivation |
+| F7 | 171 | q_i = w_i² at an optimum (minimized, not bounded); scale estimates; N2(a) \NTwoDefScaledOpt of \NTwoDefScaledN OPTIMAL | s3_analysis.json n2.miqp |
+| F8 | 143 | A full row rank; g ≠ 0; A*_eq; α'w* = g'w*; g'Σ⁻¹g = g'Σ⁻¹α step | derivation |
+| F9 | 147 | inverse-free step, no assumption on F; B full column rank | derivation |
+| F10 | 151, 84 | derivative where multipliers unique; one-sided at cap ties; e_p for A* > 0 | derivation |
+| F11 | 155 | same (w, z) and linking rows; ζ ∈ (0,1]; w = 0 at ζ = 0; λ* ≥ 0 | derivation |
+| F12 | 134 | basic solution, exact up to \QPTol | src/opt/continuous.py |
+| F13 | 79, 99, 155, 171, 176; Table I | s_j → h_j (sector bound; table1_mandate), s_i → q_i, s_i′ → q_i′ (perspective epigraph); s, ŝ, s± kept for slopes | h, q unused elsewhere |
+
+### Open items (S4b closing entry) and step-3 additions (lines at c222e53)
+- **II.**
+  - φ wording (70).
+  - Jargon:
+    - name, ex-ante volatility, σ_m = 3%/√\MonthsPerYear, five styles, \NSectors sectors, c per month vs per year, u and θ (62);
+    - excess returns (66);
+    - key (84);
+    - arm, I1 above-budget count \VolIOneAbove (99);
+    - certified gap (167);
+    - gated (180);
+    - best known value (250);
+    - probe, "collapse" replaced by the E3 counts (263);
+    - risk-row normalization (266).
+- **III.**
+  - MIPGap for I1/I2 and N1 (134).
+  - 8279 vs 8399 (180; Q-b).
+  - "predicted ≤ 10⁻⁶" as "the relative \PredOneTol predicted before the analysis ran" (234; Q-c).
+  - s_obj rule (134) and I1-constraint rule (123).
+- **IV.**
+  - Slope-scale sentence rewritten and moved to III-E (180; Q-e).
+  - P1/P2/P3 per step (234).
+  - I2 near-tie: units and elasticity ranking (237; Q-f).
+  - C2 grids (123) and the 18 keys (212; Q-d).
+  - Mom bound stated at its tightest point; "four families" gone (192).
+  - Rescaled-arm confound, and "consistent with outer approximation; logs off" (263; Q-h).
+  - Outlines (40, 53, 297) say "rescaled formulation (rows and cones together)".
+- **IV-C additions** (263, 266):
+  - method 0 below plain, default looser than plain;
+  - sample labels n = \NOneCell vs \NThreeN;
+  - E3 \NThreeRatioIn / \NThreeCollapsed / \NThreeRatioAbove, max \NThreeRatioMax;
+  - N2(b) in one sentence, with n = \NTwoBarrierN and the scale \NTwoConvexScale (Q-g).
+- **Q-a in IV-A** (202): the n restored, and the cause of 7.5e-8 stated.
+
+### Q-a … Q-j
+- The answers are in the "S4c step 1" entry above. Correction (steps 2–5 entry): 6 NaN closed-form A* and 5 NaN √(1 − φ); \IdealZeroN = 24.
+- The round-2 checker confirmed all ten against code and outputs.
+
+### Macros added (27; all tested in tests/test_s4c.py; no existing value changed except \TestsPassed)
+- Q-a / F4: IdealRetErrNonPar, IdealPhiRound (ideal_errors now clips the NaN closed forms), SlackValueBound.
+- F5 / F7: VerdictTol, NTwoDefScaledOpt, NTwoDefScaledN.
+- Q-e: SlopeScaleN, SlopeScaleWithin, SlopeScaleBindN, SlopeScaleBindDiff.
+- P-classes: SupBindFive.
+- II jargon: NSectors, MonthsPerYear.
+- Q-f: NearTieElSector, NearTieElMom, NearTieInst.
+- E3: NThreeRatioAbove, NThreeRatioMax, NThreeBandHi.
+- Q-g, N2(b): NTwoConvexScale, NTwoBarrierN.
+- Q-b: KTwentyNineCToyFailed.
+- III rules: SObjProxyMin, SObjProxyMax, IOneNCons.
+- Q-d: CTwoGrids.
+- Mom bound: CTwoMomTight.
+
+### Pages (c222e53; results/scratch/pages_s4c_r2.txt; confirmed by the round-2 checker)
+| part | A | B | budget (Decision 54) |
+|---|---|---|---|
+| Abstract | 0.21 | 0.21 | 0.2 |
+| I | 0.31 | 0.31 | 0.5 |
+| II | 1.37 | 1.37 | 1.3 |
+| III | 1.93 | 1.93 | 1.5 |
+| IV | 2.06 | 2.56 | 2.5 |
+| V | 1.14 | 0.64 | 0.7 |
+| VI | 0.14 | 0.14 | 0.2 |
+| Disclosures and AI use | 0.33 | 0.33 | 0.3 |
+| References | 0.28 | 0.28 | 0.3 |
+- **II–IV: A 5.36, B 5.86 against 5.3, over by 0.56 after the whole cut order (1)–(10).**
+- Total 8 pages; refs:start p. 8.
+- **Forecast** for the parts still in outline, Σ max(0, budget − B): I +0.19, V +0.06, VI +0.06, Abstract 0, disclosures 0, for **+0.31**.
+  - Sum of B now: 7.77 pages, so about 8.1 forecast. That is over RP-4's 8 pages before float slack, unless II–IV shrink or references stop counting (Decision 54(e)).
+
+### Decisions needed
+- **58. Page budget, after the full cut order.**
+  - II–IV measure B 5.86 against 5.3. The F-items and open items added about 0.25 page, mostly in III (Analysis 0.94).
+  - Every listed cut is applied. What remains is either "never cut" content or layout outside the cut list: Fig. 2's height (3.4 in), Fig. 4's and Fig. 5's heights, or the experiment table's width.
+  - Options:
+    - (a) let your GATE R revision shorten II–IV (e.g. A5–A9 to statements plus one-line proofs, moving detail to an appendix-free summary);
+    - (b) authorize figure-height reductions (Fig. 2 to about 2.6 in, which saves about 0.05 page);
+    - (c) wait for Prof. Ferguson's answer on references (Decision 54(e));
+    - (d) raise II–IV's budget, taking the space from V or I.
+- **59. DESIGN §10 vs data (CLAUDE.md precedence: recorded here; DESIGN not edited).**
+  - DESIGN §10 (docs/DESIGN.md:223) says "The other families, the Mom bound among them, are flat for α_mom".
+  - c2_points (α_mom, D12, n = 12) gives the Mom bound at zero a median 0.968 (0.921–0.997), against ≥ 0.994 for the families that are flat and 0.961 for sector.
+  - The report follows the data: main.tex:192 states \CTwoMomTight beside the three Fig. 1 panels. That satisfies §10's "the text gives their tightest-point values", but contradicts its "flat".
+  - This supersedes the steps 2–5 table's "Mom among the flat ones".
+  - Please correct the DESIGN sentence, or choose to restore a Mom panel (Fig. 1 in four panels, the S4b version, still generated).
+  - The Abstract outline (main.tex:38: "factor neutrality is nearly free"; "liquidity cap, sector bounds and trading costs carry the cost") may need the same nuance in your revision.
+- **60. The four-panel Fig. 1 and Table III.** Both stay generated (pinned by tests/test_fig_s4b.py; Decision 55's pattern) but are out of the report. Retiring them needs a test change.
+- **61. F4 wording deviates from the addendum's spec.** The spec said "by Slater, KKT is sufficient". The cold reader correctly noted that KKT is sufficient for any convex program; Slater gives strong duality, hence the converse direction. main.tex:139 states it that way.
+
+### Open for your GATE R revision (advisories from the round-2 checker and the c222e53 cold read; not FAILs)
+- **Internal labels.** Replace K29b, K29c, CHECKS, S2d, "misses", "objective-scale pairs" and "negative controls" with what they stand for. The K29b tolerance is 1e-5·|ŝ| + 2N.
+- **Unclear samples.**
+  - Table II (experiments): the solve-count breakdown, "3 reruns" and "reference".
+  - f for the I2 K's (f = 0.5).
+  - The "144 pairs" (K22).
+  - The I1 "violation" meaning (combined V above Ū_eff).
+  - Work units.
+  - "dollar at 10" medians over all 12 dates.
+  - Presolve-off 6.0e-4 (N = 250, all tightness levels) vs 4.4e-4 (base, all N).
+- **Captions and wording.**
+  - Table III (I1): the caption says certified-binding, but its baseline row has n = 24, including \BaseOnlyBind; restore "baseline: its dual against its own secant".
+  - Fig. 3: bp/month vs the text's decimals.
+  - Fig. 4: lines are medians.
+  - "(Fig. 1)" now precedes the Mom value, which is not plotted.
+  - "a median of at least" (192).
+  - "relative error" wording for N2(b) (266).
+- **Terms.** Define outer approximation (polyhedral cuts approximating the cones) and gloss the finance terms (books, adjusted prices, IC, winsorize, backtest, loading units).
+- **Derivations.**
+  - A2/A3 not separated; the mandate (ii) closed form not written out.
+  - A5: concavity in θ and u through ui = min(u, θ·ADV/AUM).
+  - The kink flag (III-D) is defined but no Results statistic uses it.
+- **Runs not reported.** Mandate (ii) results, N2(b)'s Clarabel and SCS, and default-scaling presolve-off are run but not reported.
