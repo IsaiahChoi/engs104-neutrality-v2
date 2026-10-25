@@ -209,6 +209,27 @@ def _validation_macros(M: _M) -> None:
 
 # ----- IV-A: Q1 -----
 
+def ideal_errors(ide: pd.DataFrame) -> dict:
+    """Idealized C1 (A2–A4) against the closed forms, over every point (S4c, Q-a). For α∥, whose
+    own split gives φ = 1 and gᵀΣ⁻¹g = 0 in exact arithmetic, the computed φ and gᵀΣ⁻¹g can round
+    past their bounds, so the stored √(1 − φ) or closed-form A* is NaN; both are clipped,
+    √max(0, ·) (a NaN A* is the square root of a negative rounding, so 0), instead of being
+    skipped by max. A NaN closed form for any other alpha raises."""
+    bad = ide["A_cf"].isna() & (ide["alpha"] != "par")
+    if bad.any():
+        raise ValueError(f"closed-form A* undefined outside α∥: {ide.loc[bad, ['alpha']].to_dict('records')}")
+    a_cf = ide["A_cf"].fillna(0.0)
+    fac = ide[ide["mandate"] == "factor"]
+    ret = (fac["retained_num"] - np.sqrt(np.maximum(0.0, 1.0 - fac["phi"]))).abs()
+    nz = a_cf.abs() > 1e-12
+    par = ide[ide["alpha"] == "par"]
+    return {"n_factor": len(fac), "ret_err": float(ret.max()),
+            "ret_err_non_par": float(ret[fac["alpha"] != "par"].max()),
+            "phi_round": float((1.0 - par["phi"]).abs().max()) if len(par) else 0.0,
+            "n_nonzero": int(nz.sum()), "a_rel": float((ide["A_num"] / a_cf - 1)[nz].abs().max()),
+            "n_zero": int((~nz).sum()), "zero_abs": float((ide["A_num"] - a_cf)[~nz].abs().max())}
+
+
 def _q1_macros(M: _M) -> None:
     c1 = latest_done("c1")
     pf = c1 / "c1_points.parquet"
@@ -234,14 +255,16 @@ def _q1_macros(M: _M) -> None:
     idf = c1 / "c1_idealized.parquet"
     ide = pd.read_parquet(idf)
     fac = ide[ide["mandate"] == "factor"]
-    nz = ide["A_cf"].abs() > 1e-12
+    r = ideal_errors(ide)
     M.add("IdealN", i(len(ide)), idf)
-    M.add("IdealFactorN", i(len(fac)), idf)
-    M.add("IdealRetErr", sig((fac["retained_num"] - fac["sqrt_1_minus_phi"]).abs().max()), idf)
-    M.add("IdealARelErr", sig((ide["A_num"] / ide["A_cf"] - 1)[nz].abs().max()), idf)
-    M.add("IdealNonzeroN", i(nz.sum()), idf)
-    M.add("IdealZeroN", i((~nz).sum()), idf)
-    M.add("IdealZeroAbs", sig((ide["A_num"] - ide["A_cf"])[~nz].abs().max()), idf)
+    M.add("IdealFactorN", i(r["n_factor"]), idf)
+    M.add("IdealRetErr", sig(r["ret_err"]), idf)
+    M.add("IdealRetErrNonPar", sig(r["ret_err_non_par"]), idf)
+    M.add("IdealPhiRound", sig(r["phi_round"]), idf)
+    M.add("IdealARelErr", sig(r["a_rel"]), idf)
+    M.add("IdealNonzeroN", i(r["n_nonzero"]), idf)
+    M.add("IdealZeroN", i(r["n_zero"]), idf)
+    M.add("IdealZeroAbs", sig(r["zero_abs"]), idf)
     M.add("IdealRetMomMin", sig(fac[fac["alpha"] == "mom"]["retained_num"].min(), 3), idf)
     from tools.make_facts import attribution_shares
     af = c1 / "c1_attribution.parquet"
@@ -724,9 +747,79 @@ def _s4b_macros(M: _M) -> None:
     M.add("NTwoRescGapScaled", sig(ar["perspective_rescaled/s10000"]["gap_eff"]["median"]), sf)
 
 
+# ----- S4c: macros for the derivation fixes and open items (S4c addendum steps 2–3) -----
+
+def _s4c_macros(M: _M) -> None:
+    from src.opt import risk_budget
+    M.add("SlackValueBound", sig(risk_budget.LAMBDA_MIN * risk_budget.SIGMA_M ** 2), "src/opt/risk_budget.py")
+    sf = ROOT / "results" / "s3_analysis" / "s3_analysis.json"
+    J = _json(sf)
+    st = J["n2"]["miqp"]["arms"]["perspective/s10000"]["statuses"]       # F7
+    M.add("NTwoDefScaledOpt", i(st.get("OPTIMAL", 0)), sf)
+    M.add("NTwoDefScaledN", i(sum(st.values())), sf)
+    k29, x2 = J["i1"]["k29b"], _json(ROOT / "results" / "s3b_analysis" / "s3b_analysis.json")["item2_k29b_ext"]
+    bf = ROOT / "results" / "s3b_analysis" / "s3b_analysis.json"
+    M.add("SlopeScaleN", i(k29["n"] + x2["all"]["n"]), bf)                # Q-e: gated + the rest
+    M.add("SlopeScaleWithin", i(k29["n"] - k29["misses"] + x2["all"]["n"] - x2["all"]["misses"]), bf)
+    M.add("SlopeScaleBindN", i(k29["binding_keys"]["n"] + x2["binding"]["n"]), bf)
+    M.add("SlopeScaleBindDiff", sig(max(k29["binding_keys"]["max_rel_diff"], x2["binding"]["max_rel_diff"])), bf)
+    s3 = _json(bf)["item3_support"]
+    M.add("SupBindFive", i(sum(s3["counts_binding_by_delta"]["d0.05"].values())), bf)
+    rep = ROOT / "results" / "data_report.md"
+    M.add("NSectors", re.search(r"GICS sectors: (\d+)", rep.read_text())[1], rep)
+    ef = latest_done("i1") / "i1_estimators.parquet"                      # Q-f
+    e = pd.read_parquet(ef)
+    e = e[e["rel_delta"] == 0.10].assign(lab=lambda x: x["key"] + "@" + x["b"].map(lambda v: f"{v:g}"),
+                                         el=lambda x: x["s"] * x["b"] / x["V"].abs())
+    g = e.groupby("lab")
+    M.add("NearTieElSector", sig(g["el"].median()["sector@0.02"]), ef)
+    M.add("NearTieElMom", sig(g["el"].median()["style:Mom@0.025"]), ef)
+    n = g["instance"].nunique()
+    if n["sector@0.02"] != n["style:Mom@0.025"]:
+        raise ValueError("the I2 selection compares different instance sets")
+    M.add("NearTieInst", i(n["sector@0.02"]), ef)
+    nf = latest_done("n3") / "summary.json"                               # E3
+    E3 = _json(nf)["expectations"]["E3"]
+    M.add("NThreeRatioAbove", i(E3["n"] - E3["n_in_band"] - E3["n_collapsed"]), nf)
+    M.add("NThreeRatioMax", sig(E3["max"]), nf)
+    cf = latest_done("n2") / "n2_convex.parquet"                          # Q-g
+    sc = set(pd.read_parquet(cf).query("scaled == True")["obj_scale"])
+    if len(sc) != 1:
+        raise ValueError(f"N2(b) uses several objective scales: {sc}")
+    M.add("NTwoConvexScale", pow10(sc.pop()), cf)
+    ks = latest_done("k29c") / "summary.json"                             # Q-b
+    M.add("KTwentyNineCToyFailed", i(_json(ks)["toys"]["kinds"].get("failed", 0)), ks)
+    # numbers the S4c text states (K31)
+    months = (risk_budget.TARGET_VOL / risk_budget.SIGMA_M) ** 2
+    if not math.isclose(months, round(months), rel_tol=1e-12):
+        raise ValueError(f"σ_m is not the annual budget over √(whole months): {months}")
+    M.add("MonthsPerYear", i(round(months)), "src/opt/risk_budget.py")
+    from src.opt import integer
+    M.add("VerdictTol", pow10(integer.VERDICT_TOL), "src/opt/integer.py")
+    cfg3, p3 = _cfg("n3")
+    M.add("NThreeBandHi", num(cfg3["expectations"]["E3_band"][1]), p3)
+    pp = latest_done("pilot", status="pilot") / "summary.json"
+    so = _json(pp)["P1"]["s_obj"]
+    M.add("SObjProxyMin", sig(so["proxy_min_scaled"]), pp)
+    M.add("SObjProxyMax", sig(so["proxy_max_scaled"]), pp)
+    ic, ip = _cfg("integer")
+    M.add("IOneNCons", i(len(ic["i1"]["constraints"])), ip)
+    from experiments.sweep import C2_GRIDS, STYLE_FACTORS
+    st = {tuple(C2_GRIDS[f"style:{f}"]) for f in STYLE_FACTORS} | {tuple(C2_GRIDS["style_all"])}
+    if len(st) != 1:
+        raise ValueError("the C2 style grids differ")
+    fmt = lambda fam: ", ".join(num(x) for x in C2_GRIDS[fam] if x is not None)
+    groups = [("dollar", "dollar"), ("beta", "beta"), ("each style and all styles", "style_all"),
+              ("sector", "sector"), ("gross", "gross"), ("$u$", "position"), (r"$\theta$", "liquidity")]
+    if {f for _, f in groups} | {f"style:{f}" for f in STYLE_FACTORS} != set(C2_GRIDS):
+        raise ValueError("C2_GRIDS has a family the grid sentence does not name")
+    M.add("CTwoGrids", "; ".join(f"{lab} {fmt(f)}" for lab, f in groups), "experiments/sweep.py")
+
+
 def result_macros() -> list[tuple[str, str, str]]:
     M = _M()
-    for part in (_config_macros, _code_macros, _data_macros, _validation_macros, _q1_macros, _q2_macros, _q3_macros, _s4b_macros):
+    for part in (_config_macros, _code_macros, _data_macros, _validation_macros, _q1_macros, _q2_macros, _q3_macros,
+                 _s4b_macros, _s4c_macros):
         part(M)
     return M.rows
 
@@ -745,7 +838,7 @@ def table1_mandate() -> Path:
         (r"Net (dollar) $\varepsilon_{\mathrm{net}}$", f"$\\pm${num(100 * m['dollar'])}\\%"),
         (r"Beta $\varepsilon_\beta$", f"$\\pm${m['beta']:.2f}"),
         ("Each style $b_k$", f"$\\pm${m['style']:.2f}"),
-        ("Each sector $s_j$ (net)", f"$\\pm${num(100 * m['sector'])}\\%"),
+        ("Each sector $h_j$ (net)", f"$\\pm${num(100 * m['sector'])}\\%"),
         ("Position cap $u$ (P-MI)", f"{num(100 * m['position'])}\\% ({num(100 * MIQP_POSITION_CAP)}\\%)"),
         (r"Liquidity $\theta$", f"{num(100 * m['liquidity_theta'])}\\% of ADV"),
         ("AUM", f"\\${num(m['aum_usd'] / 1e9)}B"),

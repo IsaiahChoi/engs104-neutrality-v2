@@ -12,6 +12,9 @@ come with labels, markers, or hatching).
   read): liquidity θ, sector, all styles jointly and the Mom bound; α_mom median over D12 with its
   interquartile band, the α⊥ and α∥ medians dashed and dash-dotted on the two factor panels, and
   the base value marked. The other families are flat; the text gives their tightest-point values.
+  Since S4c (Decision 54, DESIGN §10 as edited) the report uses fig1_cost_curves_row: three
+  panels in one row (liquidity θ, sector, all styles jointly; α⊥ and α∥ on the all-styles panel),
+  text ≥ 8 pt at 3.5 in. The four-panel version stays generated (its S4b test pins it).
 - Fig. 2 (C1): retained fraction against φ: the closed form √(1 − φ), the idealized full-factor-
   neutrality solves (filled, three alphas × D12) and the base-mandate solves (hollow), both
   relative to the unconstrained, costless P-RB.
@@ -38,6 +41,8 @@ FIG1_PANELS = [("liquidity", "Liquidity cap"), ("sector", "Sector"), ("style_all
 FIG1_XLABEL = {"liquidity": "θ (fraction of ADV)", "sector": "bound on each net weight",
                "style_all": "exposure bound", "style:Mom": "exposure bound"}
 FIG1_BASE = {"liquidity": "liquidity_theta", "sector": "sector", "style_all": "style", "style:Mom": "style"}
+FIG1_ROW_PANELS = [("liquidity", "Liquidity"), ("sector", "Sector"), ("style_all", "All styles")]
+FIG1_ROW_XLABEL = {"liquidity": r"$\theta$", "sector": "net bound", "style_all": "exposure bound"}
 FACTOR_FAMILIES = {"beta", "style_all", "style:Mom"}
 ALPHAS = [("mom", r"$\alpha_{\mathrm{mom}}$", "-", "o"), ("perp", r"$\alpha_\perp$", "--", "s"),
           ("par", r"$\alpha_\parallel$", "-.", "^")]
@@ -99,6 +104,46 @@ def fig1_cost_curves() -> Path:
                handletextpad=0.4)
     fig.tight_layout(rect=(0, 0, 1, 0.93))
     return _save(fig, f"fig1_cost_curves{TAG}")
+
+
+def fig1_row_figure():
+    """Fig. 1 as three panels in one row (DESIGN §10, Decision 54): the matplotlib figure, so its
+    layout and font sizes can be tested before saving."""
+    _apply()
+    from src.opt.continuous import load_config
+    base = load_config()[0]
+    pts = _read("c2", "c2_points")
+    pts = pts[~pts["off"]]
+    fig, axes = plt.subplots(1, 3, figsize=(style.COLUMN_WIDTH_IN, 2.15), sharey=True)
+    for ax, (fam, title) in zip(axes, FIG1_ROW_PANELS):
+        for i, (kind, label, ls, mk) in enumerate(ALPHAS):
+            if kind != "mom" and fam not in FACTOR_FAMILIES:
+                continue
+            g = pts[(pts["family"] == fam) & (pts["alpha"] == kind)]
+            q = g.groupby("value")["retained_vs_off"].quantile([0.25, 0.5, 0.75]).unstack()
+            if kind == "mom":
+                ax.fill_between(q.index, q[0.25], q[0.75], color=style.SERIES[i], alpha=0.2,
+                                linewidth=0)
+            ax.plot(q.index, q[0.5], ls=ls, marker=mk, ms=2.5, color=style.SERIES[i], label=label)
+        ax.axvline(getattr(base, FIG1_BASE[fam]), color=style.INK_SECONDARY, lw=0.6, ls=":",
+                   label="base")
+        ax.set_title(title, loc="left", pad=2)
+        ax.set_xlabel(FIG1_ROW_XLABEL[fam], labelpad=1)
+        ax.axhline(1.0, color=style.INK_SECONDARY, lw=0.5)
+        ax.xaxis.set_major_locator(plt.MaxNLocator(2))
+    axes[0].set_ylabel(r"$A^*(b)/A^*(\mathrm{off})$")
+    seen = {}
+    for ax in axes:
+        for hh, ll in zip(*ax.get_legend_handles_labels()):
+            seen.setdefault(ll, hh)
+    fig.legend(list(seen.values()), list(seen.keys()), loc="upper center", ncol=4,
+               bbox_to_anchor=(0.5, 1.0), columnspacing=0.6, handletextpad=0.3, handlelength=1.6)
+    fig.tight_layout(rect=(0, 0, 1, 0.88), w_pad=1.2)
+    return fig
+
+
+def fig1_cost_curves_row() -> Path:
+    return _save(fig1_row_figure(), f"fig1_cost_curves_row{TAG}")
 
 
 def fig2_alignment() -> Path:
@@ -177,4 +222,5 @@ def fig_c3_summary() -> Path:
 
 
 FIGURES = [("fig1_cost_curves", fig1_cost_curves), ("fig2_alignment", fig2_alignment),
-           ("fig3_attribution", fig3_attribution), ("fig_c3_summary", fig_c3_summary)]
+           ("fig3_attribution", fig3_attribution), ("fig_c3_summary", fig_c3_summary),
+           ("fig1_cost_curves_row", fig1_cost_curves_row)]                     # S4c
