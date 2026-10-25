@@ -814,6 +814,16 @@ def _s4c_macros(M: _M) -> None:
     if {f for _, f in groups} | {f"style:{f}" for f in STYLE_FACTORS} != set(C2_GRIDS):
         raise ValueError("C2_GRIDS has a family the grid sentence does not name")
     M.add("CTwoGrids", "; ".join(f"{lab} {fmt(f)}" for lab, f in groups), "experiments/sweep.py")
+    # CHECK REPORT r1: the Mom bound at its tightest point (α_mom, D12), and the n behind N2(b)'s maxima
+    c2f = latest_done("c2") / "c2_points.parquet"
+    c2 = pd.read_parquet(c2f)
+    mom = c2[(c2["alpha"] == "mom") & (c2["family"] == "style:Mom") & ~c2["off"].astype(bool)]
+    mom = mom[np.isclose(mom["value"], mom["value"].min())]
+    M.add("CTwoMomTight", sig(mom["retained_vs_off"].median(), 3), c2f)
+    bar = pd.read_parquet(cf).query("solver == 'GUROBI_BARRIER'").groupby("scaled").size()
+    if bar.nunique() != 1:
+        raise ValueError("N2(b) barrier rows differ between the scaled settings")
+    M.add("NTwoBarrierN", i(bar.iloc[0]), cf)
 
 
 def result_macros() -> list[tuple[str, str, str]]:

@@ -144,3 +144,11 @@ def test_experiment_table_i1_says_also_five_percent():
     """Cold read (S4c): "(5% at 2017-12)" read as instead of; I1 runs both steps at 2017-12."""
     i1 = next(r for r in numbers.experiment_rows() if r["exp"] == "I1")
     assert "(also 5\\% at 2017-12)" in i1["what"]
+
+
+def test_s4c_round1_macros(tmp_path):
+    """CHECK REPORT r1 (S4c): the Mom bound's tightest-point value (FAIL 1) and the n behind the N2(b)
+    barrier maxima (FAIL 3)."""
+    v = _vals(tmp_path)
+    assert v["CTwoMomTight"] == "0.968"
+    assert v["NTwoBarrierN"] == "10"
