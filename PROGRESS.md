@@ -2846,3 +2846,81 @@ Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
 - BASE = 9fec2bea073c6129dd00a415891cde94883a4671 (`git rev-parse HEAD` at session start).
 - Preconditions (S5 addendum): Isaiah's note "S4c read; Decisions 58–62; GATE R open; run S5 pass 1 (after my draft note)" present; "— Isaiah: draft (S5 pass 1)" present after it; tree clean; Section I (report/main.tex:44–58) has no red outline, its three paragraphs marked `% drafted-by-chat`.
 - Mode: draft (Isaiah's draft note). Following the S5 addendum; stop at its step 8. No experiment runs; docs/, refs.bib, proposal/, experiments/configs/ untouched; tests/ additions only.
+
+## 2026-10-25 — S5 pass 1 closing entry (Claude Code, Opus 5.5): CHECK REPORT round 1 FAIL on K30 (RP-4, 9 pages) only; stopped at the addendum's step 8
+- **BASE** 9fec2be. **HEAD**: the commit with this entry; the build checked is 3e96582 (ccbdf1f and 05253f4 carry the same PDF but for its CreationDate). Not pushed, not tagged. No experiment runs (RUN_LOG unchanged).
+- Commits since BASE: 1d52973 (BASE entry), ac17d92 (Fig. 2 at 2.6 in, tests first), 3e96582 (build), ccbdf1f (PDF CreationDate from spec_check's final-mode diagnostic), 05253f4 (cold read; literal list and claims table), and this one.
+- **report/main.tex is unchanged since BASE** (checker 4(a): empty diff). No edit to Isaiah's text, none to agent text: no mechanical LaTeX error occurred (no `??`, no undefined reference), and the only FAIL is the page count, which Decision 58(e) leaves to you.
+- One CHECK round only: its single FAIL is not mine to fix, so no re-check.
+
+### Verdicts
+- **Suite**: 534 passed, 1 skipped, 2 xfailed (logs/test_full_s5p1b_20261025T183343Z.log; the checker's clone of 05253f4 agrees). Before the Fig. 2 tests: 532 (logs/test_full_s5p1_20261025T182842Z.log).
+- **make figures** twice, byte-identical (results/scratch/figs_s5p1_c.sha = _d.sha; 21 files). Against BASE, only Fig. 2 (PDF, PNG) and numbers.tex changed.
+- **make report**: builds; exits 2 at tools/page_count.py, **9 pages** (logs/make_report_s5p1_b_20261025T183552Z.log). Page 9 holds only references [18]–[19].
+- **spec_check report, draft** (results/scratch/spec_s5p1_draft.txt): **FAIL on RP-4 only** (9 pages). RP-1/2/3/6/7 (19 cited)/9/10/11 PASS; RP-5, RP-8 N/A.
+- **spec_check report, final, diagnostic only** (results/scratch/spec_s5p1_final.txt): RP-5 PASS (refs:start p. 8); RP-8 FAIL (TODO(Isaiah), red text, `% drafted-by-agent`); RP-4 FAIL. **The two chat markers do not trip RP-8**: RP-8 matches only TODO(Isaiah), red text and `% drafted-by-agent` (tools/spec_check.py:273). So at FINAL an unrevised `% drafted-by-chat` paragraph would pass spec_check (Decisions needed, 64).
+- **CHECK REPORT round 1** (results/checks/REPORT_20261025T215638Z.md, saved verbatim; the harness refused the checker's Write): **FAIL, one item: K30 / RP-4.** K31–K40 PASS (K34, K36, K38 in draft mode); suite, tests-additions-only and protected-paths rules PASS; 4(a) PASS (empty diff), 4(b) PASS (ten Section I numbers all macros, recomputed from raw outputs; \ref and 13 \cite keys resolve), 4(c) PASS with should-fix notes (no contradiction), 4(d) listed.
+  - The cold reader's question (the δ = 10% medians 0.023 and 0.073 identical pooled, n = 23, and at 2017-12, n = 11) is **a real coincidence, not a bug**: the same case is the median in both sets (fixed-integer 2017-12_N250_f0.25_K33_style-Mom; big-M 2017-12_N250_f0.75_K100_sector, each 6th of 11 and 12th of 23); the perspective medians differ (0.0133, 0.0156). Rule 13 not triggered.
+- **Cold read** (results/checks/cold_read_20261025T214615Z.md, verbatim; the build at ccbdf1f): **MOSTLY**. Every Section I number matches Results; the issues are forward references, internal labels, and outline numbers absent from Results.
+
+### Pages (fresh build; tools/page_sections.py → results/scratch/pages_s5p1_post.txt; the checker's clone agrees). A = floats where they land; B = each float in its first-referencing part.
+| part | A | B | budget (DESIGN §11.1) | flag |
+|---|---|---|---|---|
+| Abstract (outline) | 0.21 | 0.21 | 0.2 | |
+| I | 0.53 | 0.53 | 0.5 | **over by 0.03** |
+| II | 1.37 | 1.37 | 1.3 | |
+| III | 2.08 | 1.93 | 1.5 | |
+| IV | 2.25 | 2.40 | 2.5 | |
+| **II–IV** | **5.70** | **5.70** | 5.3 | **over by 0.40** |
+| V (outline) | 0.77 | 0.77 | 0.7 | |
+| VI (outline) | 0.14 | 0.14 | 0.2 | |
+| Disclosures and AI use (outline) | 0.33 | 0.33 | 0.3 | |
+| References | 0.29 | 0.29 | 0.3 | |
+- Sum of B 7.96 pages, plus the title block (not in any span), gives **9 pages**; refs:start p. 8 (not before 7: no flag).
+- **Forecast** (addendum step 3): parts still in outline add max(0, budget − B): Abstract 0, V 0, VI +0.06, disclosures 0, so **8.02 + title block, above 8.0 (flag)**. The actual build is already 9 pages, so the forecast is moot until something shrinks.
+- II–IV went from A 5.36 / B 5.86 (c222e53) to 5.70 / 5.70 with no change to II–IV's text: Section I's prose moved the floats, so the two accountings converged.
+- **Decision 58(b)'s effect**: Fig. 2 at 2.6 in (3.4 before; the saved PDF is 3.44 × 2.56 in, 3.58 × 3.05 before, so it also no longer exceeds the column width). Its float shrank 0.195 → 0.174 page (−0.021). **No section span, page count (9) or refs:start (p. 8) changed**: the freed space became column white space. Content and legibility are pinned by tests/test_s5.py (7 legend entries, every C1 point, text ≥ 8 pt, legend clear of the axes and labels).
+
+### Issue list (file:line at 05253f4; main.tex unchanged since BASE)
+**Blocking**
+1. **K30 / RP-4: 9 pages, max 8** (report/main.pdf; the bibliography, main.tex:320–322, spills [18]–[19] onto p. 9). II–IV B 5.70 against 5.3 (agent text, main.tex:60–269); Section I 0.53 against 0.5 (your text, main.tex:44–58). About 0.05–0.1 page must go before RP-4 passes, and more before V, VI and the disclosures are written to budget. Decision 58(e): you choose the next lever (Decisions needed, 63).
+
+**Should-fix** (your text unless marked; not changed by me)
+2. main.tex:47 — "Every rule costs the pod expected alpha": beta and gross bind at no D12 date (main.tex:195); the statement is only weakly true (cost ≥ 0). Checker 4(c)#1; cold read §3.
+3. main.tex:47 — "a misread dual can lead the platform to loosen the wrong rule" has no Results support; the closest evidence, the I2 order flip under the perspective slope (\NearTiePerspSector 1.222e-3 vs \NearTiePerspMom 1.306e-3), is only in the V outline (284). Checker 4(c)#3; cold read §3.
+4. main.tex:54 — √(1−φ) "for the alpha kept under full factor neutrality … at least \IdealRetMomMin" drops "idealized" (mandate (i), no costs; main.tex:205). At base α_mom keeps a median \RetMomMed. Checker 4(c)#6.
+5. main.tex:54 — "the liquidity cap carries the cost": Results say "the caps and the costs" (main.tex:205; trading \SplitTradeMed = 0.16 of gross alpha), and the Abstract (38) and VI (298) outlines name liquidity, sector bounds and trading costs. Checker 4(c)#7.
+6. main.tex:57 — "consistent with outer approximation stopping early (\NThreeEOneDef of \NThreeN)": 29 of 36 supports "OA is chosen" (main.tex:266); "stopping early" rests on \NThreeGapDef → \NThreeGapMZero and A9 (174). "The perspective model's two scaling mechanisms" conflicts in tone with main.tex:253 ("solver behaviour, not the formulation"). Checker 4(c)#10.
+7. main.tex:47–57 — forward references a reader cannot resolve in Section I: A1–A9 labels, λ*, φ, elasticity, risk row, certified secant intervals, fixed-integer dual, support/active set, outer approximation (defined nowhere), the fundamental law (defined nowhere). Cold read §1 and fix 1.
+8. main.tex:54–56 — Section I's statistics carry no sample: \ELiqMed (D12, n = 12), \WidthMed (δ = 10%, n = 23), \PredThreeMed (P3, n = 24). Cold read §4.
+9. main.tex:315–318 — the AI-use outline does not say Claude (chat) drafted Section I and you revise it (Decision 62; docs/AI_USE.md:43 logs it). Required before FINAL.
+10. main.tex:38 and 298 — Decision 59's Mom-bound nuance (\CTwoMomTight 0.968 at zero) is not yet in the Abstract and VI outlines; "factor neutrality is nearly free" also sits against all-style 0.956.
+11. main.tex:273 — the V outline header says 0.8 page; DESIGN §11.1 says 0.7 (Decision 54).
+12. main.tex:275 — V outline "the MIQP's volatility falls below the budget" against main.tex:102 (I1 \VolIOneAbove = 3 of 144 above; N1 4 of 36 above), and its base-point counts (\VolIOneBaseBelow 48 of 48 below, \VolBaseIOneAt 39 of 48 on budget) are not in Results.
+13. V outline numbers absent from Results (each macro-sourced, so K34 passes, but the cold reader cannot match them): main.tex:279 node medians; 280 \WorkBigMTight, \WorkRescTight (Fig. 5 plots root gap, not Work); 282 \ClassPerspPOneFiveMax, \ClassBigMPOneFiveMax; 283 \ClassPerspPOne, \ClassPerspPThree; 284 \NearTiePerspSector/\NearTiePerspMom; 288 \ProbeSameDefault, \ProbePresolveMax; 289 the hedged legs (marked "not yet in Results"). Either your GATE R revision adds them to IV, or V states each with its n.
+14. main.tex:298 — VI outline's "\ELiqMed, \SplitTradeMed" are both 0.16 (an elasticity and a share of gross alpha); the cold reader read them as one number.
+15. *Agent text, GATE R (carried from the S4c advisories; not FAILs, so not changed):* internal labels at main.tex:183 and elsewhere (K29b, K29c, CHECKS, S2d, "design pilot", "misses", "objective-scale pairs", "10s_obj" read as 10 × s_obj), main.tex:316 "(Mode A)" (your outline); A9 at main.tex:174 says N3 "traces" the root bound to OA stopping early, stronger than IV-C's "consistent with" (266); the volatility drift sits in II-E (102), not Results; Fig. 4 caption (lines are medians), Table III caption (baseline row n = 24), µ̂ undefined, the "tie" tolerance and the "144 pairs".
+
+**Optional**
+16. main.tex:53 "through the risk row's multiplier" can read as λ* pricing every constraint (they are priced by their own μ_p, e_p). Checker 4(c)#4; cold read §2.
+17. main.tex:55 "test the estimators against solver error": the yardstick is the true secant. Checker 4(c)#8.
+18. main.tex:58 "one universe, period and risk model": "period" can read as one date (the results span D12 and more).
+19. main.tex:40 — the Abstract's "removes both" omits \ConeRescMax from its evidence; its Q3 numbers mix base tightness over all N (\RootRescBase, \RootDefBase) with N = 250 over all tightness levels (\PreBigMRootOn/Off).
+20. main.tex:290 — cite \SlopeScaleWithin of \SlopeScaleN (48 of 48, what main.tex:183 states) rather than \ExtWithin of \ExtN (36 of 36, its non-gated part); the cold reader took them for a contradiction.
+21. Fig. 2 (main.tex:209): α∥'s filled and hollow triangles overlap at φ = 1 (cold read §5). Not changed: only the height was authorized.
+22. Literal list: no hand-typed result numbers; the remaining words are labels, design counts and math. Optional macro \NFactors (6) for "six-factor" (main.tex:276; also agent text main.tex:69).
+23. Tooling: tools/page_sections.py's SKIP_TITLES still treats the Introduction as outline-only; Section I has no float \ref, so no effect now.
+
+### Literal list and claims table
+- results/checks/S5P1_literals_claims_20261025.md (steps 5–6). Result: **no numeric literal in your prose needs a macro**; claims: Section I all mapped (I-3 motivation, I-8 partial), Abstract all mapped (Decision 59 nuance absent), V seven items not in Results (13 above), VI mapped.
+
+### Macros added
+- None. The only changed value is \TestsPassed, 532 → 534 (the two Fig. 2 tests; the addendum's tests-first rule makes this unavoidable, as in S4c). numbers.tex holds 524 macros.
+
+### Marker counts (report/main.tex)
+- Red TODO(Isaiah) items: 6 (5 outline environments: Abstract, V, VI, disclosures, AI use; and \todo{author} at main.tex:31). `\textcolor{red}` and `\color{red}` occur only in the preamble definitions (20, 21).
+- `% drafted-by-agent` 33; `% verify-by-hand` 11; `% drafted-by-chat` 3 (main.tex:46, 49, 52); `% chat-draft revised by Isaiah` 0.
+
+### Decisions needed
+- **63. Page lever (Decision 58(e)).** 9 pages; II–IV 5.70 vs 5.3 and Section I 0.53 vs 0.5. Fig. 2's reduction freed 0.02 page but no line. Candidates named in 58(e): the value-function figure (Fig. 3 in the PDF) at single-column width with 2017-12 only, and a shorter Section I; the main lever remains your GATE R revision of II–IV (58(a)); Prof. Ferguson's answer on references (58(c)) matters only if RP-4's limit is changed to exclude them, which would be a DESIGN §11.1/§11.7 edit.
+- **64. RP-8 and the chat markers.** spec_check's final mode does not flag `% drafted-by-chat`. Should RP-8 also require that no `% drafted-by-chat` remains at FINAL (a DESIGN §11.7 and spec_check change, tests first)?
