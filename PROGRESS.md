@@ -2299,3 +2299,188 @@ results/n3/run_20261024T092033Z at b176bbb: make exit 0, DONE, RUN_LOG "ok". It 
   - (c) a later note naming what may be cut.
 - **55.** Retire fig3_attribution and the two-block table3_n2 (test change), or keep generating them.
 - **56.** Confirm the test_spec_check.py assertion change.
+
+## 2026-10-25 — Isaiah: S4b read; AI derivation cross-check; Decisions 54–57; run S4c
+- Read:
+  - PROGRESS from "S4b (Claude Code, Opus 5.5): preconditions met" to the S4b closing entry;
+  - results/checks/REPORT_20261025T083010Z.md (CHECK REPORT round 3, PASS);
+  - results/checks/cold_read_20261025T082337Z.md.
+- Claude (chat) checked the S4b stop against the files on 2026-10-25. Recommendations below are marked as Claude's; I adopted them on the date of this note, after the S4b results.
+- Pushed b78c89b before this note.
+
+### S4b stop, read
+- **Verdicts.** CHECK REPORT round 3 PASS, no FAIL items. spec_check (report, draft) PASS. Suite 521 passed, 1 skipped, 2 xfailed. `make figures` twice byte-identical. Text font TeX Gyre Termes (pdffonts).
+- **Pages.** 8 in total, refs:start p. 8. II–IV measure 5.32 (A) and 5.84 (B).
+- **N3** (results/n3/run_20261024T092033Z/summary.json; sha256 226d666f… matches numbers.tex). E1–E4 all HIT:
+  - E1: method 1 reproduces the default root bound at 29/36 (default scaling) and 30/36 (rescaled).
+  - E2: 33/36 within 5.0e-3·|V|.
+  - E3: median ratio 0.98; 31/36 in [0.5, 2], 2 below, 3 above (max 4.39).
+  - E4: max spread 7.7.
+- **P-MI volatility:** I1 median 2.87% (n = 144; 141 below the budget, 3 above).
+- **Numbers checked against files by Claude (chat):**
+  - E1's 29 and 30;
+  - the method-0 root gap 5.7e-4;
+  - I1 volatility;
+  - the P1/P2/P3 split 3/2/18 at δ = 10%.
+  - Every (file, sha256) pair checkable from the upload matches: 9 in numbers.tex, 7 in FACTS.
+
+### Derivations: AI cross-check now, hand check deferred
+- I have **not** yet checked the derivations by hand. I will do it at GATE R, against the text S4c produces, by 2026-11-03.
+- On 2026-10-25, before any hand derivation, a fresh AI chat (web AI chat, no Project context) reviewed Sections II–III of main.tex at b78c89b. It worked from a prompt written by Claude (chat).
+  - Its report is committed with this note as results/checks/derivation_crosscheck_20261025.md, verbatim.
+  - Its verdicts:
+    - II-F and A6 correct;
+    - A1, A2–A3 and A5 missing hypotheses;
+    - A4 and A7 "wrong";
+    - A8, A9 and III-D gaps;
+    - II-E's "the baseline is P-RB" wrong as a value identity.
+- Claude (chat) checked that report against main.tex, numbers.tex and the result files:
+  - All arithmetic and both counterexamples are correct.
+  - Four points are overstated:
+    - A9's causal claim is supported: all 4 N2(a) default-scaling solves at s_obj = 10⁴ ended OPTIMAL, not at the WorkLimit (s3_analysis.json n2.miqp), and their certified gap (median 1.2e-3) matches their cone effect (median 1.7e-3).
+    - It misread III-B's "A1 makes this exact", although the λ* = 0 point stands.
+    - A4's mathematics is correct; the error is II-C's definition of φ. The code computes φ on each alpha's own split (src/alpha/decompose.py:44–65), so no number changes.
+    - III-B's "exact" is a wording issue.
+  - The cross-check corrects Claude (chat)'s pre-read in two places:
+    - III-D's noise bound assumes each value is within ε of exact; it is not conservative.
+    - A4 has an inverse-free step that needs no F ≻ 0.
+  - It also found II-E's value identity, which the pre-read missed.
+- As far as Claude (chat) can tell from the files, no reported number is affected. S4c confirms this (Q-i).
+
+### Corrections (PROGRESS is append-only)
+- (m) The S4b addendum (item e) asked A1 to state that the mean-variance maximizer at λ > 0 is unique. III-C's A1 paragraph (main.tex:140) states Slater's condition only.
+- (n) III-D (main.tex:173) holds the 8η argument, a GATE R item, but has no `% verify-by-hand` marker.
+- (o) II-E (main.tex:89) says the P-MI baseline "is P-RB". It has P-RB's optimizer and, by weak duality, P-RB's constraint slopes at the base point, but its value differs by λ*σ_m².
+
+### Decisions
+Recommended by Claude (chat) on 2026-10-25, after reading the S4b results and the cross-check. Adopted by Isaiah on the date of this note.
+
+- **Decision 54 (page budget).**
+  - The binding limits are RP-4 (at most 8 pages) and, in final mode, RP-5 (refs:start on page 7 or later). The S4b build fills 8 pages with the Abstract, I, V and VI still in outline; at the old budgets those parts add about 0.6 page.
+  - (a) DESIGN §11.1's budgets become: Abstract 0.2, I 0.5, II 1.3, III 1.5, IV 2.5, V 0.7, VI 0.2, disclosures and AI use 0.3, references 0.3. They sum to 7.5, leaving about 0.15 page for float placement. II–IV at most 5.3 pages (B).
+  - (b) Cut order items (10) and (11) are added:
+    - (10) Table III (N2(b)) out of the report, N2(b) in one sentence of IV-C;
+    - (11) Fig. 1 in three panels.
+  - (c) S4c applies the text cuts as agent-drafted text, because I am short on time. I revise II–IV later.
+  - (d) Every later build reports II–IV and a page forecast.
+  - (e) I ask Prof. Ferguson whether references count toward the 8 pages. If they don't, the freed space goes to V first (Decision 50).
+  - The DESIGN edits are applied verbatim in this commit (gate_r_s5/5_apply_gate_r.py's list: ten replacements, each old string asserted once).
+- **Decision 55.** Keep generating fig3_attribution and the two-block table3_n2. No test changes (rule 5). The same holds for table3_n2b if cut (10) is taken. The attribution figure may serve as a talk backup, but only with Decision 29's caveat.
+- **Decision 56.** The tests/test_spec_check.py change (174a7d7) is confirmed after reading its diff.
+  - The old assertion encoded the scaffold's initial state (no entry verified), which my b28057b made false.
+  - The new one checks DESIGN §13's marker format on every entry.
+  - It is the only test file modified rather than added since v2-start.
+- **Decision 57.** FACTS keeps the full-suite line at the newest log (521). The submitted proposal cites no test count.
+
+### Writing
+- Mode A and Decision 53 stand. GATE R is not signed, so II–IV are still agent-drafted text, and S4c may edit them under the addendum below.
+- After GATE R, every line of report/main.tex is mine.
+
+### S4c addendum (amends RUNBOOK §4 for this session)
+With DESIGN as edited in this commit, it conflicts with neither CHECKS nor DESIGN.
+
+**Preconditions.** If any is missing, stop and say so.
+- This note.
+- results/checks/derivation_crosscheck_20261025.md.
+- A clean tree.
+
+Record BASE = `git rev-parse HEAD` in PROGRESS first.
+
+**Scope.**
+- Sections II–IV of report/main.tex, with their captions, figures and tables (agent-drafted; keep `% drafted-by-agent` on every paragraph and `% verify-by-hand` on derivation paragraphs).
+- Figure, table and macro code (tests first).
+- In the Abstract, I, V and VI: only the red outlines, and only where an S4c change alters a number or claim they cite.
+
+**Protected (ask first):** docs/ (already edited in this commit), report/refs.bib, proposal/, experiments/configs/, tests/ (additions only). No experiment runs.
+
+**Rule.** Before writing any definitional or factual statement, verify it against the code or outputs, and record the location (principle from S4b's line-236 error).
+
+**Step 0.** Full suite at BASE.
+
+**Step 1. Questions.** Answer from code and outputs, each with its source, in PROGRESS, before editing:
+- Q-a: why IV-A's retained fractions agree with √(1 − φ) to 7.5e-8 while A* agrees to 1.6e-14.
+- Q-b: reconcile K9's 8279 grid points (202 toys) with K29c's 8399 (200 toys).
+- Q-c: the source of "predicted ≤ 10⁻⁶" for P1, and when it was fixed.
+- Q-d: the C2 families and their grid values, and the 18 K15 keys.
+- Q-e: which 12 I1 cases are the "gated" ones in IV-B, and which 36 are "the other".
+- Q-f: the units and sample of the I2 selection secants (1.364e-3, 1.316e-3), and whether ranking by elasticity would pick the same constraint.
+- Q-g: the P-RB objective scale factor behind N2(b)'s "scaled" rows.
+- Q-h: any Gurobi log line that records the MIQCP method used at the default.
+- Q-i: which quantity K13's 1.5e-15 compares (weights, A*, or the penalized objective). Confirm that no reported number depends on reading the baseline's value as P-RB's.
+- Q-j: how the solver path handles base solves whose risk row is slack (λ* = 0; 4 of 36, all α∥).
+
+**Step 2. Derivation and definition fixes.** Each item is a specification; write the sentence yourself, at most one or two sentences per item.
+- F1 (II-C). Define φ(α) on α's own, unrescaled split. State that the rescaled α⊥ and α∥ are signals; φ is scale-invariant.
+- F2 (A7).
+  - The jump at ℓ is max(0, aℓ − λdℓ²), positive iff a > λdℓ.
+  - The big-M slope a − 2λdb holds for b < w° = a/(2λd), and is 0 otherwise.
+  - The perspective slope a − λdℓ holds when a > λdℓ, and is 0 otherwise.
+  - Keep the comparison for ℓ/2 < b < ℓ.
+- F3 (II-E, III-E). The baseline has P-RB's optimizer and constraint slopes at the base point; its value differs by λ*σ_m². In III-E, name the quantity K13 compares (Q-i).
+- F4 (A1).
+  - For λ > 0 the MV maximizer is unique (Σ ≻ 0), and its volatility is continuous and nonincreasing in λ.
+  - At the root the risk row binds, which gives primal feasibility and complementary slackness; by Slater, KKT is sufficient.
+  - Every P-RB optimum maximizes the Lagrangian at λ* (strong duality; II-F relies on this direction).
+  - Say how λ* = 0 is handled (Q-j).
+- F5 (A8). "Certified" is conditional on two things: V feasible (the independent checker at 1e-9) and Ū_eff a valid bound (the 1e-6·|V| slack is a margin, not a proof). Give the evidence: K23 found no violation at 144 points; N2(a) at s_obj = 1 is a counter-case (9.1e-5·|V|).
+- F6 (III-D). η and 8η are noise scales, valid if each value is within ε of its exact value. Add `% verify-by-hand`.
+- F7 (A9). s_i ≤ u_i² holds at an optimum, not as a constraint. Cite that the 4 N2(a) default-scaling solves at s_obj = 10⁴ ended OPTIMAL (new macro from s3_analysis.json n2.miqp.arms["perspective/s10000"].statuses), so their gap above MIPGap comes from the cone effect.
+- F8 (A2–A3). A has full row rank and g ≠ 0. Name the equality-case value A*_eq.
+- F9 (A4).
+  - Replace the Woodbury step with the inverse-free one: BᵀD⁻¹α⊥ = 0 gives ΣD⁻¹α⊥ = α⊥, so Σ⁻¹α⊥ = D⁻¹α⊥ and BᵀΣ⁻¹α⊥ = 0, with no F ≻ 0 needed.
+  - State that B has full column rank.
+- F10 (A5). The derivative is μ where the multipliers are unique; one-sided slopes apply at cap ties u = θ·ADV_i/AUM; e_p is defined where A* > 0.
+- F11 (A6). Add "over the same (w, z)", since the two relaxations share the linking rows.
+- F12 (III-B). "Exact active sets and duals" becomes: a basic (vertex) solution, exact up to the 10⁻⁹ tolerances.
+- F13 (notation). s is used for the sector bounds s_j, the perspective epigraph s_i and the point slope s, ŝ, s±. Keep one use; rename the other two to symbols not used elsewhere, and list the renames in PROGRESS.
+
+**Step 3. Open items for II–IV.** Apply them:
+- the S4b closing entry's open items under II, III and IV;
+- these additions:
+  - II-E: give I1's above-budget count (3 of 144) beside N1's.
+  - IV-C: the method-0 root gap is below the plain relaxation's (root cuts), while the default-scaling root bound is looser than the plain continuous relaxation itself. Replace "near the plain perspective relaxation".
+  - IV-C: label the samples. 1.8e-3 is N1 at base (n = 12); 1.9e-3 is N3 over all 36.
+  - IV-C: E3 is 31 of 36 within a factor 2, 2 below and 3 above. Use macros.
+  - IV-C: "Gurobi chose outer approximation" becomes "consistent with Gurobi choosing outer approximation".
+  - Use Q-a … Q-j where they resolve an item (for example, list the C2 families and grids in the experiment table's C2 row or in one sentence).
+
+**Step 4. Pages (Decision 54).**
+- Fig. 1 in three panels in one row, tests first; text ≥ 8 pt at 3.5 in, or else four panels and say so.
+- Then apply these cuts, in order, until II–IV (B) ≤ 5.3:
+  1. Table III (N2(b)) out of the report (cut (10)); IV-C keeps one sentence with the barrier's A* and dual errors without and with objective scaling, and the risk-row-normalization result.
+  2. Remove the duplicated family-dual rule (II-D vs A5).
+  3. A6's citation-only second sentence.
+  4. Compress III-E's validation (keep K4, K5/K6, K9, K13 and the K29c gate).
+  5. IV-A's agreement sentence moves to III-E, or becomes one clause.
+  6. IV-A's "other families are flat" becomes one clause.
+  7. IV-B's slope-accuracy sentence, rewritten clearly or moved to III-E.
+  8. IV-C's root-gap paragraph: base values in the text, loose and tight via Fig. 4.
+  9. One-line captions where possible.
+  10. General tightening of II.
+- Never cut the formulation, a definition, A2–A4, the n behind any statistic, a disclosure, or IV-C's sentence that N3 was added after the other experiments had been analysed.
+
+**Step 5. Build.**
+- Full suite on the committed tree; `make figures` twice, byte-identical; `make report`.
+- spec_check (report, draft).
+- Page table under both accountings, per section, against DESIGN §11.1 as edited, with refs:start. Then the forecast: for each part still in outline, add max(0, budget − measured B).
+- Regenerate FACTS only if a hashed source changed; every pair must match.
+
+**Step 6. CHECK REPORT.**
+- Run K30–K40 (draft mode) with the result-checker. This is a new CHECK, with 3 rounds.
+- The checker also verifies every F-item and open item: present, and true against the code and outputs.
+- Run the cold-reader on each build checked (K40), saved verbatim.
+
+**Step 7. Stop**, and report in PROGRESS:
+- BASE and HEAD;
+- a table of F1–F13 and the open items, each with file:line, what changed, and its code or output source;
+- the answers to Q-a … Q-j;
+- the page table and forecast;
+- the verdicts and macros added;
+- anything I must decide.
+
+No push, no tag.
+
+Next for me: GATE R (the hand check against S4c's text), then my revision of II–IV, then the draft note and S5 pass 1.
+
+### Run S4c
+YES, in a fresh Claude Code session.

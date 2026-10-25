@@ -220,12 +220,12 @@ Isaiah derives each item by hand (RUNBOOK §5.3); the tests and checks confirm t
 
 ## 10. Figures and tables
 
-- **Fig. 1** (C2): retained alpha A*(b)/A*(off) against the bound, median and interquartile range over D12, α_mom, in four panels: liquidity θ, sector, all styles jointly, and the Mom bound (α⊥ and α∥ dashed on the two factor panels). The other families are flat; the text gives their tightest-point values.
+- **Fig. 1** (C2): retained alpha A*(b)/A*(off) against the bound, median and interquartile range over D12, α_mom, in three panels in one row: liquidity θ, sector, and all styles jointly (α⊥ and α∥ dashed on the all-styles panel), with text at least 8 pt at 3.5 in; if that cannot be met, four panels as before (Decision 54). The other families, the Mom bound among them, are flat for α_mom; the text gives their tightest-point values.
 - **Fig. 2** (C1): retained fraction under full factor neutrality against φ. The closed-form curve √(1 − φ), the numerical idealized points (three alphas × D12), and the realistic base-mandate points.
 - **Fig. 3:** removed (Decision 50). Q1's cost sentence uses instead a direct split of the base portfolio's gross expected alpha α'w* into A*, borrow cost and trading cost (median and range over D12, α_mom, from the C1 outputs, no solves; if the stored outputs lack a term, say so and drop the sentence). The Stubbs–Vandenbussche attribution stays in the results files and may be cited in one sentence.
 - **Fig. 4** (I2): for each instance, one slope panel: the secant slope of V between neighbouring grid points (certified-nonconcave neighbours marked), the baseline's dual, and the three estimators at 0.5·b, b and 1.5·b beside the certified secant s and its interval. The value functions are described in one sentence of text. The y-axes say P-MI objective per unit of bound, not alpha. Two-column width is allowed; the height is about half the S4 version's.
 - **Fig. 5** (N1): root gap against tightness for the three arms at default presolve, one panel, with the default-scaling perspective marked as solver behaviour (Decision 37). Thin reference lines mark the median plain-relaxation gaps of big-M and the perspective. Work medians are given in the text. Censored solves are marked only if any are plotted. The N = 250 presolve-on/off comparison is reported in the text.
-- **Table I:** notation and base mandate. **Experiment table** (in II or III, single column): one row per experiment (C1, C2, I1, I2, N1, N2(a), N2(b), N3) with dates, N, f or K, the perturbation δ, the arms, and the number of solves. **Table II** (I1): estimator errors with n binding, by K, at δ = 10%, with the in-[L, H] count and the median relative interval width (H − L)/s per row; the convex baseline row is at δ = 10%; single column if it fits at the class's default size. **Table III** (N2(b)): single column; Gurobi barrier, Clarabel and SCS, each without and with objective scaling, against the reference, with each row's n; risk-row normalization is reported in one sentence (it changes nothing for the barrier). N2(a) is reported in the text. Figure and table numbers in this section name roles; the report numbers them in order of first reference.
+- **Table I:** notation and base mandate. **Experiment table** (in II or III, single column): one row per experiment (C1, C2, I1, I2, N1, N2(a), N2(b), N3) with dates, N, f or K, the perturbation δ, the arms, and the number of solves. **Table II** (I1): estimator errors with n binding, by K, at δ = 10%, with the in-[L, H] count and the median relative interval width (H − L)/s per row; the convex baseline row is at δ = 10%; single column if it fits at the class's default size. **Table III** (N2(b)), unless §11.1's cut (10) is taken: single column; Gurobi barrier, Clarabel and SCS, each without and with objective scaling, against the reference, with each row's n; risk-row normalization is reported in one sentence (it changes nothing for the barrier). N2(a) is reported in the text. Figure and table numbers in this section name roles; the report numbers them in order of first reference.
 - **Format:** single-column width (3.5 in) unless justified; text ≥ 8 pt at print size; colorblind-safe palette, with meaning never carried by color alone; vector PDF; deterministic metadata, so regeneration is byte-identical. Also export 300-dpi PNGs to `figures/png/` (for the talk).
 
 ## 11. Report
@@ -235,16 +235,16 @@ Isaiah derives each item by hand (RUNBOOK §5.3); the tests and checks confirm t
 | Part | Pages | Content |
 |---|---|---|
 | Abstract | 0.2 | Problem, approach, principal findings |
-| I. Introduction | 0.6 | Motivation, significance, related work, questions, contributions |
-| II. Problem Setting | 1.1 | §2–§5; Table I; problem classes; Q1–Q3 stated |
-| III. Solution Approach and Analysis | 1.2 | A1–A9 (brief derivations), solvers and algorithms, numerics, validation, the experiment table |
-| IV. Results | 2.7 | A: Q1 with Figs. 1–2; B: Q2 with Fig. 4 and Table II; C: Q3 with Fig. 5 and Table III |
-| V. Discussion | 0.8 | Coverage list in §11.4 |
+| I. Introduction | 0.5 | Motivation, significance, related work, questions, contributions |
+| II. Problem Setting | 1.3 | §2–§5; Table I; problem classes; Q1–Q3 stated |
+| III. Solution Approach and Analysis | 1.5 | A1–A9 (brief derivations), solvers and algorithms, numerics, validation, the experiment table |
+| IV. Results | 2.5 | A: Q1 with Figs. 1–2; B: Q2 with Fig. 4 and Table II; C: Q3 with Fig. 5 and Table III |
+| V. Discussion | 0.7 | Coverage list in §11.4 |
 | VI. Conclusion | 0.2 | Findings and extensions |
 | Disclosures and AI-use acknowledgment | 0.3 | §11.5 |
-| References | 0.5 | §13 |
+| References | 0.3 | §13 |
 
-II–IV are measured together, each float counted in the section that first references it: at most 5.0 pages (Decision 50; the S4 build ran about 6.7). Cut order if over budget: (1) Times as the text font (§11.2), then re-measure; (2) Fig. 3 removed; (3) Table III single column, N2(a) in the text; (4) Fig. 5 one panel; (5) Fig. 1 four panels; (6) Fig. 4 slope row only; (7) the experiment table replaces instance detail in each Setup paragraph; (8) compress III's validation paragraph, IV-A's envelope paragraph, IV-B's certification and slope-accuracy paragraphs and IV-C's N2(b) paragraph, and move the hedged legs to V; (9) Table II single column. Never cut the formulation, the definitions, A2–A4, the n behind every statistic, or a required disclosure. If under 6 pages before references: add substance, never layout.
+II–IV are measured together, each float counted in the section that first references it: at most 5.3 pages, and the whole report at most 8 pages with the other parts at the budgets above (Decision 54, which replaced Decision 50's 5.0 after S4b measured 5.84 with the cut order applied; the parts sum to 7.5, which leaves about 0.15 page for float placement). Cut order if over budget: (1) Times as the text font (§11.2), then re-measure; (2) Fig. 3 removed; (3) Table III single column, N2(a) in the text; (4) Fig. 5 one panel; (5) Fig. 1 four panels; (6) Fig. 4 slope row only; (7) the experiment table replaces instance detail in each Setup paragraph; (8) compress III's validation paragraph, IV-A's envelope paragraph, IV-B's certification and slope-accuracy paragraphs and IV-C's N2(b) paragraph, and move the hedged legs to V; (9) Table II single column; (10) Table III (N2(b)) out of the report, N2(b) in one sentence of IV-C; (11) Fig. 1 in three panels (Decision 54). Never cut the formulation, the definitions, A2–A4, the n behind every statistic, or a required disclosure. If under 6 pages before references: add substance, never layout.
 
 ### 11.2 Page and format rules
 
