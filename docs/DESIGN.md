@@ -344,7 +344,7 @@ This repository was extracted from v1 commit `05468f2` (tag `v1-final` in the v1
 - E. Fama, K. French, "A five-factor asset pricing model," *Journal of Financial Economics* 116(1), 2015.
 - S. Boyd, L. Vandenberghe, *Convex Optimization*, Cambridge University Press, 2004 (course text).
 - L. Wolsey, *Integer Programming*, 2nd ed., Wiley, 2020 (course text).
-- Software and data: S. Diamond, S. Boyd, "CVXPY," *JMLR* 17(83), 2016; Gurobi Optimization, *Gurobi Optimizer Reference Manual*, 2026; P. Goulart, Y. Chen, "Clarabel," arXiv:2405.12762, 2024; K. R. French Data Library; yfinance.
+- Software and data: S. Diamond, S. Boyd, "CVXPY," *JMLR* 17(83), 2016; Gurobi Optimization, *Gurobi Optimizer Reference Manual*, 2026; P. Goulart, Y. Chen, "Clarabel: An interior-point solver for conic programs with quadratic objectives," *Mathematical Programming Computation*, 2026, doi:10.1007/s12532-026-00320-7 (listed as arXiv:2405.12762, 2024, until Decision 69); K. R. French Data Library; yfinance.
 - Optional, only if Isaiah adds it: N. Jegadeesh, S. Titman, "Returns to buying winners and selling losers," *Journal of Finance* 48(1), 1993 (for the 12-1 momentum construction).
 
 Every entry carries `% verified: no` until Isaiah checks the details and changes it to `% verified: yes (<date>)`. No other entries.

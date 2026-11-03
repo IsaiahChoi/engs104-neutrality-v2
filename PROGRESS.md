@@ -3303,3 +3303,29 @@ Recommended by Claude (chat); adopted by Isaiah on 2026-11-03.
 1. Apply final_text_kit_20261103 (its README's commands), or tell me why it should not be.
 2. The Clarabel entry: either (a) amend DESIGN §13 to the published version (Mathematical Programming Computation, 2026, doi 10.1007/s12532-026-00320-7), after which tools/spec_check.py's ALLOWED year changes from 2024 to 2026 (no test changes), or (b) return refs.bib:192–198 to the arXiv 2024 entry.
 3. Then rerun this session from step 3: a green full suite, `make figures` twice, `make report`, the page table, CHECK REPORT, the cold read and the S6 rehearsal.
+
+## 2026-11-03 — Isaiah: S5 pass 3 stop read; Decision 69 (Clarabel reference); rerun S5 pass 3 from step 3
+- Read: the S5 pass 3 entries (72d94fb). Steps 1 and 2 are done: Makefile:49 checks pages with RP-4 itself (spec_check --only RP-4 --build; Decision 68), and Fig. 2's α⊥ squares have a solid face. The session stopped before step 3, rightly: final_text_kit_20261103 had not been applied, and the suite failed (1 failed, 555 passed at 1c8f8f4) on the Clarabel entry, where refs.bib and DESIGN §13 disagreed.
+- Since then I applied final_text_kit_20261103 (6ea9e97), which also pushed 72d94fb.
+- Claude (chat) checked the Clarabel record on 2026-11-03 (Oxford Research Archive): Mathematical Programming Computation, Springer, DOI 10.1007/s12532-026-00320-7, received 23 May 2024, accepted 3 April 2026, published 21 May 2026, no volume or pages yet. The refs kit's entry is right; DESIGN §13's arXiv line was stale, because the writing track that built the refs kit never saw DESIGN.md or tools/spec_check.py.
+
+### Decision 69 (the Clarabel reference)
+Recommended by Claude (chat) on 2026-11-03 (option (a) of the two the agent offered); adopted by Isaiah on the date of this note.
+- (a) DESIGN §13 lists the published version (this commit, verbatim below). refs.bib keeps the refs kit's entry, and its key goulart2024clarabel is unchanged, so no \cite changes.
+- (b) tools/spec_check.py's allow-list follows DESIGN §13: its entry for goulart2024clarabel becomes ("Goulart", "2026"). The agent makes that change in the rerun, with no test changes; test_scaffolds_pass_static_checks should then pass.
+- DESIGN §13, verbatim: "P. Goulart, Y. Chen, "Clarabel," arXiv:2405.12762, 2024;" becomes "P. Goulart, Y. Chen, "Clarabel: An interior-point solver for conic programs with quadratic objectives," *Mathematical Programming Computation*, 2026, doi:10.1007/s12532-026-00320-7 (listed as arXiv:2405.12762, 2024, until Decision 69);"
+
+### Rerun of S5 pass 3, from step 3
+The S5 addendum (my note "— Isaiah: Decision 65; S5 addendum for pass 2 and later") governs, with Decisions 67 and 68. Every line of report/main.tex is mine: change nothing in it except a mechanical LaTeX error, listed with its diff.
+
+**Before step 3.**
+- 0a. tools/spec_check.py's allow-list entry for goulart2024clarabel, as Decision 69(b) says; no test changes. Then the full suite must pass; if any other test fails, stop and report.
+- 0b. The code that picks the test log for \TestsPassed must refuse a log that records any failure or error, so numbers.tex can never take its count from a failing run. Tests first; tests/ additions only.
+- 0c. If a test writes tracked files (the session's report says the suite rewrote the Fig. 2 files), list it. Changing only where it writes, to a temporary directory, is approved, with no change to what it asserts.
+
+**Steps.**
+- 3. `make figures` twice, byte-identical, then `make report`. A page table by section against DESIGN §11.1's budgets, measured under RP-4: the text before the references, refs:start, the total page count, and each part's length (A and B) against its budget.
+- 4. CHECK REPORT in draft mode with K31, K34, K36, K37, RP-8 and RP-9 in view. List what a final-mode run would still fail on; the 32 `% drafted-by-agent` markers (Decision 65) are expected there.
+- 5. A cold read of the whole report, saved verbatim (K40).
+- 6. The S6 rehearsal, as my note "— Isaiah: pre-FINAL agent session (Fig. 2 legibility; S6 rehearsal)" defines it, writing results/checks/S6_rehearsal_<UTC>.md.
+- Stop. In the PROGRESS entry: BASE and HEAD; the commits; 0a–0c; the page table; every FAIL with the sentence it concerns; the cold reader's issues; the rehearsal's result; and what remains for me, by file:line. Commit. No push, no tag.
