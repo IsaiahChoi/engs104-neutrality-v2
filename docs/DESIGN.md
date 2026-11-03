@@ -278,7 +278,7 @@ II–IV are measured together, each float counted in the section that first refe
 ### 11.6 Writing modes
 
 The mode is set by Isaiah's latest GATE note in PROGRESS.md; absent a note, Mode B.
-- **Mode A:** the agent drafts II–IV, marks each paragraph `% drafted-by-agent`, and writes red outlines for the rest. Its derivation paragraphs also carry `% verify-by-hand` until Isaiah's GATE R hand check; after GATE R they are deleted (Decision 64).
+- **Mode A:** the agent drafts II–IV, marks each paragraph `% drafted-by-agent`, and writes red outlines for the rest. Its derivation paragraphs also carry `% verify-by-hand` until Isaiah's GATE R hand check; after GATE R they are deleted (Decision 64). After GATE R, a paragraph Isaiah keeps is marked `% agent-draft approved by Isaiah`, and one he rewrites `% agent-draft revised by Isaiah` (Decision 65).
 - **Mode B:** the agent writes no prose, captions, or displayed equations; only scaffolding, generated macros, tables, figures, and red `TODO(Isaiah)` claim→evidence outlines.
 
 Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. He may ask Claude (chat) for a draft of any of them (Decision 62); he revises or approves it, docs/AI_USE.md logs it, and the acknowledgment says so. Each paragraph of such a draft is marked `% drafted-by-chat` until then, and afterwards `% chat-draft revised by Isaiah` (he rewrote it) or `% chat-draft approved by Isaiah` (he kept it after review) (Decision 64). Claude Code never writes them. The agent never edits text in `proposal/proposal.tex`; the proposal text was drafted with Claude (chat) and edited by Isaiah (docs/AI_USE.md).
@@ -301,7 +301,7 @@ Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment.
 | RP-5 | report | final: `refs:start` on page ≥ 7 (read from the .aux) |
 | RP-6 | report | no forbidden layout commands (§11.2) |
 | RP-7 | report | every `\cite` key in refs.bib; refs.bib ⊆ §13 |
-| RP-8 | report | final: no TODO(Isaiah), red text, `% drafted-by-agent`, `% drafted-by-chat` or `% verify-by-hand` (Decision 64); draft: N/A, with the counts of `% drafted-by-chat`, `% chat-draft revised by Isaiah`, `% chat-draft approved by Isaiah` and `% verify-by-hand` in its detail |
+| RP-8 | report | final: no TODO(Isaiah), red text, `% drafted-by-agent`, `% drafted-by-chat` or `% verify-by-hand` (Decision 64); `% chat-draft revised by Isaiah`, `% chat-draft approved by Isaiah`, `% agent-draft revised by Isaiah` and `% agent-draft approved by Isaiah` pass (Decision 65); a marker counts only on a comment line that begins with it; draft: N/A, with the counts of all seven markers in its detail |
 | RP-9 | report | AI-use acknowledgment present |
 | RP-10 | report | every figure and table referenced; no `??` in the log |
 | RP-11 | report | warn on overfull hboxes > 5 pt |

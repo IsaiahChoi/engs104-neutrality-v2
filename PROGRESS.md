@@ -2991,3 +2991,72 @@ Recommended by Claude (chat) on 2026-10-26 and revised on 2026-11-02 for GATE R,
 - No number was typed by hand: the edits add no numeric literal to the prose, only existing numbers.tex macros.
 - Open: II–IV keep their 32 `% drafted-by-agent` marker lines, on which RP-8 fails in final mode; how a paragraph I keep or revise is marked is for Decision 65, which Claude (chat) proposes with the S5 pass 2 kit.
 - Open (Decision 63(b)): these cuts alone are not expected to bring II–IV to 5.3 pages. If S5 pass 2 measures more, I decide then between the reserve in 63(e) and the measured length, the references no longer counting.
+
+## 2026-11-02 — Isaiah: Decision 65; S5 addendum for pass 2 and later
+- Read: my notes of 2026-11-02 (S5 pass 1 read, GATE R signed; Section I wording and II–IV cuts), pushed as 2bc043b and ff59100.
+- Claude (chat) drafted this note on 2026-11-02; its recommendations are marked as Claude's. Adopted by Isaiah on the date of this note, without changes.
+
+### Decision 65 (markers for agent-drafted text I keep)
+Recommended by Claude (chat) on 2026-11-02: RP-8 fails in final mode on `% drafted-by-agent` (Decision 64), and the 32 such lines in II–IV need a marker that says what I did with each paragraph.
+- (a) An agent-drafted paragraph of II–IV that I have reviewed and keep is marked `% agent-draft approved by Isaiah`; one I have rewritten, `% agent-draft revised by Isaiah`. RP-8 never fails on either.
+- (b) A marker counts only on a comment line that begins with it (after optional spaces), so the header comment that names the markers does not count.
+- (c) I change the markers myself, or a Claude (chat) kit does at my word, before FINAL. S5 changes no marker.
+- (d) The AI-use acknowledgment says that Claude Code drafted II–IV, that I chose cuts and wording edits from Claude (chat)'s menus, and that I checked the derivations by hand.
+- DESIGN §11.6 and §11.7 are edited in this commit, verbatim:
+  - §11.6, the Mode A bullet, gains: "After GATE R, a paragraph Isaiah keeps is marked `% agent-draft approved by Isaiah`, and one he rewrites `% agent-draft revised by Isaiah` (Decision 65)."
+  - §11.7, the RP-8 row becomes: | RP-8 | report | final: no TODO(Isaiah), red text, `% drafted-by-agent`, `% drafted-by-chat` or `% verify-by-hand` (Decision 64); `% chat-draft revised by Isaiah`, `% chat-draft approved by Isaiah`, `% agent-draft revised by Isaiah` and `% agent-draft approved by Isaiah` pass (Decision 65); a marker counts only on a comment line that begins with it; draft: N/A, with the counts of all seven markers in its detail |
+
+### S5 addendum (pass 2 and later passes; GATE R signed)
+Amends RUNBOOK §4 S5 and replaces the addendum in my note "— Isaiah: S4c read; Decisions 58–62; GATE R open; run S5 pass 1 (after my draft note)". With DESIGN as edited on 2026-11-02 and in this commit it conflicts with neither CHECKS nor DESIGN.
+
+**Preconditions.** If any is missing, stop and say so.
+- This note, and after it a note headed "— Isaiah: draft (S5 pass <n>)".
+- The GATE R signature: my note "— Isaiah: S5 pass 1 read; GATE R signed; references do not count; Decisions 63–64".
+- A clean tree.
+
+Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
+
+**Whose text.** Every line of report/main.tex is mine (GATE R is signed), markers included. S5 changes none of it, with one exception: a mechanical fix for an error that stops `make report` or leaves `??` in the log, recorded in PROGRESS with its diff and reason. A FAIL item in report/main.tex is listed as blocking, with the exact change proposed, and not fixed. S5 writes no prose, caption or equation in report/ or proposal/.
+
+**Allowed.**
+- `make figures` (twice, byte-identical) and `make report`.
+- tools/spec_check.py, tests first, to implement DESIGN §11.7 as edited by Decisions 63–65:
+  - RP-4: the text before the references fits in 8 pages, that is, nothing but references after page 8 (refs:start on page 8 or earlier, or at the top of page 9 with nothing before it on that page). Report the total page count and refs:start.
+  - RP-8: in final mode, FAIL on any comment line that begins with `% drafted-by-agent`, `% drafted-by-chat`, `% verify-by-hand`, as well as on TODO(Isaiah) and red text; never on `% chat-draft revised by Isaiah`, `% chat-draft approved by Isaiah`, `% agent-draft revised by Isaiah`, `% agent-draft approved by Isaiah`. In draft mode RP-8 stays N/A and reports the seven marker counts in its detail.
+- tools/page_sections.py, tests first: S5 issue 23 (SKIP_TITLES, now that Section I is prose), and the length of the text before the references, in pages.
+- tests/: additions only. If an existing assertion would have to change, stop and ask (CLAUDE.md rule 5).
+- New macros only if a CHECK REPORT FAIL needs one, tests first, each with source and sha256. No existing macro's value may change; if one would, stop (CLAUDE.md rule 13).
+- No figure change and no experiment runs.
+
+**Protected (ask first).** docs/, report/main.tex (above), report/refs.bib, proposal/, experiments/configs/.
+
+**Steps.**
+1. Full suite on the committed tree. The spec_check and page_sections changes, tests first; the full suite again; commit.
+2. `make figures` twice, byte-identical; `make report`.
+3. spec_check, report, draft mode (the table). Final mode as a diagnostic, report only: each item that would fail, with the seven marker counts.
+4. Pages: tools/page_sections.py under both accountings, per section, against DESIGN §11.1, with refs:start and the text before the references. The forecast: to the text before the references, add max(0, budget − measured B) for each part still in outline (the Abstract, V, VI, the disclosures and AI use). Flag II–IV (B) above 5.3, Section I above 0.5, a forecast above 8.0, and a refs:start before page 7 (RP-5). Compare each section with S5 pass 1's table: the effect of W1–W8 and of the cuts C1–C16 (ff59100).
+5. CHECK REPORT (K30–K40, draft mode) with the result-checker, which also checks:
+   - (a) `git diff BASE HEAD -- report/main.tex` is empty, or equals the mechanical fixes recorded in PROGRESS;
+   - (b) the edits of ff59100 (Section I's W1–W8, II–IV's C1–C16): every number in the changed text is a macro (K31); each changed claim still agrees with Results, quoted side by side; every `\cite`, `\ref` and float reference resolves; and nothing that a check, DESIGN §11.3 or §11.5 requires was removed, in particular the parameter-setting rules the disclosures point to, the n of every statistic, and the statement that N3 was added after the other experiments had been analysed;
+   - (c) Section I as approved: every number and result claim maps to a macro, table, figure or result file (K31, K34), and its statements about II–IV and Results agree with them, quoted side by side;
+   - (d) for each cited work in Section I, the sentence that describes it, listed (not judged), for my verification.
+
+   A FAIL item in report/main.tex is listed as blocking and not fixed. FAIL items in generated outputs, code or tests are fixed (tests first) and re-checked, at most 3 rounds in all.
+6. Literal list (as in pass 1's step 5) for the Abstract, I, V, VI and the disclosures.
+7. Claims table for the Abstract, I, V and VI (RUNBOOK §4 S5 step 4), and the status of each of S5 pass 1's 23 issues (fixed, open or moot), with file:line.
+8. Cold read of the new PDF, saved verbatim (K40).
+9. Stop. In the PROGRESS entry: BASE and HEAD; the commits; one issue list ordered blocking / should-fix / optional, each item with file:line; the page table, the forecast and the comparison with pass 1; the verdicts; tests added; the marker counts; and anything I must decide, in particular Decision 63(b)'s lever if II–IV (B) are above 5.3.
+
+   Commit. No push, no tag.
+
+### Next
+1. S5 pass 2 (Claude Code). Then the collector in Claude (chat)'s s5p2_kit gathers its outputs for the chat.
+2. Decision 63(b)'s lever, from pass 2's page table.
+3. V (2026-11-05 to 11-08; Claude (chat) may draft it on request, Decision 62), then the Abstract, VI, the disclosures and the acknowledgment (2026-11-10); pass 3 (2026-11-10 to 11-11); FINAL and S6 on 2026-11-16.
+
+## 2026-11-02 — Isaiah: draft (S5 pass 2)
+- Sections changed since S5 pass 1's build (3e96582): Section I (Claude (chat)'s revision 2, cb2d3e7, and the wording edits W1–W8, ff59100) and II–IV (the cuts C1–C16 from Claude (chat)'s menu and the deletion of the 10 `% verify-by-hand` marker lines, ff59100).
+- Revision status: Section I is approved, not rewritten (Decision 64(a)); its paragraphs are marked `% chat-draft approved by Isaiah`. II–IV are my text since GATE R and keep `% drafted-by-agent` until I mark them (Decision 65). The Abstract, V, VI, the disclosures and the acknowledgment are still red outlines.
+- Numbers I typed by hand: none. The edits of ff59100 use only numbers.tex macros.
+- Mode: draft. spec_check and CHECK REPORT in draft mode.
+- Run S5 pass 2: YES, under the S5 addendum in my note "— Isaiah: Decision 65; S5 addendum for pass 2 and later".
