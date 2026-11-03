@@ -65,14 +65,14 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [x] 6. Stop and report (PROGRESS, S4b closing entry)
 
 ## GATE R — Isaiah (10/27 – 10/30)
-- [ ] GATE R note: derivations done (RUNBOOK §5.3); open items
+- [x] GATE R note: derivations done (RUNBOOK §5.3); open items (signed 2026-11-02, PROGRESS)
 
 ## S5 — Integration passes (Claude Code, 11/2 – 11/12, repeatable)
 - [ ] Pass 1: regenerate, spec_check, CHECK REPORT (K30–K40), literal list, claims table, cold read
 - [ ] Pass 2: same
 
 ## FINAL — Isaiah (Mon 11/16)
-- [ ] FINAL note: all sections written, no TODOs, references verified, AI-use paragraph verified
+- [x] FINAL note: all sections written, no TODOs, references verified, AI-use paragraph verified (PROGRESS)
 
 ## S6 — Final build and submission package (Claude Code, Mon 11/16)
 - [ ] 1. Clean-checkout build; byte-identical figures and numbers.tex; same page count and text

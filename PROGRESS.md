@@ -3395,3 +3395,49 @@ The S5 addendum (my note "— Isaiah: Decision 65; S5 addendum for pass 2 and la
 ### Decisions needed
 - The blocking items 1–2 and should-fix 3–5 are yours to settle before FINAL; 3(a) would need a build session (new macros, tests first).
 - Optional: approve redirecting tools/s2d_breakdown.py's output (a tool change) so the suite writes no tracked file at all.
+
+## 2026-11-03 — Isaiah: S5 pass 3 read; final edits; II–IV approved (Decision 65); FINAL; run S6
+- Read: the S5 pass 3 rerun's entries (2fc8104..9bca0f6); results/checks/REPORT_20261103T201054Z.md (CHECK REPORT round 1, PASS, draft); results/checks/cold_read_20261103T200500Z.md (MOSTLY); results/checks/S6_rehearsal_20261103T202038Z.md.
+- Claude (chat) checked the rerun against the files on 2026-11-03: report/main.tex is byte-identical to final_text_kit_20261103(b)'s output; numbers.tex differs from S5 pass 2 only in \TestsPassed (574) and its log; DESIGN, AI_USE and PROGRESS are what the kits and the sessions wrote. The rehearsal's clean checkout reproduced every figure, table and numbers.tex byte for byte, with the same page count and PDF text.
+- Claude (chat) drafted this note and the edits below; adopted by Isaiah on the date of this note.
+
+### Edits in this commit (report/main.tex; my text)
+- E1: SF1: the Conclusion's 'only' claim, which IV-C's method-0 result contradicts.
+- E2: SF2: an elasticity is a marginal rate, not a share of the cost (Abstract).
+- E3: SF2, the same in Section I.
+- E4: SF3: V's node counts and tight-level Work, now stated in IV-C.
+- E5: O1: the uniqueness qualifier that Section I and A5 keep (Abstract).
+- E6: O2: '(1 in the panel)' read oddly.
+- E7: O4: the widening follows from A8's interval; it was not measured.
+- E8: O5 and the cold reader: what the 144 pairs are.
+- E9: cold reader: the estimate's symbol was never defined.
+- E10: cold reader: the subscripts of (3) were never stated.
+- E11: cold reader: the momentum alpha's symbol and the IC were never introduced.
+- E12: the acknowledgment: II-IV are now approved (Decision 65(d)).
+- E13: the header comment names the markers as they now stand.
+- M65: Decision 65: II-IV approved; the 32 marker lines (32 lines).
+- docs/DESIGN.md §11.6: the proposal was "drafted by Claude (chat) and reviewed by Isaiah", not "drafted with Claude (chat) and edited by Isaiah", as docs/AI_USE.md records (the checker's O6).
+- Not taken: O3 (the secant inference stays, worded as "consistent with") and O7 (xcolor stays loaded, unused and harmless). SF2's option (a) (new macros for the removal shares) is not taken: the wording now states the largest marginal cost, which Results supports.
+- No number was typed by hand: the edits add only existing numbers.tex macros.
+
+### Decision 65 applied
+- I have read Sections II–IV and approve them as they stand with this note's edits. Their 32 `% drafted-by-agent` lines become `% agent-draft approved by Isaiah`, and the acknowledgment now says I approved all of the text.
+
+### FINAL
+- All sections are written; no TODO(Isaiah), red text or outline remains.
+- References verified: refs_kit_20261103 (1c8f8f4) set every entry to `% verified: yes`, and Decision 69 aligned DESIGN §13 with the Clarabel article.
+- AI-use acknowledgment verified against docs/AI_USE.md (Claude (chat)'s check; I approve it).
+- The proposal states the project type ("This problem-formulation project"); that suffices for RUNBOOK §8 G7. I have read the C1–C4 rows.
+- PLAN.md: GATE R and FINAL ticked in this commit.
+
+### S6 (RUNBOOK §4 S6, with these specifics)
+Every line of report/main.tex is mine: change nothing in it except a mechanical LaTeX error that stops `make report`, recorded with its diff. Record BASE first.
+- 0. Full suite. Then `make figures` twice, byte-identical, and `make report`, so that report/main.pdf is built from this commit's text; commit that build. \TestsPassed may change (Decision 67); no other macro.
+- 1. The clean-checkout build of RUNBOOK §4 S6, step 1, against that commit.
+- 2. tools/spec_check.py, report and proposal, final mode; CHECK REPORT in final mode (K30–K40), with a cold read of the final PDF saved verbatim (K40). If any final-mode item fails on my text, list it with the exact change proposed, and stop before step 4.
+- 3. The RUNBOOK §8 compliance-matrix walk, with the evidence for every row.
+- 4. SUBMISSION.md, as RUNBOOK §4 S6, step 4, says, including the page count in total and before the references.
+- 5. Tick S6's tasks in PLAN.md, write the closing PROGRESS entry, commit and stop. No tag, no push.
+
+### After S6
+- I read SUBMISSION.md, then `git tag report-submitted && git push origin main --tags`, and upload report/main.pdf to Canvas by Fri 2026-11-20.
