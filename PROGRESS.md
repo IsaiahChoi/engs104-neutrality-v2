@@ -3060,3 +3060,8 @@ Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
 - Numbers I typed by hand: none. The edits of ff59100 use only numbers.tex macros.
 - Mode: draft. spec_check and CHECK REPORT in draft mode.
 - Run S5 pass 2: YES, under the S5 addendum in my note "— Isaiah: Decision 65; S5 addendum for pass 2 and later".
+
+## 2026-11-03 — S5 pass 2: BASE
+- Preconditions met: Isaiah's note "— Isaiah: Decision 65; S5 addendum for pass 2 and later", followed by "— Isaiah: draft (S5 pass 2)"; the GATE R signature in "— Isaiah: S5 pass 1 read; GATE R signed; references do not count; Decisions 63–64"; the tree clean at session start (`git status --short` empty).
+- BASE = f9a6bbdc7ad7a248965653c8e6904ad4a2e94730 (`git rev-parse HEAD`, 2026-11-03T03:23Z), recorded before any other step.
+- Mode: draft (Isaiah's draft note).
