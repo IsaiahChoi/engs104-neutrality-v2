@@ -2980,3 +2980,14 @@ Recommended by Claude (chat) on 2026-10-26 and revised on 2026-11-02 for GATE R,
 2. S5 pass 2 after that kit (target 2026-11-04): it measures the pages and implements RP-4 and RP-8 (tests first).
 3. V (2026-11-05 to 11-08); the Abstract, VI, the disclosures and the acknowledgment, which also names the web AI chat's cross-check (2026-11-10); pass 3 (2026-11-10 to 11-11); FINAL and S6 on 2026-11-16.
 4. Before FINAL: verify the 11 unverified references and Section I's descriptions of [1]–[13] (RUNBOOK §5.5).
+
+## 2026-11-02 — Isaiah: Section I wording and II–IV cuts (Claude (chat)'s menu); verify-by-hand markers deleted
+- Claude (chat) checked Section I's wording and drafted a menu of cuts to II–IV on 2026-11-02 (the kit's CUTS.md). I accepted its Section I edits W1–W8 and chose the cuts; the kit applied them to report/main.tex.
+- Section I: W1–W8 applied; its three paragraph markers now read `% chat-draft approved by Isaiah` (Decision 64(a)).
+- II–IV: cuts applied: C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15, C16; skipped: none. Claude (chat)'s estimate of the saving is about 19 column lines (about 0.17 page); S5 pass 2 measures it.
+- The 10 `% verify-by-hand` marker lines are deleted (GATE R is signed; Decision 64(b)), and the header comment says so without naming the marker.
+- Correction (q): my note of the S5 pass 1 read says 11 `% verify-by-hand` markers. There are 10 marker lines; the count of 11, taken from S5 pass 1, also included the header comment that names the marker.
+- Section I's length: W1–W8 add about 5 column lines by Claude (chat)'s count, so Section I is about 0.52 page against its 0.5 budget, not the 0.49 Claude (chat) first estimated; S5 pass 2 measures it.
+- No number was typed by hand: the edits add no numeric literal to the prose, only existing numbers.tex macros.
+- Open: II–IV keep their 32 `% drafted-by-agent` marker lines, on which RP-8 fails in final mode; how a paragraph I keep or revise is marked is for Decision 65, which Claude (chat) proposes with the S5 pass 2 kit.
+- Open (Decision 63(b)): these cuts alone are not expected to bring II–IV to 5.3 pages. If S5 pass 2 measures more, I decide then between the reserve in 63(e) and the measured length, the references no longer counting.
