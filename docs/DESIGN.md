@@ -248,7 +248,7 @@ II–IV are measured together, each float counted in the section that first refe
 
 ### 11.2 Page and format rules
 
-`\documentclass[conference]{IEEEtran}` with class defaults. The text font is Times, as IEEEtran intends: under tectonic (XeTeX) the class's ptm font is unavailable, so the build loads a Times-metric text font explicitly (for example TeX Gyre Termes through fontspec, or newtxtext); math fonts are left as they are. Not allowed: geometry, `\fontsize`, `\linespread`, `\baselinestretch`, `\enlargethispage`, negative `\vspace` in running text, or font-size switches in body text. Put `\label{refs:start}` immediately before the bibliography. Final mode: references start on page 7 or later, and the PDF has at most 8 pages. Draft mode: at most 8 pages only.
+`\documentclass[conference]{IEEEtran}` with class defaults. The text font is Times, as IEEEtran intends: under tectonic (XeTeX) the class's ptm font is unavailable, so the build loads a Times-metric text font explicitly (for example TeX Gyre Termes through fontspec, or newtxtext); math fonts are left as they are. Not allowed: geometry, `\fontsize`, `\linespread`, `\baselinestretch`, `\enlargethispage`, negative `\vspace` in running text, or font-size switches in body text. Put `\label{refs:start}` immediately before the bibliography. Final mode: references start on page 7 or later, and the PDF has at most 8 pages before the references. Draft mode: at most 8 pages only.
 
 ### 11.3 Content requirements by section
 
