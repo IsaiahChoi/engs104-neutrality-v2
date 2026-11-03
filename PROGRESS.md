@@ -3072,3 +3072,76 @@ Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
 - Step 3: spec_check report draft --build (results/scratch/spec_s5p2_draft.txt): PASS; RP-4 "8 pages in total; refs:start on page 8". Final mode, diagnostic (results/scratch/spec_s5p2_final.txt): FAIL on RP-8 only (TODO(Isaiah), red text, `% drafted-by-agent`); RP-5 PASS (p. 8). Proposal draft, on a scratch copy of proposal/ (results/scratch/spec_s5p2_proposal_draft.txt): PASS (2 pages, 8 keys).
 - Step 4: results/scratch/pages_s5p2.txt, .json and pages_s5p2_compare.txt. II–IV A 5.17, B 5.67 (5.3: over by 0.37); Section I 0.54 (0.5: over by 0.04); text before the references 7.58 pages; forecast 7.71.
 - report/main.tex unchanged since BASE (no mechanical fix needed).
+
+## 2026-11-03 — S5 pass 2 closing entry (Claude Code, Opus 5.5): CHECK REPORT round 1 PASS (draft); 8 pages; stopped at the addendum's step 9
+- **BASE** f9a6bbd. **HEAD**: the commit with this entry; the build checked is 9b2ef0e (e66cc7b carries the same PDF, sha256 14c6c05f…). Not pushed, not tagged. No experiment runs (RUN_LOG unchanged).
+- Commits since BASE: afdcd9a (BASE entry), ea5ad02 (step 1: spec_check RP-4/RP-8, page_sections, tests first), 9b2ef0e (build, spec_check, pages; interim entry), e66cc7b (cold read; literal list, claims table, pass-1 issue status), and this one.
+- **report/main.tex unchanged since BASE** (checker 5(a): empty diff). No mechanical fix was needed: `make report` built, no `??`, no undefined reference. No prose, caption or equation written; no marker changed (Decision 65(c)); docs/, refs.bib, proposal/, experiments/configs/ untouched; tests/ additions only.
+- One CHECK round: PASS, so no re-check.
+
+### Verdicts
+- **Suite**: 553 passed, 1 skipped, 2 xfailed (logs/test_full_s5p2_green_20261103T032849Z.log; the checker's clone of e66cc7b agrees). Before step 1: 534 (logs/test_full_s5p2_base_20261103T032429Z.log).
+- **Tests added**: 19 in tests/test_s5p2.py (11 functions; red first: logs/test_s5p2_red_*.log). No existing test changed.
+- **make figures** twice, byte-identical (results/scratch/figs_s5p2_a.sha = _b.sha). Against BASE: every figure and table identical; numbers.tex differs only in \TestsPassed 534 → 553 (see Decisions needed).
+- **make report**: 8 pages (logs/make_report_s5p2_a_20261103T033129Z.log).
+- **spec_check report, draft, --build** (results/scratch/spec_s5p2_draft.txt): **PASS**. RP-4 "8 pages in total; refs:start on page 8". **Final, diagnostic** (spec_s5p2_final.txt): FAIL on RP-8 only (TODO(Isaiah), red text, `% drafted-by-agent`); RP-5 PASS (p. 8). **Proposal, draft** (scratch copy of proposal/; spec_s5p2_proposal_draft.txt): PASS (2 pages, 8 keys).
+- **CHECK REPORT round 1** (results/checks/REPORT_20261103T035032Z.md, saved verbatim; the harness refused the checker's Write): **PASS**. K30–K40 PASS (K34, K36, K38 in draft mode); suite, tests-additions-only and protected-paths rules PASS; 5(a) PASS (empty diff); 5(b) PASS: ff59100's numbers all macros (recomputed), changed claims agree with Results side by side, \cite/\ref resolve, nothing required removed (§8 rules, every n, the N3-added-after sentence at main.tex:256 kept), with one side effect (S1 below); 5(c) PASS with should-fix S1–S3; 5(d) listed (the checker's report, "5(d)").
+- **Cold read** (results/checks/cold_read_20261103T033915Z.md, verbatim; input = the 9b2ef0e PDF): **MOSTLY**.
+- **Literal list and claims table** (results/checks/S5P2_literals_claims_20261103.md): no hand-typed result number in your text; one new internal label, "Decision 62" (main.tex:306). Unmapped claims: none; mapped but not in Results: the V outline items of pass 1 issue 13.
+
+### Pages (results/scratch/pages_s5p2.txt, .json, pages_s5p2_compare.txt; the checker's clone agrees). A = floats where they land; B = each float in its first-referencing part.
+| part | pass 1 A | pass 1 B | pass 2 A | pass 2 B | ΔB | budget | flag |
+|---|---|---|---|---|---|---|---|
+| Abstract (outline) | 0.21 | 0.21 | 0.21 | 0.21 | 0.00 | 0.2 | |
+| I | 0.53 | 0.53 | 0.54 | 0.54 | +0.01 | 0.5 | **over by 0.04** |
+| II | 1.37 | 1.37 | 1.20 | 1.20 | −0.18 | 1.3 | |
+| III | 2.08 | 1.93 | 2.00 | 2.00 | +0.07 | 1.5 | |
+| IV | 2.25 | 2.40 | 1.98 | 2.48 | +0.08 | 2.5 | |
+| **II–IV** | 5.70 | 5.70 | 5.17 | **5.67** | −0.03 | 5.3 | **over by 0.37** |
+| V (outline) | 0.77 | 0.77 | 1.13 | 0.63 | −0.13 | 0.7 | |
+| VI (outline) | 0.14 | 0.14 | 0.14 | 0.14 | 0.00 | 0.2 | |
+| Disclosures and AI use (outline) | 0.33 | 0.33 | 0.34 | 0.34 | +0.01 | 0.3 | |
+| References (not counted) | 0.29 | 0.29 | 0.28 | 0.28 | | | |
+- **Pages 8** (pass 1: 9). refs:start p. 8 (not before 7: no RP-5 flag). **Text before the references 7.58 pages** (title block included); RP-4 PASS.
+- **Forecast**: 7.58 + max(0, budget − B) for the parts still in outline (Abstract 0, V +0.07, VI +0.06, disclosures 0) = **7.71**, under 8.0 (no flag).
+- **Effect of W1–W8 and C1–C16 (ff59100)**: the sum of the parts before the references fell 7.676 → 7.521 (**−0.155 page**), close to Claude (chat)'s ≈ 0.17 estimate for the cuts net of W1–W8. Section I grew 0.01 (W1–W8; chat's estimate 0.52 against the measured 0.54). By section, II −0.18 (II-A/II-E/II-C cuts; but see the caveat), and II–IV (B) only −0.03, because the I2 slope figure (starred, 0.32 p) and Fig. 5 (0.18 p) now land at the top of p. 7 inside V's span (they landed in IV-C in pass 1) and the columns around them stretch differently: V's B fell 0.13 with unchanged text, and IV-C's text span grew 0.12 after cuts. So the IV/V split, and with it II–IV (B), carries roughly ±0.1–0.15 page of float-placement and column-stretch noise; the total before the references is the robust figure.
+- **Measurement caveat (II/III split)**: Table I's top marker registers at the foot of p. 2's right column while the table sits at the top of p. 3, so B moves its 0.09 page out of "Questions" (B 0.00) rather than out of III: III is overstated and II understated by about 0.09. The II–IV total is unaffected.
+- Changing page_sections' outline-only rule (issue 23) moved no float: first references are identical under the pass-1 and pass-2 rules.
+
+### Marker counts (report/main.tex; RP-8's line-start rule)
+- `% drafted-by-agent` 32; `% drafted-by-chat` 0; `% verify-by-hand` 0; `% chat-draft revised by Isaiah` 0; `% chat-draft approved by Isaiah` 3 (main.tex:46, 49, 52); `% agent-draft revised by Isaiah` 0; `% agent-draft approved by Isaiah` 0. The header comment (main.tex:3) quotes `% drafted-by-agent` mid-line and is not counted (Decision 65(b)).
+- Red TODO(Isaiah) items: 5 outline environments (Abstract, V, VI, disclosures, AI use) and \todo{author} (main.tex:31).
+
+### Issue list (file:line at HEAD; report/main.tex unchanged since BASE; all items are your text, none changed by me)
+**Blocking**
+- None. (RP-4 passes; pass 1's only blocking item is fixed.)
+
+**Should-fix**
+1. main.tex:57 (also the outlines at 40 and 276) — "that stops early": ff59100's A9 cut (main.tex:165) removed II–IV's only statement of it; IV-C (256) gives the evidence (the default root bound is looser than the plain relaxation, median 0.0145 against 1.94e-3, at 25 of 36) but not the inference. Checker S1 proposes either adding to IV-C after "looser than the plain relaxation itself" ": its outer approximation stops before it reaches the cones' own relaxation", or in I replacing "that stops early (median root gap \NThreeGapDef, against \NThreeGapMZero\ with conic node relaxations)" by "whose root bound is looser than the plain perspective relaxation (median root gap \NThreeGapDef, against \NThreeGapPlain\ for the plain relaxation and \NThreeGapMZero\ with QCP node relaxations)". Cold read §2–§3 flags it too.
+2. main.tex:54 against 38 and 288 — which constraints carry the cost: I names "the position and liquidity caps and the trading and borrow costs" (matches Results 195's "the caps and the costs"); the Abstract and VI outlines name "the liquidity cap, sector bounds and trading costs". The position cap binds at 2 of 12 dates (median elasticity 0); sector bounds at 12 of 12 (0.014). Checker S2 proposes "…comes mainly from the liquidity cap (median elasticity \ELiqMed) and the trading and borrow costs", with 38 and 288 aligned.
+3. main.tex:53 — "prices each constraint by its own dual at a fixed risk budget": true for Q1; in Q2–Q3 \pmi\ fixes λ* and its slopes are of the risk-penalized objective (main.tex:102). Checker S3 proposes adding "(in the integer problem, of the risk-penalized objective at λ*; Sec. II-E)". This is also the cold reader's first Q&A question.
+4. main.tex:306–307 (AI-use outline): "which Isaiah revises" → approved (Decision 64(a)); add Decision 65(d) (you chose cuts and wording edits from Claude (chat)'s menus; derivations checked at GATE R, not "checks"); add the web AI chat's derivation cross-check (your 2026-11-02 note); drop the internal labels "Decision 62", "(Mode A)", "gate notes". Required before FINAL.
+5. V outline numbers not in Results (pass 1 issue 13; Decision 63(b): into V with their n, or dropped): main.tex:265 (\VolIOneBaseBelow, \VolBaseIOneAt), 269 (node medians), 270 (\WorkBigMTight, \WorkRescTight), 272 (\ClassPerspPOneFiveMax, \ClassBigMPOneFiveMax), 273 (\ClassPerspPOne, \ClassPerspPThree), 274 (\NearTiePerspSector/\NearTiePerspMom), 278 (\ProbePresolveMax), 279 (hedged legs).
+6. V outline conflicts a reader sees: main.tex:265 "all 48 of 48 base points below" against II-E's "3 above" of all 144 I1 points (102) — say "base points" against "all points"; main.tex:280 \ExtWithin\ of \ExtN\ (36 of 36) against III-E's \SlopeScaleWithin\ of \SlopeScaleN\ (48 of 48, 173).
+7. main.tex:38 and 288 — Decision 59's Mom-bound nuance (\CTwoMomTight\ 0.968 at zero, stated at 185) absent; the two 0.16s (\ELiqMed, an elasticity; \SplitTradeMed, a share of gross alpha) sit side by side unlabelled; 0.961/0.956 (fractions of A*(off)) are compared with 0.964 (fraction of the unconstrained, costless optimum) (cold read §2–§3).
+8. main.tex:263 — V outline header "0.8 page"; DESIGN §11.1 says 0.7.
+9. Cold read, II–IV (your text since GATE R): terms undefined or used before definition — presolve (first at 102; central to IV-C 246), f (K = round(fS), 125), µ̂ (211, Table II caption 220), α_mom as a symbol (73), QCP (256), SCS/ECOS (136), GICS and SMB/HML/RMW/CMA (65), w₀ (65), w± (65, defined at 79), A1–A9 and I1/N1–N3 labels used in II before III; samples missing for most validation statistics (173) and for "144 pairs" (256); denominators (Fig. 1/Fig. 2 captions; 185, 195); units of \NearTieSector\ (230) against Fig. 3's bp/month; Work raw or normalized (246); N2(b)'s scale 10³ against s_obj 10⁴ and no Clarabel/SCS result (259); the I1 selection rule, the Mom bound at 0.025 and how D12 was chosen (125). The cold reader's five fixes (results/checks/cold_read_20261103T033915Z.md §7) are ordered.
+10. Section I is 0.54 page against its 0.5 budget (+0.04).
+11. For FINAL, RP-8: besides the 32 `% drafted-by-agent` lines (Decision 65 markers) and the five outlines, the preamble definitions main.tex:20–21 (\todo, the outline environment: red text and "TODO(Isaiah)") and \todo{author} (31) also trip RP-8; they must go when the outlines do.
+
+**Optional**
+12. main.tex:57 — "conic node relaxations" against "QCP node relaxation (method 0)" (40, 256); use one term (checker O2).
+13. main.tex:53 — Q1/Q3 paraphrase a subset of II-G (111) (checker O1).
+14. main.tex:173 — "on \KNineToys\ one-asset toys" and "on random toys" no longer say the 200 random toys are among the 202 (checker O3).
+15. main.tex:40 — "removes both" omits \ConeRescMax\ and its scope; Q3 numbers mix scopes (pass 1 issue 19).
+16. main.tex:296 — "the eight required items" heads seven bullets (item 7 is the AI-use outline); the cold reader counted seven.
+17. main.tex:266 — optional macro \NFactors\ (6) for "six-factor" (also 69).
+18. Fig. 2 — α∥'s filled and hollow triangles overlap at φ = 1 (pass 1 issue 21; no figure change in this pass).
+19. The cold reader again flagged the 2017-12 δ = 10% medians equal to the pooled ones: pass 1 showed this is a real coincidence (the same case is the median in both sets).
+
+### Status of S5 pass 1's 23 issues
+- Fixed: 1, 2, 3, 4, 6, 8, 16, 17, 18, 23. Mostly fixed: 7 (remaining: "active set", "conic node relaxations", "default-scaling" at 56–57), 15 (remaining: "design pilot" 302, "Mode A" 307, µ̂, "tie"). Partly fixed: 5 (Section I now matches Results; the outlines disagree with it: should-fix 2), 9 (should-fix 4). Open: 10, 11, 12, 13, 14 (should-fix 5–8), 19, 20, 21, 22 (optional). Table with file:line: results/checks/S5P2_literals_claims_20261103.md, step 7b.
+
+### Decisions needed
+- **Decision 63(b)'s lever.** II–IV (B) 5.67 against 5.3 (over by 0.37; ±0.1–0.15 placement noise at the IV/V boundary); Section I 0.54 against 0.5. The text before the references is 7.58 pages and the forecast 7.71, so RP-4 has about 0.3 page of room once V, VI and the disclosures are written to budget. Choices: accept the measured II–IV length (the references no longer count), cut further, or keep 63(e)'s reserve (single-column I2 figure), which is not triggered (nothing beyond page 8).
+- **\TestsPassed.** The addendum says no existing macro may change. \TestsPassed went 534 → 553 because of step 1's tests-first rule; I treated it as the unavoidable exception, as in S5 pass 1 (532 → 534), not as a result change (rule 13 not triggered). Confirm, or say how later passes should handle it (for example, by exempting the count explicitly).
