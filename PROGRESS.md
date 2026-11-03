@@ -3341,3 +3341,57 @@ The S5 addendum (my note "— Isaiah: Decision 65; S5 addendum for pass 2 and la
 - Step 3: `make figures` twice, exit 0, the 21 tracked outputs sha-identical across runs (results/scratch/s5p3/figs_runA.sha = figs_runB.sha). Against HEAD only report/numbers.tex differs: \TestsPassed 556 → 574 (source logs/test_full_s5p3_0abc_20261103T195237Z.log; Decision 67). `make report` exit 0 (logs/make_report_s5p3_20261103T195447Z.out): RP-4 PASS, 9 pages, refs:start p. 8, text before the references ends on p. 8; draft spec_check PASS. report/main.tex unchanged (sha256 bbcc4c95…); no mechanical fix needed.
 - Pages (results/scratch/s5p3/pages_s5p3.txt): text before the references 7.706 pages; table in the closing entry.
 - Final-mode spec_check, diagnostic (results/scratch/s5p3/spec_report_final.txt): FAIL on RP-8 only (32 `% drafted-by-agent`, Decision 65); RP-5 PASS.
+
+## 2026-11-03 — S5 pass 3 rerun closing entry (Claude Code, Opus 5.5): CHECK REPORT round 1 PASS (draft); 9 pages, 7.71 before the references; cold read MOSTLY; S6 rehearsal PASS on the build
+- **BASE** 14ad89c. **HEAD**: the commit with this entry. Commits: 2fc8104 (BASE), f9159ee (0a–0c), 7832283 (step 3 build; interim entry), and this one (check reports, cold read, rehearsal, this entry). Not pushed, not tagged. No experiment runs (RUN_LOG unchanged).
+- **report/main.tex unchanged** (`git diff 14ad89c HEAD -- report/main.tex` empty; sha256 bbcc4c95…): no mechanical fix was needed. docs/, refs.bib, proposal/, experiments/configs/ untouched; tests/ changed only by the added tests/conftest.py and tests/test_s5p3.py.
+
+### 0a–0c (details in the interim entry above)
+- 0a: spec_check ALLOWED goulart2024clarabel → ("Goulart", "2026") (Decision 69(b)). Suite 564 passed, 1 skipped, 2 xfailed; no other test failed.
+- 0b: full_suite_log refuses a newest log with any failure or error (raises); 7 tests in tests/test_s5p3.py, red then green.
+- 0c: tests that wrote tracked files (all byte-identical): test_s5, test_s4c, test_fig_s4b, test_fig_s3, test_numbers (figures/ and report/tables/, now redirected to a tmp dir by tests/conftest.py, no assertion changed) and test_s2d_breakdown (results/pilot_s2d/s2d_breakdown_run_20261020T045603Z.json, not redirected: tools/s2d_breakdown.py hard-codes its output; needs a tool change, not approved). Suite after 0a–0c: 574 passed, 1 skipped, 2 xfailed.
+
+### Step 3: pages (results/scratch/s5p3/pages_s5p3.txt; the checker's clone agrees). A = floats where they land; B = each float in its first-referencing part.
+| part | A | B | budget (DESIGN §11.1) | flag |
+|---|---|---|---|---|
+| Abstract | 0.16 | 0.16 | 0.2 | |
+| I | 0.56 | 0.56 | 0.5 | +0.06 (Decision 66(a) accepts the measured length) |
+| II | 1.21 | 1.21 | 1.3 | |
+| III | 2.00 | 2.00 | 1.5 | +0.50 |
+| IV | 2.00 | 2.50 | 2.5 | |
+| **II–IV** | 5.21 | **5.71** | 5.3 (5.67 accepted, Decision 66) | +0.04 over the accepted 5.67 (float noise at IV/V) |
+| V | 1.22 | 0.72 | 0.8 | |
+| VI | 0.19 | 0.19 | 0.2 | |
+| Disclosures and AI use | 0.29 | 0.29 | 0.3 | |
+| References (not counted) | 0.35 | 0.35 | | |
+- **Text before the references 7.706 pages** (≤ 8: RP-4 PASS); refs:start p. 8 (RP-5 ≥ 7 PASS); **9 pages in total**, page 9 references only. No part is in outline, so no forecast term. Decision 66's forecast was ≈ 7.85.
+
+### Step 4: CHECK REPORT round 1, draft (results/checks/REPORT_20261103T201054Z.md; saved verbatim by me, the harness refused the checker's Write): **PASS**
+- K30–K40 PASS in draft mode; suite (clone: 574 passed), tests-additions-only, protected paths and the empty main.tex diff PASS. K32: the only macro value change is \TestsPassed 556 → 574 (Decision 67). K38 also passes its final criterion (19 of 19 `% verified: yes`; refs.bib ⊆ DESIGN §13 as edited by Decision 69). K36: all 8 §11.5 items, with lines. K37: every §11.4 item in V.
+- **FAIL items: none in draft mode.**
+- **Final mode would still fail on:** RP-8 (the 32 `% drafted-by-agent` lines: main.tex:57 61 65 69 83 98 102 117 128 132 136 139 142 145 148 151 158 161 165 175 178 188 198 204 207 210 220 223 236 239 249 252; Decision 65) and K34 on SF1 (below). Marker counts: drafted-by-agent 32, drafted-by-chat 0, verify-by-hand 0, chat-draft revised 0, chat-draft approved 12, agent-draft revised 0, agent-draft approved 0. No TODO(Isaiah), red text or outline remains.
+
+### Step 5: cold read (results/checks/cold_read_20261103T200500Z.md, verbatim; input = 7832283's PDF, sha256 5e3a0a7e…): **MOSTLY**
+- Five fixes, in the reader's order: (1) qualify "only with rows and cones rescaled together" (VI, main.tex:277); (2) back the Discussion's node counts and tight-level Work with Results, and reword "Tolerance trades against runtime" (V, main.tex:268); (3) quantify or soften "most of the cost comes from the liquidity cap" (main.tex:35, 48, 259, 277); (4) pin down samples (115 checks/18 keys, the 240 I1 relaxations, the 144 pairs, "6 of 12", "4 above", the dollar elasticity's n, the f behind K = 67/79, the C1 solve count, N1's "3 reruns", N2(b)'s Clarabel/SCS results); (5) definition order (N, w±, μ̂, the ± subscripts in eq. (3), "QCP node relaxation" in I, forward references to N1–N3/I1/A1–A9 in II, the overloaded b, the I1 bound rule and Mom = 0.025).
+
+### Step 6: S6 rehearsal (results/checks/S6_rehearsal_20261103T202038Z.md)
+- 1 PASS: clean clone of 7832283 with data/ and logs/ copied in (no .lic); `make test` 574 passed; `make figures` byte-identical to the repo's 21 outputs; `make report` exit 0, 9 pages, identical PDF text on every page.
+- 2: report final FAIL on RP-8 only; proposal final PASS.
+- 3: compliance matrix: 13 of 16 rows met; open for you: R1 (cold-read fixes), R9 (K34 final, main.tex:277), C5 (RP-8 markers); G7 and C1–C4 need your read. Nothing open for the agent before FINAL.
+
+### Issue list (report/main.tex is yours; none applied)
+**Blocking for FINAL**
+1. main.tex:57–252, the 32 `% drafted-by-agent` lines (Decision 65(c)).
+2. main.tex:277 (SF1): "its tighter relaxation reaches the root only with rows and cones rescaled together, presolve brings big-M close, and the objective still needs scaling." IV-C:250 reports method 0 reaching \NThreeGapMZero\ at default scaling, below the plain relaxation's \NThreeGapPlain. Checker's proposal: "with Gurobi's default cone handling, its tighter relaxation reaches the root only with rows and cones rescaled together (QCP node relaxations reach it without rescaling), presolve brings big-M close, and the objective still needs scaling." Cold reader fix 1.
+
+**Should-fix**
+3. SF2, main.tex:35, 48, 259, 277, "most of the cost" from the liquidity cap and trading and borrow: true on the files (removal shares: liquidity 0.30, trading and borrow 0.45 of the median shortfall; together above 0.5 at 12 of 12 dates), but Results gives only an elasticity and shares of gross alpha. Either (a) a Results sentence with new macros (a build session, tests first) or (b) "the largest marginal cost" in 35 and 48. Cold reader fix 3.
+4. SF3, main.tex:268: \NodesRescBase/\NodesBigMBase and \WorkRescTight/\WorkBigMTight appear only in V; add them to IV-C:240 (macros exist). Cold reader fix 2.
+5. Cold reader fixes 4–5 (samples; definition order), in II–IV.
+
+**Optional**
+6. O1 main.tex:35 "exact for convex programs" → "… where the dual is unique"; O2 main.tex:283 "(\MultiSessionReturns\ in the panel)" reads "(1 in the panel)"; O3 main.tex:265 "consistent with a longer secant crossing more pieces" (6 → 7 of 11); O4 main.tex:268 "Tolerance trades against runtime" is a consequence of eq. (3), not measured; O5 main.tex:250 the 144 pairs; O6 DESIGN §11.6 "edited by Isaiah" vs the acknowledgment's "reviewed by the author"; O7 main.tex:18 xcolor unused.
+
+### Decisions needed
+- The blocking items 1–2 and should-fix 3–5 are yours to settle before FINAL; 3(a) would need a build session (new macros, tests first).
+- Optional: approve redirecting tools/s2d_breakdown.py's output (a tool change) so the suite writes no tracked file at all.
