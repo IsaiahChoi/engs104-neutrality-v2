@@ -2925,3 +2925,58 @@ Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
 - **63. Page lever (Decision 58(e)).** 9 pages; II–IV 5.70 vs 5.3 and Section I 0.53 vs 0.5. Fig. 2's reduction freed 0.02 page but no line. Candidates named in 58(e): the value-function figure (Fig. 3 in the PDF) at single-column width with 2017-12 only, and a shorter Section I; the main lever remains your GATE R revision of II–IV (58(a)); Prof. Ferguson's answer on references (58(c)) matters only if RP-4's limit is changed to exclude them, which would be a DESIGN §11.1/§11.7 edit.
 - **64. RP-8 and the chat markers.** spec_check's final mode does not flag `% drafted-by-chat`. Should RP-8 also require that no `% drafted-by-chat` remains at FINAL (a DESIGN §11.7 and spec_check change, tests first)?
 - Correction (S5 pass 1 closing entry, Verdicts): the make report log is logs/make_report_s5p1_b_20261025T183547Z.log, not …T183552Z.log.
+
+## 2026-11-02 — Isaiah: S5 pass 1 read; GATE R signed; references do not count; Decisions 63–64
+- Read:
+  - PROGRESS from "— Isaiah: S4c read; Decisions 58–62; GATE R open; run S5 pass 1 (after my draft note)" to the S5 pass 1 closing entry and its correction (e9ed2e7);
+  - results/checks/REPORT_20261025T215638Z.md (CHECK REPORT round 1: FAIL on K30/RP-4 only);
+  - results/checks/cold_read_20261025T214615Z.md (MOSTLY) and results/checks/S5P1_literals_claims_20261025.md.
+- Pushed S5 pass 1's commits (1d52973..e9ed2e7) and my Section I revision 2 commit (cb2d3e7) before this note.
+- Claude (chat) checked the S5 pass 1 stop against the files on 2026-10-26 and wrote this note's text on 2026-11-02 from my answers; its recommendations below are marked as Claude's. Its 2026-10-26 kit (d6364_kit) was never applied: GATE R and Prof. Ferguson's answer overtook its text.
+
+### S5 pass 1 stop, checked by Claude (chat) against the files
+- CHECK REPORT round 1 has one FAIL, K30/RP-4: 9 pages, and page 9 holds only references [18]–[19]. K31–K40, the suite, tests-additions-only, the protected paths and the addendum's items 4(a)–(d) pass.
+- numbers.tex has 524 macros, none added or removed since S4c; the only changed value is \TestsPassed, 532 to 534 (the two Fig. 2 tests; logs/test_full_s5p1b_20261025T183343Z.log).
+- Recomputed from the result files, all matching: \PredOneMax and \PredThreeMed (s3b_analysis.json, sha256 339ce5ee…; P1 n = 7, P3 n = 24); \NThreeEOneDef, \NThreeN, \NThreeGapDef and \NThreeGapMZero and the N1 volatility macros (the 36 default-presolve solves per arm) (results/n3/run_20261024T092033Z/summary.json, sha256 226d666f…); Table III's δ = 10% medians and maxima (n = 23) and its baseline row (n = 24) (s3_analysis.json, sha256 0e867713…); \ConeDefMax (6.4e-3) agrees with s3_analysis.json's maximum over all 48 N1 solves of that arm (6.35e-3). Not recomputed by Claude (chat): macros sourced only from parquet or csv files (among them \WidthMed and \ConeRescMax), which its sandbox cannot read; the round-1 checker recomputed them.
+- Fig. 2 (Decision 58(b)): the change touched only src/figures/fig_c.py, the regenerated figure files and the added tests/test_s5.py. Its float shrank by 0.021 page; the page count, refs:start and the section spans did not change.
+- Pages: the closing entry's table matches the checker's. II–IV measure 5.70 pages (A and B) against 5.3, Section I 0.53 against 0.5, and the forecast is 8.02 pages plus the title block, references included.
+- The issue list has 23 items: 1 blocking, 14 should-fix, 8 optional. Section I revision 2 addresses items 2–6, 8, 9, 17 and 18, and part of 7 (the fixed-integer dual and the support are still used before II–IV define them) and 16 ("through the risk budget's multiplier λ*" can still be read as λ* pricing every constraint). S5 pass 2 re-checks them.
+- Two items the issue list lacks (Claude (chat)), both for my writing: the AI-use outline (main.tex:315–318) does not mention the web AI chat's derivation cross-check of II–III, which docs/AI_USE.md logs (2026-10-25) and the acknowledgment must include; and \ConeRescMax (1.9e-11) is the rescaled arm's maximum at default presolve (n = 36), while over all 48 N1 solves, presolve off included, it is 8.0e-9 (s3_analysis.json), so Section I's (iv) and the Abstract should keep that scope.
+- Confirmed by the kit on my machine before it wrote this note: HEAD is cb2d3e7 and pushed; `git diff 9fec2be e9ed2e7 -- report/main.tex` is empty; cb2d3e7 changes only report/main.tex and docs/AI_USE.md; since 9fec2be, tests/ changed only by additions.
+
+### GATE R: signed
+- I checked the derivations of II-F, A1–A9 and III-D by hand and sign GATE R. I keep no item-by-item record of the check; any fixes go into my revision of II–IV.
+- From here every line of report/main.tex is my text, and the S5 addendum's condition for pass 2 is met. The 11 `% verify-by-hand` markers are deleted before FINAL (Decision 64(b)).
+- docs/AI_USE.md's three "checks the derivations by hand at GATE R (not yet done)" now read done (this commit).
+
+### Prof. Ferguson on references (Decision 58(c))
+- He told me, before this note, that references do not count toward the 8 pages. This replaces RUNBOOK §0.5's plan to meet both readings.
+
+### Decisions
+Recommended by Claude (chat) on 2026-10-26 and revised on 2026-11-02 for GATE R, Prof. Ferguson's answer and my choice on Section I. Adopted by Isaiah on the date of this note.
+
+- **Decision 63 (page lever; Decision 58(e)).**
+  - (a) References do not count: RP-4 requires the text before the references to fit in 8 pages, and RP-5 still asks for at least 6 pages before them. DESIGN §11.1 and §11.7 are edited in this commit (below); tools/spec_check.py changes in S5 pass 2, tests first.
+  - (b) My revision of II–IV still cuts them to at most 5.3 pages (B) (Decision 58(a)), from wording, internal labels (S5 issue 15) and repeated detail, never from DESIGN §11.1's never-cut list. Claude (chat) drafts a cut menu and I choose. The V-outline numbers that Results lacks (S5 issue 13) go into V with their n, or are dropped; IV does not grow for them.
+  - (c) The space freed by (a) and (b) goes to V first (Decisions 54(e), 58(c)); the other section budgets stand.
+  - (d) Section I: I keep Claude (chat)'s revision 2 (cb2d3e7) after a wording check by Claude (chat), rather than rewriting it (Decision 64(a)). It is about 0.47 page by Claude (chat)'s estimate; S5 pass 2 measures it. The acknowledgment says Claude (chat) drafted it.
+  - (e) Reserve: the I2 slope figure (Fig. 3 in the PDF; DESIGN §10's Fig. 4) at single-column width, only if a pass still finds the text before the references longer than 8 pages.
+  - (f) A draft-mode RP-4 FAIL is reported, not fixed: no pass's agent cuts text to meet it. RP-4 must pass by S6 (2026-11-16).
+- **Decision 64 (RP-8 and the paragraph markers).**
+  - (a) In final mode RP-8 also fails on any `% drafted-by-chat` line. A chat-drafted paragraph passes once marked `% chat-draft revised by Isaiah` (I rewrote it) or `% chat-draft approved by Isaiah` (I kept it after review). In draft mode RP-8 stays N/A and reports the counts of these three markers and of `% verify-by-hand` in its detail.
+  - (b) In final mode RP-8 also fails on any `% verify-by-hand` line. With GATE R signed, the markers are deleted by the kit that applies my II–IV revision, or else in S5 pass 2.
+  - (c) DESIGN §11.6 and §11.7 are edited in this commit (below). tools/spec_check.py and its tests change in S5 pass 2 (tests first; tests/ additions only; if an existing assertion would have to change, pass 2 stops and asks, rule 5).
+
+### DESIGN edits (Decisions 63–64; applied verbatim in this commit)
+- §11.1, heading: "(IEEE conference format; ≥ 6 pages before references; ≤ 8 pages in total)" becomes "(IEEE conference format; 6–8 pages before the references, which do not count (Decision 63))"
+- §11.1, page rule: "and the whole report at most 8 pages" becomes "and the text before the references at most 8 pages (references do not count: Prof. Ferguson, Decision 63)"
+- §11.6, Mode A bullet gains: "Its derivation paragraphs also carry `% verify-by-hand` until Isaiah's GATE R hand check; after GATE R they are deleted (Decision 64)."
+- §11.6, Decision 62 paragraph: "he revises it, docs/AI_USE.md logs it, and the acknowledgment says so." becomes "he revises or approves it, docs/AI_USE.md logs it, and the acknowledgment says so. Each paragraph of such a draft is marked `% drafted-by-chat` until then, and afterwards `% chat-draft revised by Isaiah` (he rewrote it) or `% chat-draft approved by Isaiah` (he kept it after review) (Decision 64)."
+- §11.7, RP-4 row: "| RP-4 | report | ≤ 8 pages |" becomes "| RP-4 | report | the text before the references fits in 8 pages: nothing but references after page 8 (references do not count: Prof. Ferguson, Decision 63); the total page count is reported |"
+- §11.7, RP-8 row: "| RP-8 | report | final: no TODO(Isaiah), red text, or `% drafted-by-agent` |" becomes "| RP-8 | report | final: no TODO(Isaiah), red text, `% drafted-by-agent`, `% drafted-by-chat` or `% verify-by-hand` (Decision 64); draft: N/A, with the counts of `% drafted-by-chat`, `% chat-draft revised by Isaiah`, `% chat-draft approved by Isaiah` and `% verify-by-hand` in its detail |"
+
+### Next
+1. Claude (chat) sends the II–IV cut menu and the Section I wording check; I choose, and a kit applies the chosen cuts and wording to report/main.tex, marks Section I `% chat-draft approved by Isaiah` and deletes the `% verify-by-hand` markers (target 2026-11-03).
+2. S5 pass 2 after that kit (target 2026-11-04): it measures the pages and implements RP-4 and RP-8 (tests first).
+3. V (2026-11-05 to 11-08); the Abstract, VI, the disclosures and the acknowledgment, which also names the web AI chat's cross-check (2026-11-10); pass 3 (2026-11-10 to 11-11); FINAL and S6 on 2026-11-16.
+4. Before FINAL: verify the 11 unverified references and Section I's descriptions of [1]–[13] (RUNBOOK §5.5).

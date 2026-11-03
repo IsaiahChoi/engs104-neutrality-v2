@@ -230,7 +230,7 @@ Isaiah derives each item by hand (RUNBOOK §5.3); the tests and checks confirm t
 
 ## 11. Report
 
-### 11.1 Structure and page budget (IEEE conference format; ≥ 6 pages before references; ≤ 8 pages in total)
+### 11.1 Structure and page budget (IEEE conference format; 6–8 pages before the references, which do not count (Decision 63))
 
 | Part | Pages | Content |
 |---|---|---|
@@ -244,7 +244,7 @@ Isaiah derives each item by hand (RUNBOOK §5.3); the tests and checks confirm t
 | Disclosures and AI-use acknowledgment | 0.3 | §11.5 |
 | References | 0.3 | §13 |
 
-II–IV are measured together, each float counted in the section that first references it: at most 5.3 pages, and the whole report at most 8 pages with the other parts at the budgets above (Decision 54, which replaced Decision 50's 5.0 after S4b measured 5.84 with the cut order applied; the parts sum to 7.5, which leaves about 0.15 page for float placement). Cut order if over budget: (1) Times as the text font (§11.2), then re-measure; (2) Fig. 3 removed; (3) Table III single column, N2(a) in the text; (4) Fig. 5 one panel; (5) Fig. 1 four panels; (6) Fig. 4 slope row only; (7) the experiment table replaces instance detail in each Setup paragraph; (8) compress III's validation paragraph, IV-A's envelope paragraph, IV-B's certification and slope-accuracy paragraphs and IV-C's N2(b) paragraph, and move the hedged legs to V; (9) Table II single column; (10) Table III (N2(b)) out of the report, N2(b) in one sentence of IV-C; (11) Fig. 1 in three panels (Decision 54). Never cut the formulation, the definitions, A2–A4, the n behind every statistic, or a required disclosure. If under 6 pages before references: add substance, never layout.
+II–IV are measured together, each float counted in the section that first references it: at most 5.3 pages, and the text before the references at most 8 pages (references do not count: Prof. Ferguson, Decision 63) with the other parts at the budgets above (Decision 54, which replaced Decision 50's 5.0 after S4b measured 5.84 with the cut order applied; the parts sum to 7.5, which leaves about 0.15 page for float placement). Cut order if over budget: (1) Times as the text font (§11.2), then re-measure; (2) Fig. 3 removed; (3) Table III single column, N2(a) in the text; (4) Fig. 5 one panel; (5) Fig. 1 four panels; (6) Fig. 4 slope row only; (7) the experiment table replaces instance detail in each Setup paragraph; (8) compress III's validation paragraph, IV-A's envelope paragraph, IV-B's certification and slope-accuracy paragraphs and IV-C's N2(b) paragraph, and move the hedged legs to V; (9) Table II single column; (10) Table III (N2(b)) out of the report, N2(b) in one sentence of IV-C; (11) Fig. 1 in three panels (Decision 54). Never cut the formulation, the definitions, A2–A4, the n behind every statistic, or a required disclosure. If under 6 pages before references: add substance, never layout.
 
 ### 11.2 Page and format rules
 
@@ -278,10 +278,10 @@ II–IV are measured together, each float counted in the section that first refe
 ### 11.6 Writing modes
 
 The mode is set by Isaiah's latest GATE note in PROGRESS.md; absent a note, Mode B.
-- **Mode A:** the agent drafts II–IV, marks each paragraph `% drafted-by-agent`, and writes red outlines for the rest.
+- **Mode A:** the agent drafts II–IV, marks each paragraph `% drafted-by-agent`, and writes red outlines for the rest. Its derivation paragraphs also carry `% verify-by-hand` until Isaiah's GATE R hand check; after GATE R they are deleted (Decision 64).
 - **Mode B:** the agent writes no prose, captions, or displayed equations; only scaffolding, generated macros, tables, figures, and red `TODO(Isaiah)` claim→evidence outlines.
 
-Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. He may ask Claude (chat) for a draft of any of them (Decision 62); he revises it, docs/AI_USE.md logs it, and the acknowledgment says so. Claude Code never writes them. The agent never edits text in `proposal/proposal.tex`; the proposal text was drafted with Claude (chat) and edited by Isaiah (docs/AI_USE.md).
+Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment. He may ask Claude (chat) for a draft of any of them (Decision 62); he revises or approves it, docs/AI_USE.md logs it, and the acknowledgment says so. Each paragraph of such a draft is marked `% drafted-by-chat` until then, and afterwards `% chat-draft revised by Isaiah` (he rewrote it) or `% chat-draft approved by Isaiah` (he kept it after review) (Decision 64). Claude Code never writes them. The agent never edits text in `proposal/proposal.tex`; the proposal text was drafted with Claude (chat) and edited by Isaiah (docs/AI_USE.md).
 
 ### 11.7 `tools/spec_check.py`
 
@@ -297,11 +297,11 @@ Either way, Isaiah writes the Abstract, I, V, VI, and the AI-use acknowledgment.
 | RP-1 | report | `make report` builds |
 | RP-2 | report | IEEEtran with the conference option |
 | RP-3 | report | an abstract and sections matching Introduction, Problem Setting, Solution Approach, Results, Discussion, Conclusion (a mapping table allows renamed titles) |
-| RP-4 | report | ≤ 8 pages |
+| RP-4 | report | the text before the references fits in 8 pages: nothing but references after page 8 (references do not count: Prof. Ferguson, Decision 63); the total page count is reported |
 | RP-5 | report | final: `refs:start` on page ≥ 7 (read from the .aux) |
 | RP-6 | report | no forbidden layout commands (§11.2) |
 | RP-7 | report | every `\cite` key in refs.bib; refs.bib ⊆ §13 |
-| RP-8 | report | final: no TODO(Isaiah), red text, or `% drafted-by-agent` |
+| RP-8 | report | final: no TODO(Isaiah), red text, `% drafted-by-agent`, `% drafted-by-chat` or `% verify-by-hand` (Decision 64); draft: N/A, with the counts of `% drafted-by-chat`, `% chat-draft revised by Isaiah`, `% chat-draft approved by Isaiah` and `% verify-by-hand` in its detail |
 | RP-9 | report | AI-use acknowledgment present |
 | RP-10 | report | every figure and table referenced; no `??` in the log |
 | RP-11 | report | warn on overfull hboxes > 5 pt |
