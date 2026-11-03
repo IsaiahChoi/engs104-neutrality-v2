@@ -3146,3 +3146,50 @@ Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
 - **Decision 63(b)'s lever.** II–IV (B) 5.67 against 5.3 (over by 0.37; ±0.1–0.15 placement noise at the IV/V boundary); Section I 0.54 against 0.5. The text before the references is 7.58 pages and the forecast 7.71, so RP-4 has about 0.3 page of room once V, VI and the disclosures are written to budget. Choices: accept the measured II–IV length (the references no longer count), cut further, or keep 63(e)'s reserve (single-column I2 figure), which is not triggered (nothing beyond page 8).
 - **\TestsPassed.** The addendum says no existing macro may change. \TestsPassed went 534 → 553 because of step 1's tests-first rule; I treated it as the unavoidable exception, as in S5 pass 1 (532 → 534), not as a result change (rule 13 not triggered). Confirm, or say how later passes should handle it (for example, by exempting the count explicitly).
 - Correction (S5 pass 2 closing entry, should-fix 9): presolve's first use in II–IV is main.tex:136 (III-B), not 102; w± is defined at main.tex:77, not 79. The other line numbers there were checked (ECOS/SCS 136; f in K = round(fS) 125; GICS and SMB 65; QCP 256; 144 pairs 256; \NearTieSector\ 230; N2(b)'s scale 259).
+
+## 2026-11-02 — Isaiah: S5 pass 2 read; Decisions 66–67; edits to Section I, IV-C, the author line and outlines
+- Read: PROGRESS from "— S5 pass 2: BASE" to the S5 pass 2 closing entry and its correction (47783f9); results/checks/REPORT_20261103T035032Z.md (CHECK REPORT round 1, PASS); results/checks/cold_read_20261103T033915Z.md (MOSTLY); results/checks/S5P2_literals_claims_20261103.md.
+- Pushed S5 pass 2's commits (afdcd9a..47783f9) before this note.
+- Claude (chat) checked the stop against the files on 2026-11-02 and drafted this note and the edits below; its recommendations are marked as Claude's. Adopted by Isaiah on the date of this note, without changes.
+
+### S5 pass 2 stop, checked by Claude (chat) against the files
+- report/main.tex is byte-identical to ff59100 (sha256 209bfbb5…), as the checker found (5(a)).
+- numbers.tex differs from ff59100 only in \TestsPassed, 534 to 553, and its source line (logs/test_full_s5p2_green_20261103T032849Z.log).
+- docs/DESIGN.md, docs/AI_USE.md and PROGRESS.md up to the pass 2 entries are exactly what s5p2_kit wrote; tests/ changed only by the added tests/test_s5p2.py.
+- tools/spec_check.py's new RP-4 implements Decision 63 as written: PASS at 8 pages or fewer; beyond that, only if refs:start is on page 8 or earlier, or at the top of page 9, and no labelled float or section lies after page 8.
+- Pages, as in the closing entry: 8 pages; the text before the references 7.58, forecast 7.71; II–IV (B) 5.67 against 5.3. The cuts shortened the text before the references by 0.155 page, while II–IV (B) moved only 0.03, because the I2 slope figure and Fig. 5 now land in V's span.
+- Not rechecked by Claude (chat): the test run itself (it read the code and the logs' names, not the run) and the checker's recomputation of the macros.
+
+### Decisions
+Recommended by Claude (chat) on 2026-11-02, after reading the S5 pass 2 results. Adopted by Isaiah on the date of this note, without changes.
+
+- **Decision 66 (pages; closes Decision 63(b)).**
+  - (a) Neither the I2 figure reserve (63(e)) nor further cuts: II–IV stay at their measured length (5.67 pages (B) in S5 pass 2, with about 0.1–0.15 page of float-placement noise at the IV/V boundary), and Section I at its measured length (0.54 against 0.5, a little more after this note's edits). The binding limit is RP-4: the text before the references, 7.58 pages measured.
+  - (b) V's budget rises from 0.7 to 0.8 page (DESIGN §11.1, this commit), from the room the references freed (Decisions 54(e), 58(c), 63(c)). With V at 0.8 and this note's edits (about 4 more lines of body text), the forecast is about 7.85 pages, which leaves about 0.15 page for float noise.
+  - (c) Pass 3 re-measures. If its forecast exceeds 8.0, V is the first part trimmed.
+- **Decision 67 (\TestsPassed).** \TestsPassed is exempt from the S5 addendum's rule that no existing macro's value may change: it changes whenever tests are added, with its source log recorded. Any other macro whose value would change still stops the pass (CLAUDE.md rule 13). The handling in passes 1 and 2 stands. Claude (chat)'s addendum had contradicted its own tests-first requirement; this amends it.
+- DESIGN §11.1 is edited in this commit, verbatim:
+  - §11.1, V's budget: "| V. Discussion | 0.7 | Coverage list in §11.4 |" becomes "| V. Discussion | 0.8 | Coverage list in §11.4 (0.7 until Decision 66) |"
+  - §11.1, II–IV rule: "at most 5.3 pages, and the text before the references at most 8 pages" becomes "at most 5.3 pages as planned (Decision 66 accepts the 5.67 measured in S5 pass 2), and the text before the references at most 8 pages"
+
+### Edits to report/main.tex in this commit (my text; drafted by Claude (chat), approved by me)
+- E1: author line (\todo{author}; RP-8 at FINAL).
+- E2: S3: 'equal risk' holds for Q1; the integer problem fixes the risk price.
+- E3: S2: the position cap binds at 2 of 12 dates; the liquidity cap dominates.
+- E4: O2: one term for MIQCPMethod 0.
+- E5: S1: restore II-IV's statement of the inference, as an inference.
+- E6: cold read: 'QCP' was never defined.
+- E7: S2 aligned; Decision 59's Mom nuance; the two 0.16s and the denominators labelled (should-fix 7).
+- E8: S2 aligned in VI's outline, with the same labels.
+- E9: AI-use outline: approved, not revised; Decision 65(d); the web AI cross-check; no internal labels.
+- M1: Section I's marker records the new wording edits.
+- No number was typed by hand: the edits add only existing numbers.tex macros. Section I keeps its `% chat-draft approved by Isaiah` markers; the IV-C paragraph keeps `% drafted-by-agent` until I mark II–IV (Decision 65).
+
+### Still open
+- For my writing: the V outline's numbers that Results lacks, and its two conflicting counts (should-fix 5–6, with V); the cold read's definitions in II–IV (should-fix 9; Claude (chat) can draft a menu, as for the cuts).
+- For FINAL: the 32 `% drafted-by-agent` lines (Decision 65), the five outlines, and the preamble definitions of \todo and the outline environment (main.tex:20–21), which RP-8 fails on and which go with the last outline.
+
+### Next
+1. V (2026-11-05 to 11-08; Claude (chat) may draft it on request, Decision 62), at most 0.8 page.
+2. The Abstract, VI, the disclosures and the acknowledgment (2026-11-10), from the outlines as edited here.
+3. Draft note and S5 pass 3 (2026-11-10 to 11-11); FINAL and S6 on 2026-11-16.
