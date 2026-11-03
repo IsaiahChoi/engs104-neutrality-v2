@@ -3193,3 +3193,33 @@ Recommended by Claude (chat) on 2026-11-02, after reading the S5 pass 2 results.
 1. V (2026-11-05 to 11-08; Claude (chat) may draft it on request, Decision 62), at most 0.8 page.
 2. The Abstract, VI, the disclosures and the acknowledgment (2026-11-10), from the outlines as edited here.
 3. Draft note and S5 pass 3 (2026-11-10 to 11-11); FINAL and S6 on 2026-11-16.
+
+## 2026-11-02 — Isaiah: pre-FINAL agent session (Fig. 2 legibility; S6 rehearsal)
+- Read: my note "— Isaiah: S5 pass 2 read; Decisions 66–67; edits to Section I, IV-C, the author line and outlines" (04c40ac).
+- Claude (chat) drafted this note on 2026-11-02; adopted by Isaiah on the date of this note.
+- Purpose: everything Claude Code can do before I write V, the Abstract, VI and the acknowledgment. Those, the reference checks and the Decision 65 markers are mine (DESIGN §11.6); this session touches none of them.
+
+### Addendum for this session
+Amends RUNBOOK §4 for this session only; the S5 addendum stays in force for S5 pass 3.
+
+**Preconditions.** This note and a clean tree; if either is missing, stop. Record BASE = `git rev-parse HEAD` in PROGRESS before any other step.
+
+**Whose text.** Every line of report/main.tex is mine. This session changes none of it, markers included, and makes no mechanical fix: if `make report` fails, stop and report.
+
+**Allowed.**
+- Fig. 2 (S5 pass 1 issue 21): make α∥'s filled (mandate (i)) and hollow (base mandate) markers distinguishable where they overlap at φ = 1, keeping every point, every legend entry and the size and font limits that tests/test_s5.py pins. Tests first; tests/ additions only. Report the page effect.
+- `make figures` (twice, byte-identical) and `make report`. \TestsPassed may change (Decision 67); if any other macro's value would change, stop (CLAUDE.md rule 13).
+- An S6 rehearsal that writes only under results/ (no SUBMISSION.md yet):
+  1. a clean checkout of HEAD in a scratch directory under results/scratch/ (gitignored), with the data copied in as the result-checker does: `make figures` byte-identical to the committed figures, tables and numbers.tex, and `make report` with the same page count and the same PDF text as report/main.pdf;
+  2. tools/spec_check.py, report and proposal, in final mode, as a diagnostic: every item that fails, with file:line;
+  3. the RUNBOOK §8 compliance matrix, row by row: met, open for me (what and where), or open for the agent;
+  4. results/checks/S6_rehearsal_<UTC>.md holding 1–3.
+- No experiment runs.
+
+**Protected (ask first).** docs/, report/main.tex, report/refs.bib, proposal/, experiments/configs/.
+
+**Steps.**
+1. Full suite on the committed tree. The Fig. 2 tests, then the change; the full suite again; commit.
+2. `make figures` twice, byte-identical; `make report`; tools/page_sections.py (the text before the references, and Fig. 2's float height before and after).
+3. The S6 rehearsal.
+4. Stop. In the PROGRESS entry: BASE and HEAD; the commits; Fig. 2's change and its page effect; the rehearsal's verdicts; and what remains for me, by file:line. Commit. No push, no tag.
