@@ -3226,3 +3226,46 @@ Amends RUNBOOK §4 for this session only; the S5 addendum stays in force for S5 
 
 ## 2026-11-02 — pre-FINAL agent session: BASE
 - BASE = d6309bb2e76143fdc9bacbf1ddf47ea7b868476e (clean tree; precondition note "— Isaiah: pre-FINAL agent session (Fig. 2 legibility; S6 rehearsal)" present).
+
+## 2026-11-03 — pre-FINAL agent session: closing entry (stopped at step 2: `make report` fails)
+- Read: Isaiah's note "— Isaiah: pre-FINAL agent session (Fig. 2 legibility; S6 rehearsal)" and the entries it names.
+- BASE = d6309bb (recorded in b80678c). HEAD = this commit. Commits: b80678c (BASE), a4ddebe (step 1: Fig. 2 code and tests), this commit (build outputs and this entry). Not pushed, not tagged.
+- report/main.tex untouched: sha256 cfdc1a72… at BASE and now. No change to docs/, report/refs.bib, proposal/, experiments/configs/. No experiment runs.
+
+### Step 1: Fig. 2 (S5 pass 1 issue 21)
+- Full suite on the committed tree (b80678c): 553 passed, 1 skipped, 2 xfailed (logs/test_full_prefinal_base_20261103T042123Z.log).
+- Cause, from the rendered figure: all 24 α∥ points lie on φ = 1 (stored φ = 1 to 5.7e-15). The 12 filled (full factor neutrality) points stack at (1, 0) on the end of the closed-form curve. The 12 hollow (base mandate) points have transparent faces, so the x = 1 gridline runs through every centre, and stacked hollow neighbours (0.457/0.466, 0.566/0.578/0.579, 0.822/0.838) show through each other. Both effects make the hollow triangles read as filled.
+- Tests first: tests/test_prefinal.py, 3 tests, checking the rendered pixels at 600 dpi.
+  - α∥'s hollow face is opaque and equals the axes background; its edge is the series colour.
+  - The centre pixel of every isolated hollow α∥ marker (at least 2 required) is the background colour.
+  - The filled α∥ stack is drawn above the curve (zorder), unclipped, with the series colour at its centre and near its base.
+  - Red on the committed figure: the hollow centre was the grid grey (217, 216, 212), and zorder was 2 = 2 (logs/test_prefinal_red_20261103T042400Z.log, …042417Z, …042428Z). The …042428Z log ran before the code edit landed; it was renamed from _green_ to _red_. In the new tests, `x == 1.0` became a 1e-12 tolerance before green (φ is 1 to 5.7e-15). Green: logs/test_prefinal_green_20261103T042452Z.log (with test_s5, test_s4c, test_fig_s4b, test_fig_s3: 32 passed).
+- Change (src/figures/fig_c.py `fig2_figure`, α∥ only):
+  - The hollow α∥ markers get `mfc="white"` (opaque) in place of `"none"`.
+  - The filled α∥ markers get `zorder=3, clip_on=False`.
+  - α_mom and α⊥ are unchanged. Every point, all 7 legend entries, the 3.5 × 2.6 in size and the ≥ 8 pt text are unchanged; tests/test_s5.py passes unmodified. fig_c.py is not kept-core (DESIGN §12).
+- Full suite after the change: 556 passed, 1 skipped, 2 xfailed (logs/test_full_prefinal_green_20261103T042528Z.log).
+- Page effect: none. The saved PDF is 3.443 × 2.556 in before and after. tools/page_sections.py gives fig:alignment 0.174 page before (BASE export) and after (working tree). The text before the references is 7.739 pages in both; II–IV (B) is 5.53 in both.
+- Not changed, for you: α⊥'s hollow squares at φ = 0 have the same look. The x = 0 gridline runs through their column and they overlap each other (main.tex:199, Fig. 2). The same one-line fix (`mfc="white"`) would apply, but the note authorized α∥ only.
+
+### Step 2: build
+- `make figures`, run twice, exit 0 both times. The 21 tracked files (figures/, report/numbers.tex, report/tables/) are sha-identical across the runs (results/scratch/prefinal/figs_pre.sha, figs_runA.sha, figs_runB.sha; logs/make_figures_prefinal_3_*.out, _4_*.out). Against HEAD, only figures/fig2_alignment.pdf, figures/png/fig2_alignment.png and report/numbers.tex differ.
+- numbers.tex changes only in \TestsPassed, 553 to 556, and its source line (logs/test_full_prefinal_green_20261103T042528Z.log, sha256 92d6550b…). Decision 67 permits this; no other macro changed.
+- **`make report` fails** (exit 2; logs/make_report_prefinal_20261103T043045Z.out). tectonic builds, then `tools/page_count.py report/main.pdf --min 1 --max 8` (Makefile:49) rejects **9 pages**.
+  - Page 9 holds only references [18]–[19]. refs:start is on page 8; the text before the references is 7.739 pages.
+  - So RP-4 as Decision 63 states it (refs:start on page 8, nothing but references after page 8) would pass, but the Makefile's total-page gate still says 8. This is the same as S5 pass 1 (PROGRESS, S5 pass 1 build: 9 pages, page 9 references only).
+  - Not caused by Fig. 2. The BASE tree (git archive of d6309bb, old Fig. 2) also builds to 9 pages with the same 7.739 (results/scratch/prefinal/pages_base.txt). The committed 8-page report/main.pdf at BASE was stale: it came from 9b2ef0e, before your 04c40ac edits to main.tex (E1–E9, about 4 more lines).
+  - Per your note ("if `make report` fails, stop and report"), I stopped. No mechanical fix, no Makefile change, no spec_check run: `--build` rewrites report/main.pdf, and without it RP-4 can't read refs:start.
+  - This commit includes the 9-page report/main.pdf from this build, as S5 pass 1 (3e96582) did, so the tracked PDF matches HEAD's sources rather than pre-04c40ac text. If you'd rather keep the PDF uncommitted until a passing build, revert that file yourself.
+- Deviation, contained in scratch: my first `make figures` pair ran inside the BASE export (a shell `cd` persisted from the page_sections call). There, uv created results/scratch/prefinal/base_tree/.venv from its local cache ("Installed 53 packages in 211ms", nothing downloaded), and make_all failed on missing results (exit 2). It wrote only inside the export (its ROOT is the export). The working repo was untouched apart from the files above. My first hash files were empty (zsh does not word-split `$FILES`); I discarded them and reran both `make figures` runs with proper hashing (the figures above).
+
+### Step 3: S6 rehearsal: not run
+- Stopped at step 2 under the note's rule. There is no results/checks/S6_rehearsal_*.md, no clean-checkout build, no final-mode spec_check, and no compliance-matrix walk.
+- For the rehearsal's clean checkout: the newest full-suite logs (logs/test_full_*.log) are gitignored and untracked. \TestsPassed's source must be copied into the clone with logs/, as the result-checker's run_clone.sh does (rsync data/ and logs/, `--exclude *.lic`, `uv sync --offline --frozen`).
+
+### What remains for you (file:line)
+1. **The page gate (decide first; it blocks `make report`, the S6 rehearsal and S6).** Makefile:49 `page_count.py --max 8` versus Decision 63's RP-4. Either the Makefile follows RP-4 (total pages reported, the limit on the text before the references), or the text shrinks back to 8 total pages. 7.739 pages are before the references now; with V at 0.8, Decision 66's forecast was about 7.85. Then rerun this session from step 2, or run step 3 alone.
+2. Fig. 2's α⊥ column at φ = 0 (above): optional, needs your authorization.
+3. Your sections, as outlines in red: Abstract main.tex:35; V main.tex:263 (0.8 page); VI main.tex:287; disclosures main.tex:296; AI-use acknowledgment main.tex:305. Then the preamble's \todo and outline definitions, main.tex:20–21 (RP-8), and the header comment, main.tex:5.
+4. Decision 65 markers: 32 `% drafted-by-agent` lines, at main.tex:63 67 71 75 89 104 108 123 134 138 142 145 148 151 154 157 164 167 171 181 184 194 204 210 213 216 226 229 242 245 255 258.
+5. report/refs.bib: 11 entries still `% verified: no` (K38 final mode; e.g. refs.bib:6, 62, 118).
