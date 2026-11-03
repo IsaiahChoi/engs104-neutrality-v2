@@ -3445,3 +3445,9 @@ Every line of report/main.tex is mine: change nothing in it except a mechanical 
 ## 2026-11-03 — S6 (final build and submission package): BASE
 - Preconditions: Isaiah's note "— Isaiah: S5 pass 3 read; final edits; II–IV approved (Decision 65); FINAL; run S6" (0f41969); the tree clean at session start (`git status --short` empty).
 - BASE = 0f4196917a29902399b562e072ea7ba780f5f68c (`git rev-parse HEAD`), recorded before any other step. report/main.tex at BASE: sha256 5caf80c2dd4a86aa958294d08459ca1ac181e6a5725378a562e84b3a45949850.
+
+## 2026-11-03 — S6 (Claude Code, Opus 5.5): step 0 done (suite, figures ×2, build)
+- Full suite: 574 passed, 1 skipped, 2 xfailed, exit 0 (logs/test_full_s6_20261103T203050Z.log); the tree stayed clean (the suite's one unredirected write, results/pilot_s2d/s2d_breakdown_run_20261020T045603Z.json, byte-identical).
+- `make figures` twice, exit 0 both: the 21 tracked outputs (figures/, report/numbers.tex, report/tables/) sha-identical across runs (results/scratch/s6/figs_runA.sha = figs_runB.sha). Against BASE only report/numbers.tex differs, and only in \TestsPassed's source comment (now logs/test_full_s6_20261103T203050Z.log); its value stays 574 (Decision 67). No other macro changed.
+- `make report` exit 0 (logs/make_report_s6_20261103T203316Z.out): RP-4 PASS, 9 pages in total, refs:start p. 8, text before the references ends on p. 8; draft spec_check PASS. report/main.pdf sha256 d2c99bfd871621aafe4363b9cd734f7149bcc9637cf10fc9b1613468dd2b89bc.
+- report/main.tex unchanged (sha256 5caf80c2…, as at BASE): no mechanical fix needed.
