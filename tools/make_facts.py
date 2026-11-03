@@ -401,19 +401,25 @@ _PYTEST_COUNT = re.compile(r"(\d+) (passed|failed|skipped|xfailed|xpassed|errors
 def full_suite_log(logs: Path) -> tuple[Path, dict]:
     """The newest full-suite pytest log by the UTC stamp in its name, among `make <target>` logs
     (make runs the whole suite before a runner) and `test_full_*` logs; logs without a pytest
-    summary line (e.g. `make figures`) are not candidates. Returns (file, counts)."""
+    summary line (e.g. `make figures`) are not candidates. Returns (file, counts). A newest log that
+    records any failure or error is refused (ValueError), so no count comes from a failing run (S5
+    pass 3, 0b); a summary counts as one whether or not anything passed."""
     found = []
     for pat in FULL_SUITE_GLOBS:
         for f in Path(logs).glob(pat):
             m = re.search(r"_(\d{8}T\d{6}Z)\.", f.name)
             lines = [ln for ln in f.read_text(errors="replace").splitlines()
-                     if re.search(r"\d+ passed", ln) and re.search(r" in [\d.]+s", ln)]
+                     if _PYTEST_COUNT.search(ln) and re.search(r" in [\d.]+s", ln)]
             if m and lines:
                 found.append((m[1], f, lines[-1]))
     if not found:
         raise ValueError(f"no full-suite pytest log with a summary line in {logs}")
     _, f, line = max(found, key=lambda x: (x[0], x[1].name))
-    return f, {k if k != "error" else "errors": int(n) for n, k in _PYTEST_COUNT.findall(line)}
+    c = {k if k != "error" else "errors": int(n) for n, k in _PYTEST_COUNT.findall(line)}
+    if c.get("failed", 0) or c.get("errors", 0):
+        raise ValueError(f"newest full-suite log {f.name} records a failing run "
+                         f"({c.get('failed', 0)} failed, {c.get('errors', 0)} errors): {line.strip()}")
+    return f, c
 
 
 def refs(F: Facts) -> None:

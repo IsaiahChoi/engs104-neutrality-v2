@@ -38,7 +38,7 @@ ALLOWED: dict[str, tuple[str, str | None]] = {
     "wolsey2020integer": ("Wolsey", "2020"),
     "diamond2016cvxpy": ("Diamond", "2016"),
     "gurobi2026manual": ("Gurobi", "2026"),
-    "goulart2024clarabel": ("Goulart", "2024"),
+    "goulart2024clarabel": ("Goulart", "2026"),
     "french_data_library": ("French Data Library", None),
     "yfinance": ("yfinance", None),
 }
