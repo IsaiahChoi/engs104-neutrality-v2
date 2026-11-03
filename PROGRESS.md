@@ -3441,3 +3441,7 @@ Every line of report/main.tex is mine: change nothing in it except a mechanical 
 
 ### After S6
 - I read SUBMISSION.md, then `git tag report-submitted && git push origin main --tags`, and upload report/main.pdf to Canvas by Fri 2026-11-20.
+
+## 2026-11-03 — S6 (final build and submission package): BASE
+- Preconditions: Isaiah's note "— Isaiah: S5 pass 3 read; final edits; II–IV approved (Decision 65); FINAL; run S6" (0f41969); the tree clean at session start (`git status --short` empty).
+- BASE = 0f4196917a29902399b562e072ea7ba780f5f68c (`git rev-parse HEAD`), recorded before any other step. report/main.tex at BASE: sha256 5caf80c2dd4a86aa958294d08459ca1ac181e6a5725378a562e84b3a45949850.
