@@ -3329,3 +3329,7 @@ The S5 addendum (my note "— Isaiah: Decision 65; S5 addendum for pass 2 and la
 - 5. A cold read of the whole report, saved verbatim (K40).
 - 6. The S6 rehearsal, as my note "— Isaiah: pre-FINAL agent session (Fig. 2 legibility; S6 rehearsal)" defines it, writing results/checks/S6_rehearsal_<UTC>.md.
 - Stop. In the PROGRESS entry: BASE and HEAD; the commits; 0a–0c; the page table; every FAIL with the sentence it concerns; the cold reader's issues; the rehearsal's result; and what remains for me, by file:line. Commit. No push, no tag.
+
+## 2026-11-03 — S5 pass 3 rerun (from step 3): BASE
+- Preconditions: Isaiah's note "— Isaiah: S5 pass 3 stop read; Decision 69 (Clarabel reference); rerun S5 pass 3 from step 3" (14ad89c), which authorizes this rerun and sets CHECK REPORT to draft mode; the tree clean at session start (`git status --short` empty). No separate "— Isaiah: draft (S5 pass 3)" note exists; the 14ad89c note serves as the authorization.
+- BASE = 14ad89c418096a61005dba1fcea79f2be3787b98 (`git rev-parse HEAD`), recorded before any other step.
