@@ -3223,3 +3223,6 @@ Amends RUNBOOK §4 for this session only; the S5 addendum stays in force for S5 
 2. `make figures` twice, byte-identical; `make report`; tools/page_sections.py (the text before the references, and Fig. 2's float height before and after).
 3. The S6 rehearsal.
 4. Stop. In the PROGRESS entry: BASE and HEAD; the commits; Fig. 2's change and its page effect; the rehearsal's verdicts; and what remains for me, by file:line. Commit. No push, no tag.
+
+## 2026-11-02 — pre-FINAL agent session: BASE
+- BASE = d6309bb2e76143fdc9bacbf1ddf47ea7b868476e (clean tree; precondition note "— Isaiah: pre-FINAL agent session (Fig. 2 legibility; S6 rehearsal)" present).
