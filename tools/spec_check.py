@@ -58,6 +58,13 @@ SECTIONS = {   # required section -> accepted titles (prefix match, case-insensi
 SIZE_SWITCHES = ("tiny", "scriptsize", "footnotesize", "small", "large", "Large", "LARGE",
                  "huge", "Huge")
 FINAL_MARKERS = ("TODO", "\\textcolor{red}", "% drafted-by-agent", "TODO(Isaiah)")
+# Paragraph markers (DESIGN §11.6-§11.7; Decisions 64, 65). RP-8 fails in final mode on the first
+# three and never on the other four; a marker counts only on a comment line that begins with it.
+RP8_FAIL_MARKERS = ("% drafted-by-agent", "% drafted-by-chat", "% verify-by-hand")
+RP8_PASS_MARKERS = ("% chat-draft revised by Isaiah", "% chat-draft approved by Isaiah",
+                    "% agent-draft revised by Isaiah", "% agent-draft approved by Isaiah")
+RP8_FINAL = ("TODO(Isaiah)", "red text", *RP8_FAIL_MARKERS)
+PAGE_LIMIT = 8                                 # RP-4: the text before the references (Decision 63)
 
 
 # ----- text helpers -----
@@ -146,22 +153,67 @@ def has_ai_use(tex: str) -> bool:
 RED_TEXT = re.compile(r"\\(?:text)?color\s*\{\s*red[^}]*\}", re.I)   # \color{red}, \textcolor{Red!50}
 
 
+def marker_lines(text: str, marker: str) -> list[int]:
+    """1-based numbers of the lines that begin (after optional spaces) with a `% ...` marker
+    (Decision 65(b)): a marker quoted inside another comment or after text does not count."""
+    word = re.escape(marker.lstrip("%").strip())
+    pat = re.compile(rf"^[ \t]*%[ \t]*{word}(?![\w-])")
+    return [i for i, line in enumerate(text.splitlines(), 1) if pat.match(line)]
+
+
+def marker_counts(text: str) -> dict[str, int]:
+    """The seven paragraph markers of RP-8, in DESIGN order, with their line counts."""
+    return {m: len(marker_lines(text, m)) for m in RP8_FAIL_MARKERS + RP8_PASS_MARKERS}
+
+
 def draft_markers(text: str, markers=FINAL_MARKERS) -> list[str]:
-    """Markers present: TODO and red text in the comment-stripped text; drafted-by-agent in the
-    raw text (it is a comment). The pseudo-marker "red text" matches any \\color{red...} or
-    \\textcolor{red...} spelling, any case."""
+    """Markers present: TODO and red text in the comment-stripped text; `% ...` markers on a
+    comment line that begins with them (marker_lines). The pseudo-marker "red text" matches any
+    \\color{red...} or \\textcolor{red...} spelling, any case."""
     stripped = strip_comments(text)
 
     def present(m):
         if m == "red text":
             return bool(RED_TEXT.search(stripped))
-        return m in text if m.startswith("%") else m in stripped
+        return bool(marker_lines(text, m)) if m.startswith("%") else m in stripped
     return [m for m in markers if present(m)]
 
 
 def label_page(aux: str, label: str) -> int | None:
     m = re.search(r"\\newlabel\{" + re.escape(label) + r"\}\{\{[^}]*\}\{(\d+)\}", aux)
     return int(m.group(1)) if m else None
+
+
+def labels_after(aux: str, page: int) -> list[str]:
+    """Labels (other than refs:start) that the .aux places after `page`: material set after it."""
+    return [lab for lab, p in re.findall(r"\\newlabel\{([^}]*)\}\{\{[^}]*\}\{(\d+)\}", aux)
+            if lab != "refs:start" and int(p) > page]
+
+
+def heading_at_top(page_text: str) -> bool:
+    """The page's first text is the references heading (IEEEtran sets it in small capitals)."""
+    return bool(re.match(r"\s*R\s?E\s?F\s?E\s?R\s?E\s?N\s?C\s?E\s?S\b", page_text or ""))
+
+
+def refs_fit(n_pages: int | None, refs_page: int | None, refs_page_text: str,
+             late_labels: list[str], limit: int = PAGE_LIMIT) -> tuple[bool, str]:
+    """RP-4 (Decision 63): the text before the references fits in `limit` pages, i.e. nothing
+    but references after page `limit`: refs:start on page `limit` or earlier, or at the top of
+    page `limit` + 1 with nothing before it there, and no labelled float or section after
+    page `limit`."""
+    detail = f"{n_pages} pages in total; refs:start on page {refs_page}"
+    if n_pages is None:
+        return False, detail + " (no PDF)"
+    if n_pages <= limit:
+        return True, detail + f" (at most {limit} pages)"
+    if refs_page is None:
+        return False, detail + " (no fresh .aux: build with --build)"
+    top = refs_page == limit + 1 and heading_at_top(refs_page_text)
+    ok = (refs_page <= limit or top) and not late_labels
+    why = (f"references start at the top of page {refs_page}" if top
+           else f"text before the references ends on page {refs_page}")
+    return ok, (detail + f"; {why}" + (f"; after page {limit}: {late_labels}" if late_labels else "")
+                + f" (text before the references: max {limit} pages)")
 
 
 def pdf_pages(path: Path) -> int:
@@ -259,9 +311,19 @@ def run(target: str, mode: str, root: Path = ROOT, build: bool = False) -> list[
     miss = missing_sections(tex)
     add("RP-3", not miss, f"missing {miss}" if miss else "abstract and six sections present")
     n = pdf_pages(pdf) if pdf.exists() else None
-    add("RP-4", n is not None and n <= 8, f"{n} pages (max 8)")
     aux = d / "main.aux"
-    page = label_page(aux.read_text(), "refs:start") if aux.exists() else None
+    # the .aux counts only if it is from a build at least as new as the sources (`make report`
+    # runs tectonic without --keep-intermediates, so an older .aux can be left behind)
+    aux_ok = aux.exists() and _fresh(aux, [*d.glob("*.tex"), bib_path,
+                                          *(root / "figures").glob("*.pdf")])[0]
+    aux_text = aux.read_text() if aux_ok else ""
+    page = label_page(aux_text, "refs:start") if aux_ok else None
+    if n is not None and page is not None and n > PAGE_LIMIT:
+        from pypdf import PdfReader
+        page_text = PdfReader(str(pdf)).pages[page - 1].extract_text() if page <= n else ""
+    else:
+        page_text = ""
+    add("RP-4", *refs_fit(n, page, page_text, labels_after(aux_text, PAGE_LIMIT)))
     add("RP-5", page is not None and page >= 7, f"refs:start on page {page} (need >= 7)",
         na=not final)
     bad = forbidden_layout(all_tex)
@@ -270,8 +332,10 @@ def run(target: str, mode: str, root: Path = ROOT, build: bool = False) -> list[
     unresolved, extra = sorted(keys - set(entries)), not_allowed(entries)
     add("RP-7", not unresolved and not extra,
         f"{len(keys)} cited; unresolved {unresolved}; outside DESIGN §13 {extra}")
-    found = draft_markers(all_tex, ("TODO(Isaiah)", "red text", "% drafted-by-agent"))
-    add("RP-8", not found, f"found {found}" if found else "none", na=not final)
+    found = draft_markers(all_tex, RP8_FINAL)
+    counts = ", ".join(f"{m.lstrip('% ')} {c}" for m, c in marker_counts(all_tex).items())
+    add("RP-8", not found, (f"found {found}" if found else "none") + f"; markers: {counts}",
+        na=not final)
     add("RP-9", has_ai_use(tex), "AI-use acknowledgment heading")
     log_path = d / "main.log"
     log = log_path.read_text(errors="replace") if log_path.exists() else ""

@@ -14,7 +14,10 @@ is the distance to the next part's marker, halved to pages. Two accountings:
 - B, each float in the part that first references it (DESIGN §11.1): its area (body height plus
   \\textfloatsep, or \\dbltextfloatsep and both columns for a starred float) moves from the part
   where it lands to the part with its first \\ref outside comments and outside the outline-only
-  parts (Abstract and Introduction, whose red outlines point at floats as evidence).
+  parts (those whose only content is a red outline, which points at floats as evidence; found
+  from the source by outline_only, so a part counts once it is prose: S5 pass 2).
+The length of the text before the references, in pages, is the refs:start marker's position
+(before_refs; DESIGN §11.1, Decision 63).
 """
 from __future__ import annotations
 
@@ -32,7 +35,6 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRATCH = ROOT / "results" / "scratch" / "pages"
 PT = 65536.0                                   # sp per pt
 INCH_PT = 72.27
-SKIP_TITLES = ("Abstract", "Introduction")     # outline-only parts (module docstring)
 
 PREAMBLE = (r"\usepackage{zref-savepos,zref-abspage}\makeatletter\zref@addprop{savepos}{abspage}"
             r"\makeatother\newcommand{\mk}[1]{\zsavepos{#1}}"
@@ -64,6 +66,24 @@ def parts(src: str) -> list[dict]:
             out.append({"key": f"{'sec' if sec else 'sub'}{k}", "title": m.group(2).strip(),
                         "pos": m.start(), "level": 1 if sec else 2})
     return out
+
+
+def outline_only(src: str, prts: list[dict]) -> tuple[str, ...]:
+    """Keys of the parts whose only content (comments, the heading, labels and the abstract's
+    environment aside) is one or more red outline environments."""
+    t = _blank_comments(src)
+    ends = [p["pos"] for p in prts[1:]] + [len(t)]
+    out = []
+    for p, end in zip(prts, ends):
+        body = t[p["pos"]:end]
+        if r"\begin{outline}" not in body:
+            continue
+        rest = re.sub(r"\\begin\{outline\}.*?\\end\{outline\}", " ", body, flags=re.S)
+        rest = HEAD.sub(" ", rest, count=1)
+        rest = re.sub(r"\\(?:begin|end)\{(?:abstract|document)\}|\\label\{[^}]*\}", " ", rest)
+        if not rest.strip():
+            out.append(p["key"])
+    return tuple(out)
 
 
 def first_refs(src: str, prts: list[dict], skip=()) -> dict[str, str]:
@@ -119,6 +139,11 @@ def spans(g: Geometry, pos: dict, keys: list[str], end: str = "end") -> dict[str
     """Pages from each part's marker to the next one's (the last to `end`)."""
     seq = list(keys) + [end]
     return {a: (_u(g, pos, b) - _u(g, pos, a)) / 2 for a, b in zip(seq, seq[1:])}
+
+
+def before_refs(g: Geometry, pos: dict) -> float:
+    """Pages from the top of page 1 to the refs:start marker: the text before the references."""
+    return _u(g, pos, "refs") / 2
 
 
 def float_areas(g: Geometry, pos: dict, wide: dict, sep: float, sep_wide: float | None = None) -> dict:
@@ -188,7 +213,7 @@ def measure(report: Path = ROOT / "report") -> dict:
             for m2 in [re.search(r"\\label\{([^}]*)\}", m.group(4))] if m2}
     floats = float_areas(g, pos, wide, dims["textfloatsep"], dims["dbltextfloatsep"])
     landed = landing(g, pos, floats, keys)
-    skip = tuple(p["key"] for p in prts if p["title"] in SKIP_TITLES)
+    skip = outline_only(src, prts)
     first = first_refs(src, prts, skip=skip)
     B = by_first_reference(A, floats, landed, first)
     n_copy = len(PdfReader(SCRATCH / "main.pdf").pages)
@@ -200,6 +225,8 @@ def measure(report: Path = ROOT / "report") -> dict:
     i0, i1 = names.index("Problem Setting"), names.index("Discussion")
     in_2_4 = {p["key"] for p in prts if sec[i0]["pos"] <= p["pos"] < sec[i1]["pos"]}
     return {"pages_copy": n_copy, "pages_report": n_real, "refs_start_page": pos["refs"][0],
+            "before_refs_pages": before_refs(g, pos),
+            "outline_only": [p["title"] for p in prts if p["key"] in skip],
             "rows": rows, "floats": {f: {**v, "lands": landed[f], "first_ref": first.get(f)}
                                      for f, v in floats.items()},
             "II_IV": {"A": sum(r["A"] for r in rows if r["key"] in in_2_4),
@@ -227,7 +254,9 @@ def main(argv=None) -> int:
     res = measure()
     res["sections"] = section_table(res)
     lines = [f"pages: {res['pages_report']} (scratch copy {res['pages_copy']}); refs:start on page "
-             f"{res['refs_start_page']}; II-IV: A {res['II_IV']['A']:.2f}, B {res['II_IV']['B']:.2f}",
+             f"{res['refs_start_page']}; text before the references {res['before_refs_pages']:.2f} pages; "
+             f"II-IV: A {res['II_IV']['A']:.2f}, B {res['II_IV']['B']:.2f}",
+             "outline-only parts (their \\refs skipped in B): " + ", ".join(res["outline_only"]),
              "part | A (where floats land) | B (first reference)"]
     for s in res["sections"]:
         lines.append(f"{s['title']} | {s['A']:.2f} | {s['B']:.2f}")
