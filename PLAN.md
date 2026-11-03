@@ -75,11 +75,11 @@ From docs/RUNBOOK.md §1 (calendar) and §4 (session prompts). Claude Code ticks
 - [x] FINAL note: all sections written, no TODOs, references verified, AI-use paragraph verified (PROGRESS)
 
 ## S6 — Final build and submission package (Claude Code, Mon 11/16)
-- [ ] 1. Clean-checkout build; byte-identical figures and numbers.tex; same page count and text
-- [ ] 2. spec_check report and proposal (final); CHECK REPORT (final)
-- [ ] 3. Compliance matrix walk (RUNBOOK §8)
-- [ ] 4. SUBMISSION.md
-- [ ] 5. Commit and stop (no tag, no push)
+- [x] 1. Clean-checkout build; byte-identical figures and numbers.tex; same page count and text (S6, 2026-11-03: PASS, PROGRESS)
+- [x] 2. spec_check report and proposal (final); CHECK REPORT (final) (both PASS; results/checks/REPORT_20261103T204948Z.md)
+- [x] 3. Compliance matrix walk (RUNBOOK §8) (results/checks/S6_matrix_20261103T205701Z.md; P0 instructor-discussion element open for Isaiah)
+- [x] 4. SUBMISSION.md
+- [x] 5. Commit and stop (no tag, no push)
 
 ## Submit — Isaiah (Fri 11/20)
 - [ ] Tag `report-submitted`, push, upload the PDF

@@ -3460,3 +3460,26 @@ Every line of report/main.tex is mine: change nothing in it except a mechanical 
 - Cold read (K40): results/checks/cold_read_20261103T204218Z.md (verbatim), input results/scratch/s6/main_final_f0129e05.pdf; verdict MOSTLY.
 - The cold reader's "coincident medians" query (pooled δ = 10%, n = 23, and 2017-12 δ = 10%, n = 11: fixed 0.023, big-M 0.073) is genuine, not a generation bug: recomputed from results/s3_analysis/i1_long.csv, the same case is the median of both sets (the 12 other-date cases split 6 below, 6 above) for both estimators; the checker confirms it independently from i1_solves. No rule-13 stop.
 - Pages (tools/page_sections.py, results/scratch/s6/pages_s6.txt): text before the references 7.76 pages; II–IV 5.56; 9 pages in total.
+
+## 2026-11-03 — S6 closing entry (Claude Code, Opus 5.5): final build PASS; CHECK REPORT final PASS; SUBMISSION.md written; stopped (no tag, no push)
+- **BASE** 0f41969. **HEAD**: the commit with this entry. Commits: 1a24780 (BASE), ec2cca5 (step 0 build), 6fac8de (steps 1–2: the checked build, CHECK REPORT, cold read), and this one (matrix walk, SUBMISSION.md, PLAN ticks, this entry). Not pushed, not tagged. No experiment runs (RUN_LOG unchanged).
+- **report/main.tex unchanged** (sha256 5caf80c2…; `git diff 0f41969 HEAD -- report/main.tex` empty): no mechanical LaTeX fix was needed, so none is listed. docs/, tests/, src/, tools/, refs.bib, proposal/proposal.tex and experiments/configs/ untouched.
+- **Submission PDF:** report/main.pdf sha256 f0129e05b2cc25401ab8ea7b95cc8303f26fa257ecffab85ad0e9656ecd6e56c, committed at 6fac8de. 9 pages in total; the text before the references is 7.76 pages and ends on p. 8 (refs:start p. 8).
+- **Step verdicts:**
+  - 0 PASS: 574 passed; figures ×2 byte-identical; only \TestsPassed's source comment changed.
+  - 1 PASS: clean clone; 21 outputs byte-identical; PDF pages and text identical.
+  - 2: spec_check final PASS for the report and the proposal. CHECK REPORT round 1, final mode, **PASS** (results/checks/REPORT_20261103T204948Z.md). Cold read MOSTLY (results/checks/cold_read_20261103T204218Z.md). No final-mode item fails on Isaiah's text, so no change is proposed.
+  - 3: results/checks/S6_matrix_20261103T205701Z.md, with 15 of 16 rows met with evidence. **P0 is open for Isaiah on one element:** "discussed with an instructor" has no record in the repo. The 10/21 Fügenschuh meeting did not take place (PROGRESS:2140), and the 10/23 class discussion is never recorded. The proposal was accepted 2026-10-24.
+  - 4: SUBMISSION.md.
+  - 5: PLAN S6 tasks 1–5 ticked.
+- **Deviation:** the final-mode spec_check (RP-1/PR-1) rebuilt report/main.pdf in the working tree (d2c99bfd… → f0129e05…, same pages and text) and wrote an untracked proposal/proposal.pdf. Moving both to trash and putting ec2cca5's PDF bytes back was denied by the auto-mode classifier, and I did not pursue it. The rebuilt PDF is the one checked and cold-read, so it is the committed submission PDF. proposal/proposal.pdf stays untracked.
+
+### Decisions needed (Isaiah)
+1. **P0:** confirm that the proposal was discussed with an instructor (for example at the 10/23 class discussion, or by email). If you want it on record, add a note. SUBMISSION.md flags this item.
+2. **proposal/proposal.pdf** (untracked, from PR-1): move it to results/scratch/trash/ or keep it. It is not part of the submission.
+3. **Optional wording, your text only, not required by any check** (REPORT_20261103T204948Z.md):
+   - O1, main.tex:35 and 48: "largest marginal cost" → "… of the mandate's rules".
+   - O2, main.tex:277: "reaches the root" → the checker's proposed sentence.
+   - O3, main.tex:268: "Tolerance trades against runtime" → "… in principle".
+   Any edit means rerunning S6 from step 0.
+4. **Then:** read SUBMISSION.md; `git tag report-submitted && git push origin main --tags`; upload report/main.pdf (sha256 f0129e05…) to Canvas by Fri 2026-11-20.
