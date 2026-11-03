@@ -1,13 +1,16 @@
 % refs.bib: the DESIGN §13 allow-list only (CLAUDE.md rule 9). Fields are those DESIGN §13
-% states, plus page ranges added on 2026-10-21 (sources in the comment above each entry). Isaiah checks every detail (authors, title, venue, volume,
+% states, plus page ranges added on 2026-10-21 and the details added on 2026-11-03 (sources in the comment above each entry). Isaiah checks every detail (authors, title, venue, volume,
 % issue, pages, year) and flips its marker to `% verified: yes (<date>)`.
 % tools/spec_check.py (RP-7, K38) checks every key against the allow-list.
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: Penn Libraries and Texas A&M catalogue records (2nd ed., New York: McGraw-Hill, 2000, ISBN 0-07-024882-6); the title page reads "Providing", not the retailers' "Producing"; subtitle, publisher and address added
+% verified: yes (2026-11-03)
 @book{grinold2000active,
   author    = {Grinold, R. and Kahn, R.},
-  title     = {Active Portfolio Management},
+  title     = {Active Portfolio Management: A Quantitative Approach for Providing Superior Returns and Controlling Risk},
   edition   = {2nd},
+  publisher = {McGraw-Hill},
+  address   = {New York},
   year      = {2000}
 }
 
@@ -59,17 +62,19 @@
   year    = {2012}
 }
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: RePEc v53y2005i4p586-599; doi 10.1287/opre.1050.0212; pages added
+% verified: yes (2026-11-03)
 @article{jacobs2005portfolio,
   author  = {Jacobs, B. and Levy, K. and Markowitz, H.},
   title   = {Portfolio optimization with factors, scenarios, and realistic short positions},
   journal = {Operations Research},
   volume  = {53},
   number  = {4},
+  pages   = {586--599},
   year    = {2005}
 }
 
-% details checked by Claude (chat) 2026-10-21: doi 10.1007/s10107-005-0594-3; issue 2 not seen in a source; pages added
+% details checked by Claude (chat) 2026-10-21: doi 10.1007/s10107-005-0594-3; issue 2 not seen in a source; pages added; issue 2 confirmed 2026-11-03 (Peeref record)
 % verified: yes (2026-10-21)
 @article{frangioni2006perspective,
   author  = {Frangioni, A. and Gentile, C.},
@@ -81,13 +86,14 @@
   year    = {2006}
 }
 
-% details checked by Claude (chat) 2026-10-21: doi 10.1007/s10107-010-0360-z; volume 124 not seen in a source; pages added
-% verified: yes (2026-10-21)
+% details checked by Claude (chat) 2026-10-21: doi 10.1007/s10107-010-0360-z; volume 124 not seen in a source; pages added; volume 124 and issue 1--2 confirmed 2026-11-03 (library catalogue record), issue added
+% verified: yes (2026-11-03)
 @article{gunluk2010perspective,
   author  = {G{\"u}nl{\"u}k, O. and Linderoth, J.},
   title   = {Perspective reformulations of mixed integer nonlinear programs with indicator variables},
   journal = {Mathematical Programming},
   volume  = {124},
+  number  = {1--2},
   pages   = {183--205},
   year    = {2010}
 }
@@ -115,75 +121,96 @@
   year    = {1981}
 }
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: RePEc v34y2022i3p1489-1511; doi 10.1287/ijoc.2021.1127; pages added
+% verified: yes (2026-11-03)
 @article{bertsimas2022scalable,
   author  = {Bertsimas, D. and Cory-Wright, R.},
   title   = {A scalable algorithm for sparse portfolio selection},
   journal = {INFORMS Journal on Computing},
   volume  = {34},
   number  = {3},
+  pages   = {1489--1511},
   year    = {2022}
 }
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: RePEc v116y2015i1p1-22; doi 10.1016/j.jfineco.2014.10.010; pages added
+% verified: yes (2026-11-03)
 @article{fama2015five,
   author  = {Fama, E. and French, K.},
   title   = {A five-factor asset pricing model},
   journal = {Journal of Financial Economics},
   volume  = {116},
   number  = {1},
+  pages   = {1--22},
   year    = {2015}
 }
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: the book's copyright page (Cambridge University Press, first published 2004, ISBN 978-0-521-83378-3); address added
+% verified: yes (2026-11-03)
 @book{boyd2004convex,
   author    = {Boyd, S. and Vandenberghe, L.},
   title     = {Convex Optimization},
   publisher = {Cambridge University Press},
+  address   = {Cambridge, UK},
   year      = {2004}
 }
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: publisher listings (2nd ed., Wiley, Hoboken, 2020, ISBN 978-1-119-60653-6) and the UCLouvain record (2020); the copyright page says first published 2021; address added
+% verified: yes (2026-11-03)
 @book{wolsey2020integer,
   author    = {Wolsey, L.},
   title     = {Integer Programming},
   edition   = {2nd},
   publisher = {Wiley},
+  address   = {Hoboken, NJ},
   year      = {2020}
 }
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: jmlr.org paper 15-408 (vol. 17, no. 83, pp. 1-5); full title and pages added
+% verified: yes (2026-11-03)
 @article{diamond2016cvxpy,
   author  = {Diamond, S. and Boyd, S.},
-  title   = {{CVXPY}},
+  title   = {{CVXPY}: A {Python}-embedded modeling language for convex optimization},
   journal = {Journal of Machine Learning Research},
   volume  = {17},
   number  = {83},
+  pages   = {1--5},
   year    = {2016}
 }
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: Gurobi's support article on citing Gurobi (author Gurobi Optimization, LLC; year 2026); the installed gurobipy version from uv.lock added
+% verified: yes (2026-11-03)
 @manual{gurobi2026manual,
-  author = {{Gurobi Optimization}},
+  author = {{Gurobi Optimization, LLC}},
   title  = {Gurobi Optimizer Reference Manual},
+  note   = {Version 13.0.3},
   year   = {2026}
 }
 
-% verified: no
-@misc{goulart2024clarabel,
-  author = {Goulart, P. and Chen, Y.},
-  title  = {Clarabel},
-  note   = {arXiv:2405.12762},
-  year   = {2024}
+% details checked by Claude (chat) 2026-11-03: Oxford Research Archive record: published in Mathematical Programming Computation on 2026-05-21, doi 10.1007/s12532-026-00320-7, no volume or pages listed yet; replaces arXiv:2405.12762; full title
+% verified: yes (2026-11-03)
+@article{goulart2024clarabel,
+  author  = {Goulart, P. and Chen, Y.},
+  title   = {{Clarabel}: An interior-point solver for conic programs with quadratic objectives},
+  journal = {Mathematical Programming Computation},
+  note    = {doi: 10.1007/s12532-026-00320-7},
+  year    = {2026}
 }
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: the library's page (Tuck School of Business, Dartmouth College; daily five factors (2x3) and daily momentum factor); data downloaded in Oct. 2026 (docs/AI_USE.md); the library rebuilds its return histories monthly, so the access month matters; no URL, as no other entry has one and an unbroken URL would overrun the column
+% verified: yes (2026-11-03)
 @misc{french_data_library,
-  author = {French, K. R.},
-  title  = {Data Library}
+  author       = {French, K. R.},
+  title        = {Data Library},
+  howpublished = {Tuck School of Business, Dartmouth College},
+  note         = {Daily Fama/French five factors (2$\times$3), momentum factor and risk-free rate; accessed Oct.~2026}
 }
 
-% verified: no
+% details checked by Claude (chat) 2026-11-03: the project's GitHub page and PyPI metadata (author Ran Aroussi); the installed version from uv.lock; data downloaded in Oct. 2026 (docs/AI_USE.md)
+% verified: yes (2026-11-03)
 @misc{yfinance,
-  title = {yfinance}
+  author       = {Aroussi, R.},
+  title        = {yfinance},
+  howpublished = {Python package for Yahoo! Finance market data, version 1.7.0},
+  note         = {Data retrieved Oct.~2026}
 }
