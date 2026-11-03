@@ -355,18 +355,25 @@ def exit_code(rows) -> int:
     return 1 if any(r[2] == "FAIL" for r in rows) else 0
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--target", choices=["proposal", "report"], required=True)
     p.add_argument("--mode", choices=["draft", "final"], default="draft")
     p.add_argument("--build", action="store_true", help="build here with logs and .aux")
-    a = p.parse_args()
-    rows = run(a.target, a.mode, build=a.build)
+    p.add_argument("--only", metavar="CHECK",
+                   help="print and exit on this check alone, as the full run measures it "
+                        "(the Makefile's page gate: --only RP-4, Decision 68)")
+    a = p.parse_args(argv)
+    rows = run(a.target, a.mode, root=ROOT, build=a.build)
+    if a.only:
+        rows = [r for r in rows if r[0] == a.only]
+        if not rows:
+            p.error(f"no check {a.only} for --target {a.target}")
     print(f"{'check':<6} {'req':<6} {'status':<6} detail")
     for cid, req, status, detail in rows:
         print(f"{cid:<6} {req:<6} {status:<6} {detail}")
     code = exit_code(rows)
-    print(f"spec_check {a.target} ({a.mode}): {'FAIL' if code else 'PASS'}")
+    print(f"spec_check {a.target} ({a.only or a.mode}): {'FAIL' if code else 'PASS'}")
     return code
 
 

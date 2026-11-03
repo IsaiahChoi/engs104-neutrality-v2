@@ -3269,3 +3269,37 @@ Amends RUNBOOK §4 for this session only; the S5 addendum stays in force for S5 
 3. Your sections, as outlines in red: Abstract main.tex:35; V main.tex:263 (0.8 page); VI main.tex:287; disclosures main.tex:296; AI-use acknowledgment main.tex:305. Then the preamble's \todo and outline definitions, main.tex:20–21 (RP-8), and the header comment, main.tex:5.
 4. Decision 65 markers: 32 `% drafted-by-agent` lines, at main.tex:63 67 71 75 89 104 108 123 134 138 142 145 148 151 154 157 164 167 171 181 184 194 204 210 213 216 226 229 242 245 255 258.
 5. report/refs.bib: 11 entries still `% verified: no` (K38 final mode; e.g. refs.bib:6, 62, 118).
+
+## 2026-11-03 — pre-FINAL session 2 (Claude Code, Opus 5.5): Decision 68; page gate and Fig. 2 α⊥ done; stopped before the build (final text not applied; suite red at HEAD)
+- Request (Isaiah, 2026-11-03): record Decision 68; (1) Makefile:49's page check follows it; (2) Fig. 2's α⊥ hollow squares get α∥'s white face; then (3) `make report` and a page table, (4) CHECK REPORT (draft), (5) cold read, (6) the S6 rehearsal. Commit; no push, no tag.
+- BASE = 1c8f8f4a0b8695fc912abf118c0d5a06d308875d (clean tree at session start). HEAD = this commit. report/main.tex, docs/, report/refs.bib, proposal/ and experiments/configs/ untouched. No experiment runs, so no RUN_LOG row.
+
+### Decision 68 (the Makefile's page gate)
+Recommended by Claude (chat); adopted by Isaiah on 2026-11-03.
+- The Makefile's page check follows Decision 63. Only the text before `\label{refs:start}` counts toward the 8 pages, measured exactly as tools/spec_check.py's RP-4 measures it. The references may run onto later pages.
+
+### Two preconditions not met (found at session start; why steps 3–6 did not run)
+1. **final_text_kit_20261103 is not applied.** HEAD is the refs kit's commit (1c8f8f4); no later commit, and origin/main is the same. report/main.tex still has the header TODO (main.tex:5), the `\todo` and `outline` definitions (main.tex:20–21) and the outlines for the Abstract (main.tex:35), V (main.tex:263) and VI (main.tex:287); only Section I carries `% chat-draft approved by Isaiah` (3 lines). DESIGN §11.2 still reads "the PDF has at most 8 pages". docs/AI_USE.md has no row for the kit. The zip is in ~/Downloads, unapplied. Its script edits report/main.tex, docs/DESIGN.md and docs/AI_USE.md (yours, protected), so I did not run it. It checks only for a clean tree and the exact old blocks, and this commit touches neither, so it will still apply on top of this commit. Its chained push will also push this session's commit.
+2. **The suite is red at BASE: 1 failed, 555 passed** (logs/test_full_d68_base_20261103T190653Z.log). tests/test_spec_check.py::test_scaffolds_pass_static_checks fails on `not_allowed(entries) == ['goulart2024clarabel']`. The refs kit (1c8f8f4) changed that entry from `@misc`, arXiv:2405.12762, year 2024, to `@article`, Mathematical Programming Computation, year 2026 (refs.bib:192–198). DESIGN §13 (line 347) lists "P. Goulart, Y. Chen, "Clarabel," arXiv:2405.12762, 2024", and tools/spec_check.py's ALLOWED pins year 2024. So RP-7 fails as well. That is a conflict between refs.bib and DESIGN §13 (CLAUDE.md: record it and stop). Not fixed: changing ALLOWED would put spec_check out of step with DESIGN, and the test may not be weakened (rule 5).
+- With the suite red I ran neither `make figures` nor `make report` (rule 6). Also, tools/make_facts.full_suite_log takes the newest full-suite log without checking for failures, so a `make figures` now would set \TestsPassed = 563 from a failing log. The next session must run a green full suite before `make figures`.
+
+### Step 1: the page gate (Decision 68)
+- Makefile:49 `$(PY) tools/page_count.py report/main.pdf --min 1 --max 8` becomes `$(PY) tools/spec_check.py --target report --only RP-4 --build`. No other Makefile line changed. The proposal's `page_count.py --max 2` stays, and page_count.py (kept core) is untouched.
+- tools/spec_check.py: `main()` takes an optional argv and a new `--only CHECK`, which runs the full `run()` and prints and exits on that check's row alone. So the gate is RP-4's own measurement (`refs_fit`, `label_page`, `labels_after`, `heading_at_top`), not a second count. RP-4's detail still reports the total page count and refs:start. `run()` is unchanged.
+- `--build` is needed because RP-4 reads refs:start from a fresh main.aux, and line 48's plain `tectonic main.tex` keeps none. The gate therefore rebuilds once in report/ with `--keep-logs --keep-intermediates`, exactly as spec_check's `--build` always has. This also leaves line 50's draft spec_check a fresh .aux (RP-4, RP-5) and .log (RP-10, RP-11). The cost is a second tectonic run in `make report`. Your call if you'd rather have line 48 keep its intermediates; I left it alone ("change nothing else in the build").
+- Tests first: tests/test_prefinal2.py. The report recipe is exactly three lines, with the gate as above and no page_count. The proposal check is unchanged. `--only RP-4` passes 9 pages with refs:start on page 8 while other checks fail. It fails when the text runs onto page 9. Its row equals the full run's RP-4 row. It rejects an unknown check. Red: logs/test_prefinal2_red_20261103T*.log.
+
+### Step 2: Fig. 2, α⊥'s hollow squares
+- src/figures/fig_c.py `fig2_figure`: the base-mandate markers get `mfc="white"` for α⊥ as well as α∥. α_mom, the filled markers, every point, the 7 legend entries, the size and the fonts are unchanged, and tests/test_s5.py and tests/test_prefinal.py pass unmodified.
+- Tests first (tests/test_prefinal2.py): α⊥'s hollow face is opaque and equals the axes background, with the edge in the series colour. Every α⊥ hollow square whose centre no later-drawn square covers (at least 2; none is isolated, since all 12 lie within 22 pt at 4 pt each) shows background at its centre. Red: the centre was the grid grey (217, 216, 212).
+- Page effect: none. The new PDF is 3.443 × 2.556 in, the same as before (results/scratch/prefinal2/). The float's height is unchanged.
+- figures/fig2_alignment.pdf and figures/png/fig2_alignment.png are in this commit. tests/test_s5.py:56 calls `fig2_alignment()`, which writes them during the suite. They are byte-identical to a separate render of the committed code (sha256 b0d2f8fe… and f684b043…). report/numbers.tex and report/main.pdf were not rebuilt.
+- Suite after both changes: **1 failed (the same goulart2024clarabel test), 563 passed, 1 skipped, 2 xfailed** (logs/test_full_prefinal2_after_20261103T191131Z.log). Related files alone: logs/test_prefinal2_green_20261103T191117Z.log.
+
+### Steps 3–6: not run
+- No `make report`, no page table, no CHECK REPORT, no cold read and no S6 rehearsal: the report still holds the outlines, and the suite is red.
+
+### Decisions needed
+1. Apply final_text_kit_20261103 (its README's commands), or tell me why it should not be.
+2. The Clarabel entry: either (a) amend DESIGN §13 to the published version (Mathematical Programming Computation, 2026, doi 10.1007/s12532-026-00320-7), after which tools/spec_check.py's ALLOWED year changes from 2024 to 2026 (no test changes), or (b) return refs.bib:192–198 to the arXiv 2024 entry.
+3. Then rerun this session from step 3: a green full suite, `make figures` twice, `make report`, the page table, CHECK REPORT, the cold read and the S6 rehearsal.

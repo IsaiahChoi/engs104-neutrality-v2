@@ -159,14 +159,16 @@ def fig2_figure():
     for i, (kind, label, _, mk) in enumerate(ALPHAS):
         # α∥ lies on φ = 1 (pre-FINAL, S5 pass 1 issue 21): its filled stack at (1, 0) is drawn
         # whole above the curve's end, and its hollow markers get an opaque white face so the
-        # x = 1 gridline and stacked neighbours don't show through and read as filled.
+        # x = 1 gridline and stacked neighbours don't show through and read as filled. α⊥'s hollow
+        # markers on φ = 0 get the same face, for the x = 0 gridline (pre-FINAL 2).
         par = kind == "par"
         g = ide[ide["alpha"] == kind]
         ax.plot(g["phi"], g["retained_num"], ls="none", marker=mk, ms=4, color=style.SERIES[i],
                 label=f"{label}, full factor neutrality",
                 **({"zorder": 3, "clip_on": False} if par else {}))
         r = pts[pts["alpha"] == kind]
-        ax.plot(r["phi"], r["retained"], ls="none", marker=mk, ms=4, mfc="white" if par else "none",
+        ax.plot(r["phi"], r["retained"], ls="none", marker=mk, ms=4,
+                mfc="white" if kind in ("par", "perp") else "none",
                 color=style.SERIES[i], label=f"{label}, base mandate")
     ax.set_xlabel(r"alignment share $\varphi$")
     ax.set_ylabel(r"retained fraction $A^*/A^*_{\mathrm{unc}}$")

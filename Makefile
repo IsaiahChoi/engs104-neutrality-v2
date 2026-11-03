@@ -46,7 +46,7 @@ proposal:
 
 report: figures
 	cd report && tectonic main.tex
-	$(PY) tools/page_count.py report/main.pdf --min 1 --max 8
+	$(PY) tools/spec_check.py --target report --only RP-4 --build
 	$(PY) tools/spec_check.py --target report --mode $(MODE)    # (S1)
 
 spec-check:
