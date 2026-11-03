@@ -157,11 +157,16 @@ def fig2_figure():
     phi = np.linspace(0, 1, 201)
     ax.plot(phi, np.sqrt(1 - phi), color=style.INK, lw=1.0, label=r"closed form $\sqrt{1-\varphi}$")
     for i, (kind, label, _, mk) in enumerate(ALPHAS):
+        # α∥ lies on φ = 1 (pre-FINAL, S5 pass 1 issue 21): its filled stack at (1, 0) is drawn
+        # whole above the curve's end, and its hollow markers get an opaque white face so the
+        # x = 1 gridline and stacked neighbours don't show through and read as filled.
+        par = kind == "par"
         g = ide[ide["alpha"] == kind]
         ax.plot(g["phi"], g["retained_num"], ls="none", marker=mk, ms=4, color=style.SERIES[i],
-                label=f"{label}, full factor neutrality")
+                label=f"{label}, full factor neutrality",
+                **({"zorder": 3, "clip_on": False} if par else {}))
         r = pts[pts["alpha"] == kind]
-        ax.plot(r["phi"], r["retained"], ls="none", marker=mk, ms=4, mfc="none",
+        ax.plot(r["phi"], r["retained"], ls="none", marker=mk, ms=4, mfc="white" if par else "none",
                 color=style.SERIES[i], label=f"{label}, base mandate")
     ax.set_xlabel(r"alignment share $\varphi$")
     ax.set_ylabel(r"retained fraction $A^*/A^*_{\mathrm{unc}}$")
